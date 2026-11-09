@@ -1,4 +1,5 @@
-﻿# Builds the Audio plugin and installs it into Stream Deck.
+﻿# Builds the Audio plugin, installs it into Stream Deck and publishes the update to GitHub.
+param([string]$Message = 'Audio bijgewerkt')
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.gamevolume.sdPlugin"
@@ -18,3 +19,4 @@ Copy-Item "$root\out\*" "$target\bin" -Recurse -Force
 
 Start-Process $exe
 Write-Output 'Stream Deck restarted.'
+& "$root\..\publish.ps1" -Message $Message

@@ -16,6 +16,13 @@ internal sealed class Ctx
     public string? Hash;
     public bool HoldFired;
     public CancellationTokenSource? HoldTimer;
+
+    // What the key shows now, so the name animation can redraw it without detecting games again.
+    public Bitmap? Icon;
+    public string Name = "", Time = "";
+    public bool Active, Scrolls;
+    public int Overflow, Offset;
+    public DateTime CycleStart;
 }
 
 internal static class Program
@@ -45,6 +52,22 @@ internal static class Program
     {
         string? Arg(string n) { int i = Array.IndexOf(args, n); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         if (Arg("--assets") is { } assets) { WriteAssets(assets); return 0; }
+        if (Arg("--scroll-test") is { } testOut)
+        {
+            using var glyph = Glyphs.Controller(96, Color.White);
+            const string name = "Librarian: Tidy Up the Arcane Library!";
+            int overflow = NameOverflow(name);
+            foreach (var (suffix, offset) in new[] { ("start", 0), ("end", overflow) })
+            {
+                var url = KeyImage(glyph, name, "12u 05m", true, offset);
+                File.WriteAllBytes($"{testOut}-{suffix}.png", Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]));
+            }
+            using var fits = Glyphs.Controller(96, Color.White);
+            var shortUrl = KeyImage(fits, "Fall Guys", "3m", true);
+            File.WriteAllBytes($"{testOut}-short.png", Convert.FromBase64String(shortUrl[(shortUrl.IndexOf(',') + 1)..]));
+            File.WriteAllText($"{testOut}.txt", $"overflow={overflow} short={NameOverflow("Fall Guys")}");
+            return 0;
+        }
 
         // Launcher only reads the shared settings: Audio is the one process that writes them.
         SettingsStore.LogFile = "launcher.log";
@@ -58,6 +81,7 @@ internal static class Program
         await Ws.ConnectAsync(new Uri($"ws://127.0.0.1:{port}"), CancellationToken.None);
         await Send(new JsonObject { ["event"] = reg, ["uuid"] = uuid });
         _ = Task.Run(TickLoop);
+        _ = Task.Run(AnimateLoop);
 
         var buffer = new byte[1 << 16];
         using var ms = new MemoryStream();
@@ -329,23 +353,69 @@ internal static class Program
         _ => RenderCurrent(c),
     };
 
-    private static async Task SetImage(Ctx c, string hash, Bitmap icon, string name, string time, bool active)
+    private static async Task SetImage(Ctx c, string hash, Bitmap icon, string name, string time, bool active, bool scrolls = false)
     {
+        if (name != c.Name || scrolls != c.Scrolls)
+        {
+            c.Overflow = scrolls ? NameOverflow(name) : 0;
+            c.Offset = 0;
+            c.CycleStart = DateTime.UtcNow;
+        }
+        (c.Icon, c.Name, c.Time, c.Active, c.Scrolls) = (icon, name, time, active, scrolls);
+
         if (hash == c.Hash) return;
         c.Hash = hash;
-        await Send(new JsonObject
-        {
-            ["event"] = "setImage", ["context"] = c.Id,
-            ["payload"] = new JsonObject { ["image"] = KeyImage(icon, name, time, active), ["target"] = 0 },
-        });
+        await SendKey(c);
     }
 
+    private static Task SendKey(Ctx c) => Send(new JsonObject
+    {
+        ["event"] = "setImage", ["context"] = c.Id,
+        ["payload"] = new JsonObject { ["image"] = KeyImage(c.Icon!, c.Name, c.Time, c.Active, c.Offset), ["target"] = 0 },
+    });
+
+    // ---------- long names: mostly still on the left, with an occasional slide to the end ----------
+
+    private const double RestSeconds = 8, EndPauseSeconds = 1.5, PixelsPerSecond = 45;
+
+    private static async Task AnimateLoop()
+    {
+        while (Ws.State == WebSocketState.Open)
+        {
+            await Task.Delay(80);
+            await Locked(AnimateFrame);
+        }
+    }
+
+    private static async Task AnimateFrame()
+    {
+        foreach (var c in Contexts.Values.Where(x => x.Overflow > 0 && x.Icon != null).ToList())
+        {
+            int offset = ScrollOffset(c.Overflow, (DateTime.UtcNow - c.CycleStart).TotalSeconds);
+            if (offset == c.Offset) continue;
+            c.Offset = offset;
+            await SendKey(c);
+        }
+    }
+
+    private static int ScrollOffset(int overflow, double seconds)
+    {
+        double slide = overflow / PixelsPerSecond, back = slide / 2;
+        double t = seconds % (RestSeconds + slide + EndPauseSeconds + back);
+        if (t < RestSeconds) return 0;
+        t -= RestSeconds;
+        if (t < slide) return (int)(t * PixelsPerSecond);
+        t -= slide;
+        if (t < EndPauseSeconds) return overflow;
+        t -= EndPauseSeconds;
+        return Math.Max(0, overflow - (int)(t * PixelsPerSecond * 2));
+    }
     private static Task RenderCurrent(Ctx c)
     {
         var name = _game != null ? DisplayName(_game.Entry) : "Geen game";
         var time = _game != null && Bool(c, "showPlaytime", true) ? Playtime(_game) : "";
         var art = _game != null ? _art.ForGame(_game) : _art.NoGame;
-        return SetImage(c, $"{art.Id}|{name}|{time}", art.KeyIcon, name, time, _game != null);
+        return SetImage(c, $"{art.Id}|{name}|{time}", art.KeyIcon, name, time, _game != null, scrolls: true);
     }
 
     private static Task RenderFixed(Ctx c)
@@ -363,7 +433,7 @@ internal static class Program
 
         var name = entry == null ? "Kies een game" : DisplayName(entry);
         var time = running != null && Bool(c, "showPlaytime", true) ? Playtime(running) : "";
-        return SetImage(c, $"{art.Id}|{name}|{time}|{running != null}", art.KeyIcon, name, time, running != null);
+        return SetImage(c, $"{art.Id}|{name}|{time}|{running != null}", art.KeyIcon, name, time, running != null, scrolls: true);
     }
 
     private static async Task RenderApp(Ctx c)
@@ -400,17 +470,48 @@ internal static class Program
     }
 
     /// <summary>Key layout: name on top, logo in the middle, and the large playtime at the bottom when there is one.</summary>
-    private static string KeyImage(Bitmap icon, string name, string subtitle, bool active)
+    private const int NameLeft = 4, NameWidth = 136;
+
+    private static Font NameFont() => new("Segoe UI Semibold", 19f, GraphicsUnit.Pixel);
+
+    private static StringFormat ScrollFormat()
+    {
+        var f = new StringFormat(StringFormat.GenericTypographic) { LineAlignment = StringAlignment.Center };
+        f.FormatFlags |= StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces;
+        return f;
+    }
+
+    /// <summary>How many pixels of the name do not fit on the key.</summary>
+    private static int NameOverflow(string name)
+    {
+        using var bmp = new Bitmap(1, 1);
+        using var g = ArtworkService.HighQuality(bmp);
+        using var font = NameFont();
+        using var fmt = ScrollFormat();
+        return Math.Max(0, (int)Math.Ceiling(g.MeasureString(name, font, int.MaxValue, fmt).Width) - NameWidth);
+    }
+
+    private static string KeyImage(Bitmap icon, string name, string subtitle, bool active, int offset = 0)
     {
         using var bmp = new Bitmap(144, 144, PixelFormat.Format32bppArgb);
         using (var g = ArtworkService.HighQuality(bmp))
         {
             g.Clear(Color.Black);
             using var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
-            using var nameFont = new Font("Segoe UI Semibold", 19f, GraphicsUnit.Pixel);
+            using var nameFont = NameFont();
             using var subFont = new Font("Segoe UI Semibold", 31f, GraphicsUnit.Pixel);
             using var main = new SolidBrush(active ? Color.White : ColorTranslator.FromHtml(Dim));
-            g.DrawString(name, nameFont, main, new RectangleF(4, 3, 136, 26), fmt);
+
+            int overflow = NameOverflow(name);
+            if (overflow > 0)
+            {
+                // Too long: start at the left edge and let the animation reveal the rest.
+                using var scroll = ScrollFormat();
+                g.SetClip(new Rectangle(NameLeft, 3, NameWidth, 26));
+                g.DrawString(name, nameFont, main, new RectangleF(NameLeft - offset, 3, NameWidth + overflow + 20, 26), scroll);
+                g.ResetClip();
+            }
+            else g.DrawString(name, nameFont, main, new RectangleF(NameLeft, 3, NameWidth, 26), fmt);
 
             bool timed = subtitle.Length > 0;
             int size = timed ? 66 : 104;

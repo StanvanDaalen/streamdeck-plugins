@@ -34,4 +34,4 @@ Vink in het menu alleen inputs aan waar iets op is aangesloten. Een monitor geef
 
 ## Zelf bouwen
 
-Vereist de .NET 10 SDK. Met `install.ps1` in `GameVolume`, `Launcher` of `Monitor` bouw en installeer je een plugin op deze pc. Met `package.ps1` maak je de installatiebestanden in `dist\`.
+Vereist de .NET 10 SDK. Met `install.ps1` in `GameVolume`, `Launcher` of `Monitor` bouw en installeer je een plugin op deze pc. Elke `install.ps1` zet de update daarna ook op GitHub met een nieuwe release, via `publish.ps1`. Met `package.ps1` maak je alleen de installatiebestanden in `dist\`.
