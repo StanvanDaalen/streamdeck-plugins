@@ -1,0 +1,9 @@
+{
+  "id": "gv-background",
+  "items": [
+    { "key": "background", "type": "pixmap", "rect": [0, 0, 200, 100], "zOrder": 0 },
+    { "key": "title", "type": "text", "rect": [12, 10, 176, 26], "font": { "size": 18, "weight": 600 }, "alignment": "left", "text-overflow": "ellipsis", "zOrder": 1 },
+    { "key": "value", "type": "text", "rect": [12, 44, 176, 28], "font": { "size": 20, "weight": 600 }, "alignment": "left", "zOrder": 2 },
+    { "key": "indicator", "type": "bar", "rect": [12, 80, 176, 8], "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#444444", "bar_fill_c": "#FFFFFF", "value": 0, "range": { "min": 0, "max": 100 }, "zOrder": 3 }
+  ]
+}

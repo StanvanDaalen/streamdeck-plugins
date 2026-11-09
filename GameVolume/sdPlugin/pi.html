@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
+  .row > label:not(.check):first-child, .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  .row select, .row input[type=text], .row input[type=number] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  .opts { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+  .opts label, .check { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+  .opts input, .check input { margin: 0; flex: none; }
+  .check { flex: 1; min-width: 0; }
+  .hint { color: #8a8a8a; margin-left: auto; padding-left: 8px; font-size: 11px; }
+  button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  .btn { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; cursor: pointer; flex: none; }
+  button:hover, .btn:hover { background: #474747; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .file { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
+  .file span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8a; }
+  .file input { display: none; }
+  .status { padding: 6px 8px; border-radius: 4px; background: #3a2626; color: #ff9a9a; margin: 2px 0 8px; }
+  .status.ok { background: #333; color: #fff; }
+  #libPanel iframe { width: 100%; height: 440px; border: 1px solid #4a4a4a; border-radius: 3px; margin-top: 6px; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+  <div id="dialOnly">
+    <div class="row" id="appRow"><label>App</label><select id="app"></select></div>
+    <div class="row" id="titleRow"><span class="lbl">Titel</span><div class="opts">
+      <label><input type="checkbox" data-group="titleMode" value="app">Applicatie</label>
+      <label><input type="checkbox" data-group="titleMode" value="custom">Eigen tekst</label></div></div>
+    <div class="row hide" id="customTitleRow"><label>Eigen titel</label><input type="text" id="customTitle" placeholder="Bijv. Game"></div>
+    <div class="row" id="displayRow"><span class="lbl">Weergave</span><div class="opts">
+      <label><input type="checkbox" data-group="display" value="icon">Icoon</label>
+      <label><input type="checkbox" data-group="display" value="background">Achtergrond</label></div></div>
+    <div class="row" id="themeRow"><span class="lbl">Slider</span><div class="opts">
+      <label><input type="checkbox" data-group="theme" value="standard">Standaard</label>
+      <label><input type="checkbox" data-group="theme" value="game">Game-thema</label></div></div>
+    <div class="row" id="stepRow"><label>Volumestap</label>
+      <select id="step"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
+
+    <div id="gestureSection">
+      <h4>Bediening</h4>
+      <div class="row"><label>Eén klik</label><select id="singleAction" class="gesture"></select></div>
+      <div class="row"><label>Dubbelklik</label><select id="doubleAction" class="gesture"></select></div>
+      <div class="row"><label>Vasthouden</label><select id="holdAction" class="gesture"></select></div>
+      <h4>Favoriet volume</h4>
+      <div class="row"><span class="lbl" id="favoriteFor">—</span><input type="number" id="favorite" min="0" max="100" placeholder="Niet ingesteld"></div>
+      <div class="row"><span class="lbl"></span><button id="favoriteCurrent">Huidig volume gebruiken</button></div>
+      <div class="row" id="startFavRow"><label class="check"><input type="checkbox" id="startFavorite">Games starten op favoriet volume</label></div>
+    </div>
+  </div>
+
+  <div id="outputOnly" class="hide">
+    <div id="status" class="status">Verbinden…</div>
+    <div class="row"><span class="lbl">Apparaat</span><span id="device">—</span></div>
+    <div class="row"><span class="lbl">MIDI-poort</span><span id="port">—</span></div>
+    <div id="iconSection" class="hide">
+      <h4>Eigen icons</h4>
+      <div class="row"><span class="lbl">Speakers</span><div class="file">
+        <span id="iconSpeakersName">Standaard</span>
+        <button data-lib="iconSpeakers">Bibliotheek</button><label class="btn" for="iconSpeakersFile">Bestand</label><button data-clear="iconSpeakers">Wis</button>
+        <input type="file" id="iconSpeakersFile" accept="image/png,image/jpeg"></div></div>
+      <div class="row"><span class="lbl">Koptelefoon</span><div class="file">
+        <span id="iconHeadphonesName">Standaard</span>
+        <button data-lib="iconHeadphones">Bibliotheek</button><label class="btn" for="iconHeadphonesFile">Bestand</label><button data-clear="iconHeadphones">Wis</button>
+        <input type="file" id="iconHeadphonesFile" accept="image/png,image/jpeg"></div></div>
+      <div id="libPanel" class="hide"></div>
+    </div>
+    <h4>Scarlett</h4>
+    <div class="row"><label>Speakers-mix</label>
+      <select id="speakerMix"><option value="0">Mix A</option><option value="1">Mix B</option><option value="2">Mix C</option></select></div>
+    <div class="row"><label>Koptelefoon-mix</label>
+      <select id="headphoneMix"><option value="0">Mix A</option><option value="1">Mix B</option><option value="2">Mix C</option></select></div>
+    <div class="row"><label>Focusrite</label>
+      <select id="focusriteMode">
+        <option value="0">Onzichtbaar starten, daarna sluiten</option>
+        <option value="1">Onzichtbaar starten, open laten</option>
+        <option value="2">Nooit automatisch starten</option>
+      </select></div>
+    <div class="row"><label>Volumestap</label>
+      <select id="volumeStep"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
+    <div class="row"><label>Poortnaam</label><input type="text" id="midiPort" list="ports"><datalist id="ports"></datalist></div>
+    <div class="row"><span class="lbl"></span><button id="reapply">Opnieuw toepassen</button></div>
+  </div>
+
+  <div id="gameSections">
+    <h4>Extra's</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="rememberVolume">Volume per game onthouden</label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="balance">Game/Discord-balans<span class="hint">indrukken + draaien</span></label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="duck">Spotify zachter tijdens gamen</label></div>
+    <div class="row hide" id="duckRow"><label>Spotify-volume</label>
+      <select id="duckPercent"><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option></select></div>
+
+    <h4>Gamebibliotheek</h4>
+    <p class="muted" id="libCount"></p>
+    <div class="row"><label>Game</label><select id="editId"></select></div>
+    <div class="row"><label>Eigen naam</label><input type="text" id="customName" placeholder="Naam uit de launcher"></div>
+    <div class="row"><span class="lbl">Afbeelding</span><div class="file">
+      <span id="imageName">Automatisch</span>
+      <label class="btn" for="imageFile">Kies</label><button id="imageClear">Wis</button>
+      <input type="file" id="imageFile" accept="image/png,image/jpeg"></div></div>
+    <div class="row"><label class="check"><input type="checkbox" id="hidden">Niet als game herkennen</label></div>
+    <div class="row hide" id="removeRow"><button id="remove">Verwijder uit bibliotheek</button></div>
+
+    <h4>Game toevoegen</h4>
+    <div class="row"><label>Naam</label><input type="text" id="addName" placeholder="Bijv. Overwatch"></div>
+    <div class="row"><span class="lbl">Programma</span><div class="file">
+      <span id="exeName">Kies een .exe</span><label class="btn" for="exeFile">Kies</label>
+      <input type="file" id="exeFile" accept=".exe"></div></div>
+    <div class="row"><span class="lbl"></span><button id="add">Toevoegen</button></div>
+  </div>
+
+<script>
+let ws, uuid, actionId = '', lib = [], selected = null, addExe = '';
+const $ = id => document.getElementById(id);
+const send = payload => ws && ws.readyState === 1 &&
+  ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
+const edit = fields => send({ editId: $('editId').value, ...fields });
+const filePath = v => {
+  const raw = v.replace(/^C:\\fakepath\\/, '');
+  let decoded = raw;
+  try { decoded = decodeURIComponent(raw); } catch {}
+  send({ piLog: v });
+  return decoded.replace(/\//g, '\\');
+};
+const baseName = p => p.split('\\').pop();
+
+function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+  uuid = inUuid;
+  try { actionId = JSON.parse(actionInfo).action; } catch {}
+  let controller = '';
+  try { controller = JSON.parse(actionInfo).payload.controller; } catch {}
+  const isApp = actionId.endsWith('.app'), isOutput = /\.(output|speakers|headphones)$/.test(actionId);
+  $('iconSection').classList.toggle('hide', !actionId.endsWith('.output'));
+  $('dialOnly').classList.toggle('hide', isOutput && controller !== 'Encoder');
+  $('appRow').classList.toggle('hide', !isApp);
+  $('gameSections').classList.toggle('hide', isApp || isOutput);
+  $('outputOnly').classList.toggle('hide', !isOutput);
+  for (const r of ['displayRow', 'themeRow', 'stepRow', 'gestureSection']) $(r).classList.toggle('hide', isOutput);
+  $('startFavRow').classList.toggle('hide', actionId.endsWith('.app'));
+  ws = new WebSocket('ws://127.0.0.1:' + port);
+  ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.event !== 'sendToPropertyInspector') return;
+    if (m.payload.iconLibrary) { packs = m.payload.iconLibrary; deliverLibrary(); } else apply(m.payload);
+  };
+}
+
+let packs = null, libTarget = '', libWindow = null, libSource = null, libTimer = 0;
+
+function deliverLibrary() {
+  if (libSource && packs)
+    libSource.postMessage({ type: 'packs', packs, label: libTarget === 'iconSpeakers' ? 'Speakers' : 'Koptelefoon' }, '*');
+}
+
+function closeLibrary() {
+  clearTimeout(libTimer);
+  try { if (libWindow) libWindow.close(); } catch {}
+  libWindow = libSource = null;
+  $('libPanel').innerHTML = '';
+  $('libPanel').classList.add('hide');
+}
+
+function openLibrary(target) {
+  closeLibrary();
+  libTarget = target;
+  if (!packs) send({ iconLib: true });
+  try { libWindow = window.open('icons.html', 'gvIconLibrary', 'width=640,height=720'); } catch { libWindow = null; }
+  // No answer from a pop-up means it was blocked: show the same page inside the menu instead.
+  libTimer = setTimeout(() => {
+    if (libSource) return;
+    $('libPanel').innerHTML = '<iframe src="icons.html"></iframe>';
+    $('libPanel').classList.remove('hide');
+  }, 1500);
+}
+
+window.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.type === 'ready') { clearTimeout(libTimer); libSource = e.source; deliverLibrary(); }
+  else if (d.type === 'pick') { send({ [libTarget]: d.path }); closeLibrary(); }
+  else if (d.type === 'close') closeLibrary();
+});
+
+function applyScarlett(s) {
+  $('status').textContent = s.status;
+  $('status').className = 'status' + (s.ready ? ' ok' : '');
+  $('device').textContent = s.device;
+  $('port').textContent = s.port;
+  for (const k of ['speakerMix', 'headphoneMix', 'volumeStep', 'focusriteMode'])
+    if (document.activeElement !== $(k)) $(k).value = String(s[k]);
+  if (document.activeElement !== $('midiPort')) $('midiPort').value = s.midiPort;
+  $('ports').innerHTML = (s.ports || []).map(n => `<option value="${esc(n)}">`).join('');
+}
+
+function apply(p) {
+  if (p.scarlett) applyScarlett(p.scarlett);
+  for (const k of ['iconSpeakers', 'iconHeadphones']) $(k + 'Name').textContent = p[k] ? baseName(p[k]) : 'Standaard';
+  document.querySelectorAll('[data-group]').forEach(c => c.checked = p[c.dataset.group] === c.value);
+  for (const k of ['rememberVolume', 'balance', 'duck']) $(k).checked = !!p[k];
+  $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
+  $('duckRow').classList.toggle('hide', !p.duck);
+  if (document.activeElement !== $('customTitle')) $('customTitle').value = p.customTitle;
+  for (const k of ['singleAction', 'doubleAction', 'holdAction']) $(k).value = p[k];
+  $('startFavorite').checked = !!p.startFavorite;
+  $('favoriteFor').textContent = p.favoriteFor || 'Geen game open';
+  $('favorite').disabled = $('favoriteCurrent').disabled = !p.favoriteFor;
+  if (document.activeElement !== $('favorite')) $('favorite').value = p.favorite == null ? '' : p.favorite;
+  $('step').value = p.step;
+  $('duckPercent').value = String(p.duckPercent);
+
+  const apps = [...new Set([...(p.apps || []), ...(p.app ? [p.app] : [])])];
+  $('app').innerHTML = '<option value="">Kies een app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
+  $('app').value = p.app;
+
+  lib = p.library || [];
+  $('libCount').textContent = `${lib.length} games automatisch en handmatig gevonden.`;
+  selected = selected && lib.some(g => g.id === selected) ? selected : (p.currentId || (lib[0] && lib[0].id));
+  const count = {};
+  lib.forEach(g => { const n = g.customName || g.name; count[n] = (count[n] || 0) + 1; });
+  $('editId').innerHTML = lib.map(g => {
+    const n = g.customName || g.name;
+    return `<option value="${esc(g.id)}">${esc(n)}${count[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}${g.hidden ? ' (verborgen)' : ''}</option>`;
+  }).join('');
+  if (selected) $('editId').value = selected;
+  showGame();
+}
+
+function showGame() {
+  const g = lib.find(x => x.id === selected);
+  if (!g) return;
+  if (document.activeElement !== $('customName')) $('customName').value = g.customName;
+  $('customName').placeholder = g.name;
+  $('imageName').textContent = g.customImage ? baseName(g.customImage) : 'Automatisch';
+  $('hidden').checked = g.hidden;
+  $('removeRow').classList.toggle('hide', !g.exe);
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+document.querySelectorAll('[data-group]').forEach(c => c.addEventListener('change', () =>
+  send({ [c.dataset.group]: c.value })));
+for (const k of ['rememberVolume', 'balance', 'duck'])
+  $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
+$('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
+document.querySelectorAll('.gesture').forEach(s => {
+  s.innerHTML = [['mute', 'Mute'], ['window', 'Minimaliseren / openen'], ['close', 'Afsluiten'], ['favorite', 'Favoriet volume'], ['none', 'Niets']]
+    .map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  s.addEventListener('change', () => send({ [s.id]: s.value }));
+});
+$('favorite').addEventListener('change', () => send({ favorite: $('favorite').value }));
+$('favoriteCurrent').addEventListener('click', () => send({ favoriteCurrent: true }));
+$('startFavorite').addEventListener('change', () => send({ startFavorite: $('startFavorite').checked }));
+$('step').addEventListener('change', () => send({ step: $('step').value }));
+$('app').addEventListener('change', () => send({ app: $('app').value }));
+$('duckPercent').addEventListener('change', () => send({ duckPercent: Number($('duckPercent').value) }));
+
+for (const k of ['speakerMix', 'headphoneMix', 'volumeStep', 'focusriteMode'])
+  $(k).addEventListener('change', () => send({ [k]: Number($(k).value) }));
+$('midiPort').addEventListener('change', () => send({ midiPort: $('midiPort').value }));
+$('reapply').addEventListener('click', () => send({ reapply: true }));
+document.querySelectorAll('[data-lib]').forEach(b => b.addEventListener('click', () => openLibrary(b.dataset.lib)));
+document.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', () => send({ [b.dataset.clear]: '' })));
+for (const k of ['iconSpeakers', 'iconHeadphones'])
+  $(k + 'File').addEventListener('change', e => { if (e.target.value) send({ [k]: filePath(e.target.value) }); e.target.value = ''; });
+
+$('editId').addEventListener('change', () => { selected = $('editId').value; showGame(); });
+$('customName').addEventListener('change', () => edit({ customName: $('customName').value.trim() }));
+$('hidden').addEventListener('change', () => edit({ hidden: $('hidden').checked }));
+$('imageClear').addEventListener('click', () => edit({ customImage: '' }));
+$('imageFile').addEventListener('change', () => { if ($('imageFile').value) edit({ customImage: filePath($('imageFile').value) }); $('imageFile').value = ''; });
+$('remove').addEventListener('click', () => { const g = lib.find(x => x.id === selected); if (g) send({ removeGame: g.exe }); });
+$('exeFile').addEventListener('change', () => {
+  if (!$('exeFile').value) return;
+  addExe = filePath($('exeFile').value);
+  $('exeName').textContent = baseName(addExe);
+  if (!$('addName').value) $('addName').value = baseName(addExe).replace(/\.exe$/i, '');
+  $('exeFile').value = '';
+});
+$('add').addEventListener('click', () => {
+  if (!addExe || !$('addName').value.trim()) return;
+  send({ addExe, addName: $('addName').value.trim() });
+  addExe = ''; $('addName').value = ''; $('exeName').textContent = 'Kies een .exe';
+});
+</script>
+</body>
+</html>

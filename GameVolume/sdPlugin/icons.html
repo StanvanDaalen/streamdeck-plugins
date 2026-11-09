@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Icoon kiezen</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; font: 13px "Segoe UI", sans-serif; color: #d8d8d8; background: #232323; }
+  header { padding: 12px 14px 10px; border-bottom: 1px solid #3a3a3a; }
+  h1 { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #fff; }
+  .tools { display: flex; gap: 8px; }
+  input, select { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 5px 7px; font: inherit; min-width: 0; }
+  #search { flex: 2; }
+  #pack { flex: 1; }
+  #grid { flex: 1; overflow-y: auto; padding: 12px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); grid-auto-rows: 64px; gap: 6px; }
+  #grid button { padding: 7px; border: 1px solid transparent; border-radius: 4px; background: #5a5a5a; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  #grid button:hover { border-color: #fff; }
+  #grid img { width: 100%; height: 100%; object-fit: contain; }
+  footer { padding: 7px 14px; border-top: 1px solid #3a3a3a; color: #8a8a8a; font-size: 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Icoon kiezen</h1>
+    <div class="tools">
+      <input type="text" id="search" placeholder="Zoek in alle iconen, bijv. speaker" autofocus>
+      <select id="pack"></select>
+    </div>
+  </header>
+  <div id="grid"></div>
+  <footer id="info">Bibliotheek laden…</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const host = window.opener || window.parent;
+const BATCH = 200;
+let packs = [], hits = [], shown = 0;
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fileUrl = p => 'file:///' + encodeURI(p.replace(/\\/g, '/')).replace(/#/g, '%23');
+
+function render() {
+  const choice = Number($('pack').value);
+  const terms = $('search').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  hits = [];
+  for (const pack of choice < 0 ? packs : [packs[choice]]) {
+    const packName = pack.name.toLowerCase();
+    for (const i of pack.icons) {
+      const text = `${i.n} ${i.t} ${packName}`.toLowerCase();
+      if (terms.every(t => text.includes(t))) hits.push({ n: i.n, p: pack.dir + '\\' + i.f, pack: pack.name });
+    }
+  }
+  $('grid').innerHTML = '';
+  $('grid').scrollTop = 0;
+  shown = 0;
+  append();
+  $('info').textContent = hits.length ? `${hits.length} iconen` : 'Geen iconen gevonden.';
+}
+
+function append() {
+  $('grid').insertAdjacentHTML('beforeend', hits.slice(shown, shown + BATCH).map(i =>
+    `<button title="${esc(i.n)} (${esc(i.pack)})" data-icon="${esc(i.p)}"><img loading="lazy" alt="${esc(i.n)}" src="${esc(fileUrl(i.p))}"></button>`).join(''));
+  shown = Math.min(shown + BATCH, hits.length);
+  fill();
+}
+
+// A tall window may show the whole first batch without ever firing a scroll event.
+function fill() {
+  const g = $('grid');
+  if (shown < hits.length && g.scrollHeight <= g.clientHeight + 80) requestAnimationFrame(append);
+}
+
+$('search').addEventListener('input', render);
+$('pack').addEventListener('change', render);
+window.addEventListener('resize', fill);
+$('grid').addEventListener('scroll', () => {
+  const g = $('grid');
+  if (shown < hits.length && g.scrollTop + g.clientHeight >= g.scrollHeight - 120) append();
+});
+$('grid').addEventListener('click', e => {
+  const b = e.target.closest('[data-icon]');
+  if (b) host.postMessage({ type: 'pick', path: b.dataset.icon }, '*');
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') host.postMessage({ type: 'close' }, '*'); });
+
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'packs') return;
+  packs = e.data.packs;
+  $('title').textContent = 'Icoon voor ' + e.data.label;
+  $('pack').innerHTML = '<option value="-1">Alle packs</option>' + packs.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('');
+  render();
+});
+
+host.postMessage({ type: 'ready' }, '*');
+</script>
+</body>
+</html>

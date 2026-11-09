@@ -1,0 +1,84 @@
+{
+  "UUID": "com.stan.gamevolume",
+  "Name": "Audio",
+  "Author": "Stan",
+  "Description": "Volume per game en app, automatische gameherkenning en wisselen tussen speakers en koptelefoon op de Scarlett.",
+  "Version": "2.0.0.0",
+  "SDKVersion": 2,
+  "Icon": "images/plugin",
+  "Category": "Audio",
+  "CategoryIcon": "images/category",
+  "CodePathWin": "bin/GameVolume.exe",
+  "PropertyInspectorPath": "pi.html",
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Software": { "MinimumVersion": "6.5" },
+  "Actions": [
+    {
+      "UUID": "com.stan.gamevolume.output",
+      "Name": "Scarlett Switch",
+      "Tooltip": "Wissel tussen speakers en koptelefoon. Dial: indrukken of tikken = wisselen, draaien = volume, lang tikken = mute.",
+      "Icon": "images/action-output",
+      "Controllers": ["Keypad", "Encoder"],
+      "DisableAutomaticStates": true,
+      "States": [
+        { "Image": "images/key-speakers-on", "ShowTitle": true },
+        { "Image": "images/key-headphones-on", "ShowTitle": true }
+      ],
+      "Encoder": {
+        "layout": "layouts/icon.json",
+        "Icon": "images/action-output",
+        "TriggerDescription": { "Push": "Wisselen", "Touch": "Wisselen", "LongTouch": "Mute", "Rotate": "Volume" }
+      }
+    },
+    {
+      "UUID": "com.stan.gamevolume.speakers",
+      "Name": "Scarlett Speakers",
+      "Tooltip": "Schakel naar de speakers (Output 1-2).",
+      "Icon": "images/action-speakers",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [
+        { "Image": "images/key-speakers-off", "ShowTitle": false },
+        { "Image": "images/key-speakers-on", "ShowTitle": false }
+      ]
+    },
+    {
+      "UUID": "com.stan.gamevolume.headphones",
+      "Name": "Scarlett Headphones",
+      "Tooltip": "Schakel naar de koptelefoon.",
+      "Icon": "images/action-headphones",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [
+        { "Image": "images/key-headphones-off", "ShowTitle": false },
+        { "Image": "images/key-headphones-on", "ShowTitle": false }
+      ]
+    },
+    {
+      "UUID": "com.stan.gamevolume.game",
+      "Name": "Game Volume",
+      "Tooltip": "Volume van de game die nu open staat.",
+      "Icon": "images/action-game",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "images/key-game", "ShowTitle": true }],
+      "Encoder": {
+        "layout": "layouts/icon.json",
+        "Icon": "images/action-game",
+        "TriggerDescription": { "Rotate": "Volume", "Push": "Klik, dubbelklik of vasthouden", "Touch": "Klik, dubbelklik of vasthouden", "LongTouch": "Vasthouden" }
+      }
+    },
+    {
+      "UUID": "com.stan.gamevolume.app",
+      "Name": "App Volume",
+      "Tooltip": "Volume van een vaste app, zoals Discord of Spotify.",
+      "Icon": "images/action-app",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "images/key-app", "ShowTitle": true }],
+      "Encoder": {
+        "layout": "layouts/icon.json",
+        "Icon": "images/action-app",
+        "TriggerDescription": { "Rotate": "Volume", "Push": "Klik, dubbelklik of vasthouden", "Touch": "Klik, dubbelklik of vasthouden", "LongTouch": "Vasthouden" }
+      }
+    }
+  ]
+}

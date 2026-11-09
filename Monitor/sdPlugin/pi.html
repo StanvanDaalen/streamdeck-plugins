@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
+  .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  select, input[type=text] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  .check { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; flex: 1; min-width: 0; }
+  .check input { margin: 0; flex: none; }
+  .now { margin-left: auto; color: #8a8a8a; font-size: 11px; }
+  button, .btn { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 8px; font: inherit; cursor: pointer; flex: none; }
+  button:hover, .btn:hover { background: #474747; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .file { flex: 1; min-width: 0; display: flex; gap: 5px; align-items: center; }
+  .file span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8a; }
+  .file input { display: none; }
+  #libPanel iframe { width: 100%; height: 440px; border: 1px solid #4a4a4a; border-radius: 3px; margin-top: 6px; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="row"><span class="lbl">Monitor</span><select id="monitor"></select></div>
+
+  <div id="details" class="hide">
+    <div class="row"><span class="lbl">Monitornaam</span><input type="text" id="monitorName" list="monitorNames" maxlength="16"></div>
+    <datalist id="monitorNames"><option value="Main"><option value="Top"><option value="Left"><option value="Right"><option value="Bottom"></datalist>
+
+    <h4>Inputs in gebruik</h4>
+    <div id="inputs"></div>
+    <p class="muted" id="hint"></p>
+
+    <h4>Bediening</h4>
+    <div class="row"><span class="lbl">Vorige input</span>
+      <select id="previous"><option value="double">Dubbelklik</option><option value="long">Lang indrukken</option><option value="none">Uit</option></select></div>
+    <div class="row"><label class="check"><input type="checkbox" id="showText">Tekst tonen op de knop</label></div>
+
+    <h4>Input aanpassen</h4>
+    <div class="row"><span class="lbl">Input</span><select id="editInput"></select></div>
+    <div class="row"><span class="lbl">Naam</span><input type="text" id="inputName"></div>
+    <div class="row"><span class="lbl">Icoon</span><div class="file">
+      <span id="iconName">Standaard</span>
+      <button id="libBtn">Bibliotheek</button><label class="btn" for="iconFile">Bestand</label><button id="iconClear">Wis</button>
+      <input type="file" id="iconFile" accept="image/png,image/jpeg"></div></div>
+    <div id="libPanel" class="hide"></div>
+  </div>
+  <p class="muted" id="empty">Kies hierboven een monitor.</p>
+
+<script>
+let ws, uuid, actionId = '', state = null, selected = null;
+let packs = null, libLabel = '', libCode = null, libWindow = null, libSource = null, libTimer = 0;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const send = payload => ws && ws.readyState === 1 &&
+  ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
+const baseName = p => p.split('\\').pop();
+const display = i => i.name || i.default;
+
+function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+  uuid = inUuid;
+  try { actionId = JSON.parse(actionInfo).action; } catch {}
+  ws = new WebSocket('ws://127.0.0.1:' + port);
+  ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.event !== 'sendToPropertyInspector') return;
+    if (m.payload.iconLibrary) { packs = m.payload.iconLibrary; deliverLibrary(); } else apply(m.payload);
+  };
+}
+
+function apply(p) {
+  state = p;
+  $('monitor').innerHTML = '<option value="">Kies een monitor…</option>' +
+    p.monitors.map(m => `<option value="${esc(m.key)}">${esc(m.label)}</option>`).join('');
+  $('monitor').value = p.monitor;
+  const has = p.inputs.length > 0;
+  $('details').classList.toggle('hide', !has);
+  $('empty').classList.toggle('hide', has);
+  if (!has) return;
+
+  if (document.activeElement !== $('monitorName')) $('monitorName').value = p.monitorName;
+  $('monitorName').placeholder = p.model;
+  $('previous').value = p.previous;
+  $('showText').checked = p.showText;
+
+  $('inputs').innerHTML = p.inputs.map(i => `<div class="row"><label class="check">
+    <input type="checkbox" data-code="${i.code}" ${i.enabled ? 'checked' : ''}>${esc(display(i))}${i.code === p.current ? '<span class="now">actief</span>' : ''}</label></div>`).join('');
+  const count = p.inputs.filter(i => i.enabled).length;
+  $('hint').textContent = count < 2
+    ? 'Vink minstens twee inputs aan om te kunnen wisselen. Vink alleen inputs aan waar iets op is aangesloten.'
+    : 'De knop wisselt alleen tussen deze inputs.';
+
+  if (!p.inputs.some(i => i.code === selected)) selected = p.current > 0 && p.inputs.some(i => i.code === p.current) ? p.current : p.inputs[0].code;
+  $('editInput').innerHTML = p.inputs.map(i => `<option value="${i.code}">${esc(display(i))}</option>`).join('');
+  $('editInput').value = String(selected);
+  showInput();
+}
+
+function showInput() {
+  const i = state.inputs.find(x => x.code === selected);
+  if (!i) return;
+  if (document.activeElement !== $('inputName')) $('inputName').value = i.name;
+  $('inputName').placeholder = i.default;
+  $('iconName').textContent = i.icon ? baseName(i.icon) : 'Standaard';
+}
+
+function deliverLibrary() {
+  if (libSource && packs) libSource.postMessage({ type: 'packs', packs, label: libLabel }, '*');
+}
+
+function closeLibrary() {
+  clearTimeout(libTimer);
+  try { if (libWindow) libWindow.close(); } catch {}
+  libWindow = libSource = null;
+  $('libPanel').innerHTML = '';
+  $('libPanel').classList.add('hide');
+}
+
+function openLibrary() {
+  closeLibrary();
+  libCode = selected;
+  libLabel = display(state.inputs.find(x => x.code === selected));
+  if (!packs) send({ iconLib: true });
+  try { libWindow = window.open('icons.html', 'monitorIconLibrary', 'width=640,height=720'); } catch { libWindow = null; }
+  libTimer = setTimeout(() => {
+    if (libSource) return;
+    $('libPanel').innerHTML = '<iframe src="icons.html"></iframe>';
+    $('libPanel').classList.remove('hide');
+  }, 1500);
+}
+
+window.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.type === 'ready') { clearTimeout(libTimer); libSource = e.source; deliverLibrary(); }
+  else if (d.type === 'pick') { send({ code: libCode, inputIcon: d.path }); closeLibrary(); }
+  else if (d.type === 'close') closeLibrary();
+});
+
+$('monitor').addEventListener('change', () => { selected = null; send({ monitor: $('monitor').value }); });
+$('monitorName').addEventListener('change', () => send({ monitorName: $('monitorName').value.trim() }));
+$('previous').addEventListener('change', () => send({ previous: $('previous').value }));
+$('showText').addEventListener('change', () => send({ showText: $('showText').checked }));
+$('inputs').addEventListener('change', () => {
+  send({ enabled: [...document.querySelectorAll('#inputs input:checked')].map(c => Number(c.dataset.code)) });
+});
+$('editInput').addEventListener('change', () => { selected = Number($('editInput').value); showInput(); });
+$('inputName').addEventListener('change', () => send({ code: selected, inputName: $('inputName').value }));
+$('libBtn').addEventListener('click', openLibrary);
+$('iconClear').addEventListener('click', () => send({ code: selected, inputIcon: '' }));
+$('iconFile').addEventListener('change', e => {
+  const raw = e.target.value;
+  if (raw) {
+    let path = raw.replace(/^C:\\fakepath\\/, '');
+    try { path = decodeURIComponent(path); } catch {}
+    send({ piLog: raw });
+    send({ code: selected, inputIcon: path.replace(/\//g, '\\') });
+  }
+  e.target.value = '';
+});
+</script>
+</body>
+</html>

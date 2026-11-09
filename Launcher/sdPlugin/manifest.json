@@ -1,0 +1,44 @@
+{
+  "UUID": "com.stan.launcher",
+  "Name": "Launcher",
+  "Author": "Stan",
+  "Description": "Knoppen om games en apps te starten, te minimaliseren en af te sluiten, met speeltijd.",
+  "Version": "1.0.0.0",
+  "SDKVersion": 2,
+  "Icon": "images/plugin",
+  "Category": "Launcher",
+  "CategoryIcon": "images/category",
+  "CodePathWin": "bin/Launcher.exe",
+  "PropertyInspectorPath": "pi.html",
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Software": { "MinimumVersion": "6.5" },
+  "Actions": [
+    {
+      "UUID": "com.stan.launcher.game",
+      "Name": "Game-knop",
+      "Tooltip": "De game die nu open staat, met speeltijd. Klik: minimaliseren of weergeven. Vasthouden: afsluiten.",
+      "Icon": "images/action-game",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-game", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.launcher.fixedgame",
+      "Name": "Vaste game-knop",
+      "Tooltip": "Knop voor één game. Klik: starten, minimaliseren of weergeven. Vasthouden: afsluiten.",
+      "Icon": "images/action-game",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-game", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.launcher.app",
+      "Name": "Applicatie-knop",
+      "Tooltip": "Klik: minimaliseren, weergeven of openen. Vasthouden: afsluiten.",
+      "Icon": "images/action-app",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-app", "ShowTitle": false }]
+    }
+  ]
+}

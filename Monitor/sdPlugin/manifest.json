@@ -1,0 +1,26 @@
+{
+  "UUID": "com.stan.monitor",
+  "Name": "Monitor",
+  "Author": "Stan",
+  "Description": "Wissel met een knop tussen de inputs van een monitor.",
+  "Version": "1.0.0.0",
+  "SDKVersion": 2,
+  "Icon": "images/plugin",
+  "Category": "Monitor",
+  "CategoryIcon": "images/category",
+  "CodePathWin": "bin/Monitor.exe",
+  "PropertyInspectorPath": "pi.html",
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Software": { "MinimumVersion": "6.5" },
+  "Actions": [
+    {
+      "UUID": "com.stan.monitor.input",
+      "Name": "Monitor Input",
+      "Tooltip": "Klik: volgende input. Dubbelklik: vorige input.",
+      "Icon": "images/action",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key", "ShowTitle": false }]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>Launcher</AssemblyName>
+    <RootNamespace>LauncherPlugin</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src\**\*.cs" />
+    <!-- Game detection, window control and artwork are shared with the Audio plugin. -->
+    <Compile Include="..\GameVolume\src\Native.cs" Link="Shared\Native.cs" />
+    <Compile Include="..\GameVolume\src\SettingsStore.cs" Link="Shared\SettingsStore.cs" />
+    <Compile Include="..\GameVolume\src\GameDetection.cs" Link="Shared\GameDetection.cs" />
+    <Compile Include="..\GameVolume\src\ArtworkService.cs" Link="Shared\ArtworkService.cs" />
+    <PackageReference Include="Svg" Version="3.4.8" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+  </ItemGroup>
+</Project>
