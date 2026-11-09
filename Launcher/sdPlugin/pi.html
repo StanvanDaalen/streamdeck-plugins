@@ -4,18 +4,31 @@
 <meta charset="utf-8">
 <style>
   body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  h4.first, #target.hide + h4 { margin-top: 2px; border-top: 0; padding-top: 0; }
   .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
   .lbl { flex: 0 0 96px; color: #9a9a9a; }
   select { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
   .check { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; flex: 1; }
   .check input { margin: 0; flex: none; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
   .hide { display: none !important; }
 </style>
 </head>
 <body>
-  <div class="row hide" id="gameRow"><span class="lbl">Game</span><select id="gameId"></select></div>
-  <div class="row hide" id="appRow"><span class="lbl">App</span><select id="app"></select></div>
-  <div class="row hide" id="timeRow"><span class="lbl">Speeltijd</span><label class="check"><input type="checkbox" id="showPlaytime">Tonen op de knop</label></div>
+  <div id="target" class="hide">
+    <h4 class="first" id="targetTitle">Game</h4>
+    <div class="row hide" id="gameRow"><span class="lbl">Game</span><select id="gameId"></select></div>
+    <div class="row hide" id="appRow"><span class="lbl">App</span><select id="app"></select></div>
+  </div>
+
+  <h4>Weergave</h4>
+  <div class="row hide" id="nameRow"><label class="check"><input type="checkbox" id="showName"><span id="nameLabel">Naam tonen</span></label></div>
+  <div class="row hide" id="namePlayingRow"><label class="check"><input type="checkbox" id="showNamePlaying">Naam tonen tijdens spelen</label></div>
+  <div class="row hide" id="timeRow"><label class="check"><input type="checkbox" id="showPlaytime">Speeltijd tonen tijdens spelen</label></div>
+
+  <h4>Bediening</h4>
+  <p class="muted" id="help"></p>
 
 <script>
 let ws, uuid, actionId = '';
@@ -27,10 +40,20 @@ const send = payload => ws && ws.readyState === 1 &&
 function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
   uuid = inUuid;
   try { actionId = JSON.parse(actionInfo).action; } catch {}
-  const isApp = actionId.endsWith('.app'), isFixed = actionId.endsWith('.fixedgame');
+  const isApp = actionId.endsWith('.app'), isFixed = actionId.endsWith('.fixedgame'), isCurrent = !isApp && !isFixed;
+  $('target').classList.toggle('hide', isCurrent);
+  $('targetTitle').textContent = isApp ? 'App' : 'Game';
   $('appRow').classList.toggle('hide', !isApp);
   $('gameRow').classList.toggle('hide', !isFixed);
+  $('nameRow').classList.toggle('hide', isCurrent);
+  $('nameLabel').textContent = isFixed ? 'Naam tonen als de game dicht is' : 'Naam tonen';
+  $('namePlayingRow').classList.toggle('hide', isApp);
   $('timeRow').classList.toggle('hide', isApp);
+  $('help').textContent = isApp
+    ? 'Klik: minimaliseren, weergeven of openen. Vasthouden: afsluiten.'
+    : isFixed
+      ? 'Klik: starten, minimaliseren of weergeven. Vasthouden: afsluiten.'
+      : 'Klik: minimaliseren of weergeven. Vasthouden: afsluiten.';
   ws = new WebSocket('ws://127.0.0.1:' + port);
   ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
   ws.onmessage = e => {
@@ -48,12 +71,13 @@ function apply(p) {
   const apps = [...new Set([...p.apps, ...(p.app ? [p.app] : [])])];
   $('app').innerHTML = '<option value="">Kies een app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
   $('app').value = p.app;
-  $('showPlaytime').checked = p.showPlaytime;
+  for (const k of ['showName', 'showNamePlaying', 'showPlaytime']) $(k).checked = p[k];
 }
 
 $('gameId').addEventListener('change', () => send({ gameId: $('gameId').value }));
 $('app').addEventListener('change', () => send({ app: $('app').value }));
-$('showPlaytime').addEventListener('change', () => send({ showPlaytime: $('showPlaytime').checked }));
+for (const k of ['showName', 'showNamePlaying', 'showPlaytime'])
+  $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 </script>
 </body>
 </html>

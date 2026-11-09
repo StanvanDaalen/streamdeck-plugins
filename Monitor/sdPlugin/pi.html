@@ -5,6 +5,7 @@
 <style>
   body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
   h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  h4.first { margin-top: 2px; border-top: 0; padding-top: 0; }
   .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
   .lbl { flex: 0 0 96px; color: #9a9a9a; }
   select, input[type=text] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
@@ -22,6 +23,7 @@
 </style>
 </head>
 <body>
+  <h4 class="first">Monitor</h4>
   <div class="row"><span class="lbl">Monitor</span><select id="monitor"></select></div>
 
   <div id="details" class="hide">
@@ -32,11 +34,6 @@
     <div id="inputs"></div>
     <p class="muted" id="hint"></p>
 
-    <h4>Bediening</h4>
-    <div class="row"><span class="lbl">Vorige input</span>
-      <select id="previous"><option value="double">Dubbelklik</option><option value="long">Lang indrukken</option><option value="none">Uit</option></select></div>
-    <div class="row"><label class="check"><input type="checkbox" id="showText">Tekst tonen op de knop</label></div>
-
     <h4>Input aanpassen</h4>
     <div class="row"><span class="lbl">Input</span><select id="editInput"></select></div>
     <div class="row"><span class="lbl">Naam</span><input type="text" id="inputName"></div>
@@ -45,6 +42,14 @@
       <button id="libBtn">Bibliotheek</button><label class="btn" for="iconFile">Bestand</label><button id="iconClear">Wis</button>
       <input type="file" id="iconFile" accept="image/png,image/jpeg"></div></div>
     <div id="libPanel" class="hide"></div>
+
+    <h4>Weergave</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="showText">Tekst tonen op de knop</label></div>
+
+    <h4>Bediening</h4>
+    <div class="row"><span class="lbl">Volgende input</span><span>Klik</span></div>
+    <div class="row"><span class="lbl">Vorige input</span>
+      <select id="previous"><option value="double">Dubbelklik</option><option value="long">Lang indrukken</option><option value="none">Uit</option></select></div>
   </div>
   <p class="muted" id="empty">Kies hierboven een monitor.</p>
 
