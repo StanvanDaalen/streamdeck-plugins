@@ -48,6 +48,7 @@ public static class Uf1
             await Task.Delay(1000);
         }
         if (!File.Exists(exe)) { Store.Log("uf1 niet gevonden: " + exe); return false; }
+        if (!OperatingSystem.IsWindows() && !LinuxApps.MakeExecutable(exe)) return false;
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, $"--remote-debugging-port={Store.Current.Uf1Port}") { UseShellExecute = false });
         for (int i = 0; i < 40; i++)
         {

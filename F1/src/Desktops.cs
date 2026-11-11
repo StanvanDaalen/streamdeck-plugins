@@ -266,10 +266,25 @@ public static class Desktops
         foreach (var p in System.Diagnostics.Process.GetProcesses())
         {
             bool keep = false;
-            try { keep = p.Id != Environment.ProcessId && Matches(p.ProcessName, processName); } catch { }
+            try { keep = p.Id != Environment.ProcessId && (Matches(p.ProcessName, processName) || Matches(CommandName(p.Id), processName)); } catch { }
             if (keep) list.Add(p); else p.Dispose();
         }
         return list.ToArray();
+    }
+
+    /// <summary>
+    /// The program name from /proc/&lt;pid&gt;/cmdline (Linux keeps only 15 characters of a process name, too
+    /// short for "Ultimate-F1Viewer-With-F1MV"); empty when it cannot be read.
+    /// </summary>
+    private static string CommandName(int pid)
+    {
+        try
+        {
+            var cmd = File.ReadAllText($"/proc/{pid}/cmdline");
+            var argv0 = cmd.Split('\0')[0];
+            return Path.GetFileName(argv0);
+        }
+        catch { return ""; }
     }
 
     private static bool Matches(string name, string processName) =>

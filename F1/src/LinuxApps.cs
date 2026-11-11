@@ -36,7 +36,7 @@ public static class LinuxApps
         {
             foreach (var f in Files(dir))
                 if (Path.GetFileName(f).Contains(key, StringComparison.OrdinalIgnoreCase) &&
-                    (f.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase) || IsProgram(f)))
+                    (f.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase) ? MakeExecutable(f) : IsProgram(f)))
                     return f;
             // An unpacked zip: a folder named after the app with the program inside.
             foreach (var sub in Dirs(dir).Where(d => Path.GetFileName(d).Contains(key, StringComparison.OrdinalIgnoreCase)))
@@ -58,6 +58,23 @@ public static class LinuxApps
             return exe.StartsWith('/') && File.Exists(exe) && !Path.GetFileName(exe).Equals("flatpak") && !Path.GetFileName(exe).Equals("env") ? exe : null;
         }
         catch { return null; }
+    }
+
+    /// <summary>
+    /// A downloaded AppImage is not executable yet (browsers do not keep that bit); it is the user's own
+    /// file, saved to run it, so it is marked executable for the user. False when that is not possible.
+    /// </summary>
+    public static bool MakeExecutable(string path)
+    {
+        if (OperatingSystem.IsWindows() || !File.Exists(path)) return false;
+        if (IsProgram(path)) return true;
+        try
+        {
+            File.SetUnixFileMode(path, File.GetUnixFileMode(path) | UnixFileMode.UserExecute);
+            Store.Log($"uitvoerbaar gemaakt: {path}");
+            return true;
+        }
+        catch (Exception e) { Store.Log($"{path} is niet uitvoerbaar ({e.Message}); zet het met: chmod +x \"{path}\""); return false; }
     }
 
     private static bool IsProgram(string path)

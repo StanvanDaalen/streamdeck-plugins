@@ -138,6 +138,7 @@ public static class Apps
     {
         if (Desktops.IsRunning(process)) return true;
         if (!File.Exists(exe)) { Store.Log($"{process} niet gevonden: {exe}"); return false; }
+        if (!OperatingSystem.IsWindows() && !LinuxApps.MakeExecutable(exe)) return false;
         Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! });
         // Window placement uses Windows' own window calls; elsewhere the window manager decides.
         if (place == null || !OperatingSystem.IsWindows()) return true;
