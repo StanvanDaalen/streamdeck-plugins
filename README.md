@@ -1,12 +1,14 @@
 # Stream Deck-plugins
 
-Eigen plugins voor de Elgato Stream Deck op Windows.
+Eigen plugins voor de Elgato Stream Deck op Windows. De F1-plugin werkt ook op Linux met OpenDeck.
 
 ## Installeren
 
-1. Log in op GitHub en open de pagina **Releases** van deze repository.
+1. Open de [nieuwste release](https://github.com/StanvanDaalen/streamdeck-plugins/releases/latest).
 2. Download `Audio.streamDeckPlugin`, `Launcher.streamDeckPlugin`, `Monitor.streamDeckPlugin` en/of `F1.streamDeckPlugin`. Launcher gebruikt de gamebibliotheek van Audio voor eigen namen en afbeeldingen, maar werkt ook los.
 3. Dubbelklik op het bestand en bevestig de installatie in Stream Deck.
+
+Op Linux (alleen F1): installeer [OpenDeck](https://github.com/nekename/OpenDeck), open daarin het tabblad **Plugins** en kies het gedownloade `F1.streamDeckPlugin`.
 
 .NET hoeft niet geïnstalleerd te zijn. De plugins zijn niet gesigneerd, dus Windows of Stream Deck kan een waarschuwing tonen.
 
