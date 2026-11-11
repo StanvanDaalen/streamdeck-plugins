@@ -11,8 +11,7 @@ namespace F1;
 /// </summary>
 public static class MvSetups
 {
-    private static string SetupsFile => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MultiViewer", "setups.config.json");
+    private static string SetupsFile => LinuxApps.ConfigFile("MultiViewer", "setups.config.json");
 
     public static List<(string Name, int Windows, int Players)> List()
     {

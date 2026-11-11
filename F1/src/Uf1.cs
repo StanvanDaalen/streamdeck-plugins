@@ -32,13 +32,16 @@ public static class Uf1
             await Task.Delay(500);
         }
         var exe = Apps.Uf1Exe;
-        foreach (var p in System.Diagnostics.Process.GetProcessesByName(Process))
-        {
-            try { if (p.MainModule?.FileName is { } f) exe = f; } catch { }
-            p.Dispose();
-        }
+        // On Windows the running copy tells where it is installed. A Linux AppImage runs from a temporary
+        // mount that is gone once it closes, so there the found AppImage itself is started again.
+        if (OperatingSystem.IsWindows() || exe == null)
+            foreach (var p in Desktops.Find(Process))
+            {
+                try { if (p.MainModule?.FileName is { } f && !f.Contains("/.mount_")) exe = f; } catch { }
+                p.Dispose();
+            }
         if (exe == null) return false; // not installed: the viewer is optional
-        if (System.Diagnostics.Process.GetProcessesByName(Process).Length > 0)
+        if (Desktops.IsRunning(Process))
         {
             Store.Log("uf1 draait zonder debugpoort: herstarten met poort");
             await Desktops.CloseAppAsync(Process);
@@ -111,7 +114,7 @@ public static class Uf1
     {
         try
         {
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Process, "config.json");
+            var path = LinuxApps.ConfigFile(Process, "config.json");
             var layouts = JsonNode.Parse(File.ReadAllText(path))?["layouts"]?.AsObject();
             return layouts?.Select(kv => (kv.Key, (string?)kv.Value?["name"] ?? kv.Key,
                     (kv.Value?["uf1Windows"] as JsonArray)?.Count ?? 0, (kv.Value?["mvWindows"] as JsonArray)?.Count ?? 0))

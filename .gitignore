@@ -2,6 +2,7 @@ bin/
 obj/
 out/
 publish/
+publish-linux/
 dist/
 *.user
 .vs/

@@ -31,6 +31,13 @@ public static class Apps
     {
         get
         {
+            if (Store.Current.MultiViewerPath is { Length: > 0 } own) return own;
+            if (!OperatingSystem.IsWindows())
+                return LinuxApps.Find("multiviewer",
+                    "/usr/bin/multiviewer", "/usr/bin/multiviewer-for-f1",
+                    "/usr/lib/multiviewer/multiviewer", "/usr/lib/multiviewer-for-f1/multiviewer-for-f1",
+                    "/opt/MultiViewer/multiviewer", "/opt/multiviewer/multiviewer")
+                       ?? "/usr/bin/multiviewer";
             var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "multiviewer");
             var latest = Directory.Exists(root)
                 ? Directory.GetDirectories(root, "app-*")
@@ -47,6 +54,10 @@ public static class Apps
     {
         get
         {
+            if (Store.Current.Uf1Path is { Length: > 0 } own) return File.Exists(own) ? own : null;
+            // Linux: the viewer comes as an AppImage (wherever it was saved) or through a .desktop entry.
+            if (!OperatingSystem.IsWindows())
+                return LinuxApps.Find("ultimate-f1viewer", "/opt/Ultimate-F1Viewer-With-F1MV/ultimate-f1viewer-with-f1mv");
             // The installer's own record first (any install folder), then the usual places.
             foreach (var root in new[] { Microsoft.Win32.Registry.CurrentUser, Microsoft.Win32.Registry.LocalMachine })
                 foreach (var path in new[] { @"Software\Microsoft\Windows\CurrentVersion\Uninstall", @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall" })
@@ -83,6 +94,11 @@ public static class Apps
     {
         lock (_offered) { if (oncePerRun && !_offered.Add(app)) return; }
         Store.Log($"{app} is niet geïnstalleerd");
+        if (!OperatingSystem.IsWindows())
+        {
+            LinuxApps.OfferDownload(app, why, url);
+            return;
+        }
         var answer = MessageBox(IntPtr.Zero,
             $"{app} is niet geïnstalleerd.\n\n{why}\n\nDownloadpagina openen?",
             "F1 voor Stream Deck", MB_YESNO | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST);
@@ -123,7 +139,8 @@ public static class Apps
         if (Desktops.IsRunning(process)) return true;
         if (!File.Exists(exe)) { Store.Log($"{process} niet gevonden: {exe}"); return false; }
         Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! });
-        if (place == null) return true;
+        // Window placement uses Windows' own window calls; elsewhere the window manager decides.
+        if (place == null || !OperatingSystem.IsWindows()) return true;
 
         // Wait for the main window; when only one window has appeared after a while, that one is it.
         IntPtr hwnd = IntPtr.Zero;
@@ -150,6 +167,7 @@ public static class Apps
     /// <summary>Records where the main windows are now (used by "Huidige posities opslaan").</summary>
     public static (AppPlace? MultiViewer, AppPlace? Uf1) Capture(ICollection<string> playerTitles)
     {
+        if (!OperatingSystem.IsWindows()) return (null, null);
         AppPlace? Get(string process, Func<string, bool> isMain)
         {
             var hwnd = Windows(process).FirstOrDefault(w => isMain(w.Title)).Hwnd;
@@ -172,7 +190,7 @@ public static class Apps
     /// </summary>
     public static void ImportFromWorkspace(F1Settings s)
     {
-        if (s.PlaceMultiViewer != null && s.PlaceUf1 != null) return;
+        if (!OperatingSystem.IsWindows() || (s.PlaceMultiViewer != null && s.PlaceUf1 != null)) return;
         try
         {
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "PowerToys", "Workspaces", "workspaces.json");
@@ -215,6 +233,7 @@ public static class Apps
     /// <param name="skipTitles">Titles of windows that do not take part (MultiViewer's main window).</param>
     public static int StackByHeight(ICollection<string> skipTitles)
     {
+        if (!OperatingSystem.IsWindows()) return 0;
         var windows = Windows(MultiViewer.Process)
             .Where(w => w.Title != "MultiViewer" && !skipTitles.Contains(w.Title))
             .Select(w => { GetWindowRect(w.Hwnd, out var r); return (w.Hwnd, r.Top, r.Left); })
@@ -234,6 +253,7 @@ public static class Apps
     /// </summary>
     public static void KeepBattleModeOnTop()
     {
+        if (!OperatingSystem.IsWindows()) return;
         var windows = Windows(Uf1.Process);
         var flags = windows.Where(w => w.Title == "Flag Display").Select(w => w.Hwnd).ToHashSet();
         if (flags.Count == 0) return;
@@ -281,5 +301,8 @@ public static class Apps
     private const uint SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10;
 
     /// <summary>Window positions are in physical pixels only when the process is per-monitor DPI aware.</summary>
-    public static void MakeDpiAware() => SetProcessDpiAwarenessContext(new IntPtr(-4)); // PER_MONITOR_AWARE_V2
+    public static void MakeDpiAware()
+    {
+        if (OperatingSystem.IsWindows()) SetProcessDpiAwarenessContext(new IntPtr(-4)); // PER_MONITOR_AWARE_V2
+    }
 }

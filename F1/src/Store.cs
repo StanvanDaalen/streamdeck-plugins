@@ -66,6 +66,9 @@ public sealed class F1Settings
     public string? QualiMvSetup { get; set; }
     /// <summary>Remote-debugging port MultiViewer is started with, to open its setups.</summary>
     public int MvPort { get; set; } = 9334;
+    // Where the apps are, when the plugin cannot find them itself (mainly Linux: an AppImage or zip anywhere).
+    public string? MultiViewerPath { get; set; }
+    public string? Uf1Path { get; set; }
     /// <summary>Onboards of drivers outside these teams are "best of the rest" slots.</summary>
     public List<string> TopTeams { get; set; } = new() { "McLaren", "Ferrari", "Mercedes", "Red Bull Racing" };
     public bool RestEnabled { get; set; } = true;

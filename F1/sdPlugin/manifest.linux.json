@@ -1,0 +1,9 @@
+{
+    "OS":  [
+               {
+                   "Platform":  "linux",
+                   "MinimumVersion":  "0"
+               }
+           ],
+    "CodePathLin":  "bin-linux/F1"
+}

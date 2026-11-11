@@ -8,6 +8,8 @@ namespace F1;
 /// <summary>
 /// Windows virtual desktops: the list and the current one come from the registry, switching uses the
 /// Ctrl+Win shortcuts, and which desktop a window is on comes from the public IVirtualDesktopManager.
+/// On other systems (Linux under OpenDeck) there are no desktops or windows to manage: those calls do
+/// nothing, while finding and closing the apps' processes works everywhere.
 /// </summary>
 public static class Desktops
 {
@@ -16,6 +18,7 @@ public static class Desktops
     /// <summary>All desktops in order, and the 0-based index of the current one.</summary>
     public static (List<Guid> Ids, int Current) Info()
     {
+        if (!OperatingSystem.IsWindows()) return (new List<Guid>(), 0);
         using var k = Registry.CurrentUser.OpenSubKey(Key);
         var raw = k?.GetValue("VirtualDesktopIDs") as byte[];
         var cur = k?.GetValue("CurrentVirtualDesktop") as byte[];
@@ -30,6 +33,7 @@ public static class Desktops
     /// <summary>Switches to a desktop (0-based).</summary>
     public static async Task GoToAsync(int target)
     {
+        if (!OperatingSystem.IsWindows()) return;
         var (ids, cur) = Info();
         target = Math.Clamp(target, 0, Math.Max(0, ids.Count - 1));
         int steps = target - cur;
@@ -46,6 +50,7 @@ public static class Desktops
     /// </summary>
     public static async Task<Guid?> PrepareF1DesktopAsync()
     {
+        if (!OperatingSystem.IsWindows()) return null;
         var (ids, _) = Info();
         if (ids.Count >= 2 && IsEmpty(ids[1], ignoreF1Apps: true))
         {
@@ -58,6 +63,7 @@ public static class Desktops
     /// <summary>Creates a desktop at the end (Windows switches to it) and returns its id.</summary>
     public static async Task<Guid?> NewDesktopAsync()
     {
+        if (!OperatingSystem.IsWindows()) return null;
         var (ids, _) = Info();
         CtrlWin(VK_D);
         for (int i = 0; i < 10; i++)
@@ -75,6 +81,7 @@ public static class Desktops
     /// <summary>The desktop with this name (as shown in Task View), or null.</summary>
     public static Guid? FindByName(string name)
     {
+        if (!OperatingSystem.IsWindows()) return null;
         var (ids, _) = Info();
         foreach (var id in ids)
         {
@@ -87,6 +94,7 @@ public static class Desktops
     /// <summary>Goes to the desktop called <paramref name="name"/>, creating and naming it when it does not exist yet.</summary>
     public static async Task<Guid?> GoToNamedAsync(string name)
     {
+        if (!OperatingSystem.IsWindows()) return null;
         if (FindByName(name) is { } existing)
         {
             await GoToAsync(Info().Ids.IndexOf(existing));
@@ -104,6 +112,7 @@ public static class Desktops
     /// </summary>
     public static void SetName(Guid desk, string name)
     {
+        if (!OperatingSystem.IsWindows()) return;
         try
         {
             var shell = (IServiceProvider10)Activator.CreateInstance(Type.GetTypeFromCLSID(CLSID_ImmersiveShell)!)!;
@@ -163,6 +172,7 @@ public static class Desktops
     /// <summary>Removes a desktop when nothing is left on it, then goes to desktop 1.</summary>
     public static async Task CloseIfEmptyAsync(Guid desk)
     {
+        if (!OperatingSystem.IsWindows()) return;
         var (ids, _) = Info();
         int index = ids.IndexOf(desk);
         if (index > 0 && IsEmpty(desk, ignoreF1Apps: false))
@@ -185,6 +195,7 @@ public static class Desktops
     /// <summary>True when no normal application window is on the desktop.</summary>
     public static bool IsEmpty(Guid desk, bool ignoreF1Apps)
     {
+        if (!OperatingSystem.IsWindows()) return true;
         IVirtualDesktopManager vdm;
         try { vdm = (IVirtualDesktopManager)Activator.CreateInstance(Type.GetTypeFromCLSID(CLSID_VirtualDesktopManager)!)!; }
         catch (Exception e) { Store.Log("desktop manager: " + e.Message); return false; }
@@ -200,7 +211,7 @@ public static class Desktops
                 try
                 {
                     var name = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName;
-                    if (name is MultiViewer.Process or Uf1.Process) return true;
+                    if (Matches(name, MultiViewer.Process) || Matches(name, Uf1.Process)) return true;
                 }
                 catch { }
             }
@@ -225,7 +236,7 @@ public static class Desktops
     /// <summary>Closes an app's windows politely and ends it when it is still running after a few seconds.</summary>
     public static async Task CloseAppAsync(string processName)
     {
-        var procs = System.Diagnostics.Process.GetProcessesByName(processName);
+        var procs = Find(processName);
         foreach (var p in procs) { try { p.CloseMainWindow(); } catch { } }
         for (int i = 0; i < 10 && procs.Any(p => { try { return !p.HasExited; } catch { return false; } }); i++)
             await Task.Delay(300);
@@ -236,12 +247,40 @@ public static class Desktops
         }
     }
 
-    public static bool IsRunning(string processName) =>
-        System.Diagnostics.Process.GetProcessesByName(processName).Length > 0;
+    public static bool IsRunning(string processName)
+    {
+        var found = Find(processName);
+        foreach (var p in found) p.Dispose();
+        return found.Length > 0;
+    }
 
-    /// <summary>Visible application windows of the given processes.</summary>
+    /// <summary>
+    /// The app's processes. On Windows by exact process name. On Linux the names differ per package
+    /// (multiviewer from the .deb/.rpm, the AppImage's own file name, a Flatpak), so any process whose
+    /// name starts with the app's name, ignoring case, counts.
+    /// </summary>
+    public static System.Diagnostics.Process[] Find(string processName)
+    {
+        if (OperatingSystem.IsWindows()) return System.Diagnostics.Process.GetProcessesByName(processName);
+        var list = new List<System.Diagnostics.Process>();
+        foreach (var p in System.Diagnostics.Process.GetProcesses())
+        {
+            bool keep = false;
+            try { keep = p.Id != Environment.ProcessId && Matches(p.ProcessName, processName); } catch { }
+            if (keep) list.Add(p); else p.Dispose();
+        }
+        return list.ToArray();
+    }
+
+    private static bool Matches(string name, string processName) =>
+        OperatingSystem.IsWindows()
+            ? string.Equals(name, processName, StringComparison.OrdinalIgnoreCase)
+            : name.StartsWith(processName, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Visible application windows of the given processes (none outside Windows).</summary>
     public static List<IntPtr> AppWindows(params string[] processNames)
     {
+        if (!OperatingSystem.IsWindows()) return new List<IntPtr>();
         var pids = new HashSet<uint>(processNames.SelectMany(System.Diagnostics.Process.GetProcessesByName).Select(p => (uint)p.Id));
         var list = new List<IntPtr>();
         EnumWindows((hwnd, _) =>
@@ -252,8 +291,8 @@ public static class Desktops
         return list;
     }
 
-    public static void Minimize(IEnumerable<IntPtr> windows) { foreach (var w in windows) ShowWindow(w, SW_MINIMIZE); }
-    public static void Restore(IEnumerable<IntPtr> windows) { foreach (var w in windows) if (IsWindow(w)) ShowWindow(w, SW_RESTORE); }
+    public static void Minimize(IEnumerable<IntPtr> windows) { if (!OperatingSystem.IsWindows()) return; foreach (var w in windows) ShowWindow(w, SW_MINIMIZE); }
+    public static void Restore(IEnumerable<IntPtr> windows) { if (!OperatingSystem.IsWindows()) return; foreach (var w in windows) if (IsWindow(w)) ShowWindow(w, SW_RESTORE); }
 
     // ------------------------------------------------------------ native
 

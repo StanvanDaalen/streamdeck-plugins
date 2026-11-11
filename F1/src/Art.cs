@@ -1,7 +1,7 @@
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.Net;
-using Svg;
+using SkiaSharp;
+using Svg.Skia;
 
 namespace F1;
 
@@ -69,23 +69,44 @@ public static class Art
         {
             var key = $"{file}|{File.GetLastWriteTimeUtc(file).Ticks}|{label}|{pill}|{pillColor}";
             if (PngCache.TryGetValue(key, out var hit)) return hit;
-            var tile = SvgDocument.FromSvg<SvgDocument>(Frame(pill, pillColor) +
-                $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{White}'>{E(label.ToUpperInvariant())}</text></svg>");
-            using var bmp = tile.Draw(144, 144);
-            using (var g = System.Drawing.Graphics.FromImage(bmp))
+            var tile = Frame(pill, pillColor) +
+                $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{White}'>{E(label.ToUpperInvariant())}</text></svg>";
+            using var bmp = new SKBitmap(144, 144);
+            using (var canvas = new SKCanvas(bmp))
             {
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                using var logo = file.EndsWith(".svg")
-                    ? SvgDocument.Open(file).Draw(400, 0)
-                    : new System.Drawing.Bitmap(file);
+                canvas.Clear(SKColors.Transparent);
+                DrawSvg(canvas, tile, 144, 144);
                 // Fit inside 104×56 above the label, centred.
-                double s = Math.Min(104.0 / logo.Width, 56.0 / logo.Height);
-                int w = (int)(logo.Width * s), h = (int)(logo.Height * s);
-                g.DrawImage(logo, 72 - w / 2, 62 - h / 2, w, h);
+                if (file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var logo = new SKSvg();
+                    logo.Load(file);
+                    var r = logo.Picture?.CullRect ?? SKRect.Empty;
+                    if (r.Width > 0 && r.Height > 0)
+                    {
+                        float s = Math.Min(104f / r.Width, 56f / r.Height);
+                        canvas.Save();
+                        canvas.Translate(72 - r.Width * s / 2, 62 - r.Height * s / 2);
+                        canvas.Scale(s);
+                        canvas.Translate(-r.Left, -r.Top);
+                        canvas.DrawPicture(logo.Picture);
+                        canvas.Restore();
+                    }
+                }
+                else
+                {
+                    using var logo = SKBitmap.Decode(file);
+                    if (logo != null)
+                    {
+                        double s = Math.Min(104.0 / logo.Width, 56.0 / logo.Height);
+                        float w = (float)(logo.Width * s), h = (float)(logo.Height * s);
+                        using var img = SKImage.FromBitmap(logo);
+                        using var paint = new SKPaint { IsAntialias = true };
+                        canvas.DrawImage(img, SKRect.Create(72 - w / 2, 62 - h / 2, w, h), new SKSamplingOptions(SKCubicResampler.Mitchell), paint);
+                    }
+                }
             }
-            using var ms = new MemoryStream();
-            bmp.Save(ms, ImageFormat.Png);
+            var ms = EncodePng(bmp);
             return PngCache[key] = "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
         }
         catch (Exception e) { Store.Log("logo: " + e.Message); return null; }
@@ -110,14 +131,38 @@ public static class Art
     {
         var key = size + svg;
         if (PngCache.TryGetValue(key, out var hit)) return hit;
-        var doc = SvgDocument.FromSvg<SvgDocument>(svg);
-        doc.Width = size; doc.Height = size;
-        using var bmp = doc.Draw(size, size);
-        using var ms = new MemoryStream();
-        bmp.Save(ms, ImageFormat.Png);
+        using var bmp = new SKBitmap(size, size);
+        using (var canvas = new SKCanvas(bmp))
+        {
+            canvas.Clear(SKColors.Transparent);
+            DrawSvg(canvas, svg, size, size);
+        }
+        var ms = EncodePng(bmp);
         var url = "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
         if (PngCache.Count > 64) PngCache.Clear();
         return PngCache[key] = url;
+    }
+
+    /// <summary>Draws SVG markup scaled to fill <paramref name="width"/>×<paramref name="height"/>.</summary>
+    private static void DrawSvg(SKCanvas canvas, string svg, int width, int height)
+    {
+        using var doc = new SKSvg();
+        doc.FromSvg(svg);
+        if (doc.Picture is not { } pic) return;
+        var r = pic.CullRect;
+        if (r.Width <= 0 || r.Height <= 0) return;
+        canvas.Save();
+        canvas.Scale(width / r.Width, height / r.Height);
+        canvas.Translate(-r.Left, -r.Top);
+        canvas.DrawPicture(pic);
+        canvas.Restore();
+    }
+
+    private static MemoryStream EncodePng(SKBitmap bmp)
+    {
+        using var image = SKImage.FromBitmap(bmp);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return new MemoryStream(data.ToArray());
     }
 
     private static string E(string s) => WebUtility.HtmlEncode(s);

@@ -9,7 +9,9 @@ $plugins = @(
     @{ Project = 'GameVolume'; Id = 'com.stan.gamevolume'; File = 'Audio' },
     @{ Project = 'Launcher'; Id = 'com.stan.launcher'; File = 'Launcher' },
     @{ Project = 'Monitor'; Id = 'com.stan.monitor'; File = 'Monitor' },
-    @{ Project = 'F1'; Id = 'com.stan.f1'; File = 'F1' }
+    # F1 also runs on Linux under OpenDeck: its package carries a linux-x64 build in bin-linux as well
+    # (sdPlugin\manifest.linux.json points OpenDeck there; Stream Deck itself only reads manifest.json).
+    @{ Project = 'F1'; Id = 'com.stan.f1'; File = 'F1'; Linux = $true }
 )
 
 foreach ($p in $plugins) {
@@ -23,6 +25,16 @@ foreach ($p in $plugins) {
     New-Item -ItemType Directory -Force "$stage\bin" | Out-Null
     Copy-Item "$dir\sdPlugin\*" $stage -Recurse -Force
     Copy-Item "$publish\*" "$stage\bin" -Recurse -Force
+
+    if ($p.Linux) {
+        $publishLinux = "$dir\publish-linux"
+        if (Test-Path $publishLinux) { Remove-Item $publishLinux -Recurse -Force }
+        dotnet publish "$dir\$($p.Project).csproj" -c Release -r linux-x64 --self-contained true -o $publishLinux -v q --nologo
+        if ($LASTEXITCODE -ne 0) { throw "publish failed: $($p.Project) (linux-x64)" }
+        # OpenDeck makes the program executable itself before starting it (a zip made here has no Unix modes).
+        New-Item -ItemType Directory -Force "$stage\bin-linux" | Out-Null
+        Copy-Item "$publishLinux\*" "$stage\bin-linux" -Recurse -Force
+    }
 
     # tar writes forward slashes in the archive, which Stream Deck needs.
     tar -a -c -f "$dist\$($p.File).zip" -C "$dist\stage" "$($p.Id).sdPlugin"

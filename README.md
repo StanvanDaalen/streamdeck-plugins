@@ -46,7 +46,20 @@ Philips Hue is optioneel: koppel je bridge in de instellingen van de Track statu
 
 **Privacy:** de plugin bewaart geen F1 TV- of MultiViewer-inlog en stuurt geen gegevens naar de maker. MultiViewer en Ultimate F1 Viewer gebruiken hun eigen inlog op je eigen pc. Instellingen, zoals de sleutel van je Hue Bridge en vensterposities, staan alleen lokaal in `%APPDATA%\StanF1`. Voor replays vraagt de plugin openbare gegevens op bij OpenF1 en F1 TV, zonder inlog. MultiViewer en Ultimate F1 Viewer worden gestart met een debugpoort (9334 en 9333) die alleen vanaf de eigen pc bereikbaar is.
 
-Werkt op Windows met de Stream Deck-app.
+Werkt op Windows met de Stream Deck-app en op Linux (x64) met [OpenDeck](https://github.com/nekename/OpenDeck). Het `F1.streamDeckPlugin`-bestand bevat beide versies; installeer het in OpenDeck via het tabblad Plugins.
+
+| | Windows (Stream Deck) | Linux (OpenDeck) |
+|---|---|---|
+| Vlaggen op Hue, latency, volume, pauze, live, sync, fullscreen, Session | ja | ja |
+| Race / Quali: MultiViewer-setups, Ultimate F1 Viewer-layouts, best of the rest, battle mode | ja | ja |
+| Laatste replay zoeken (OpenF1, F1 TV) en openen in MultiViewer | ja | ja |
+| MultiViewer en Ultimate F1 Viewer starten (met debugpoort) en sluiten | ja | ja |
+| Eigen bureaublad "F1" | ja | nee, je blijft op het huidige werkblad |
+| Vensters op hun plek zetten, stapelen op hoogte, battle mode vóór de vlaggenbalk | ja | nee, dat doet je windowmanager |
+| Dubbelklik F1 Mode: alles minimaliseren | ja | nee (dempen werkt wel) |
+| Melding als een app ontbreekt | venster met Ja/Nee | zenity of kdialog, anders een melding en de downloadpagina via `xdg-open` |
+
+Op Linux vindt de plugin MultiViewer als .deb/.rpm (`multiviewer`), als Flatpak of als uitgepakte zip, en Ultimate F1 Viewer als AppImage in bijvoorbeeld `~/Applications` of `~/Downloads`, of via een snelkoppeling in `~/.local/share/applications`. Staat een app ergens anders, zet het pad dan als `MultiViewerPath` of `Uf1Path` in `~/.config/StanF1/settings.json`. Instellingen, het log en een eigen logo staan op Linux in `~/.config/StanF1`. De dials van de Stream Deck + hangen af van wat OpenDeck en je apparaat ondersteunen.
 
 ## Zelf bouwen
 
