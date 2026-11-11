@@ -1,9 +1,11 @@
 {
   "id": "f1-dial",
   "items": [
-    { "key": "accent", "type": "bar", "rect": [0, 0, 200, 6], "subtype": 0, "border_w": 0, "bar_h": 6, "bar_bg_c": "#15151E", "bar_fill_c": "#E10600", "value": 100, "range": { "min": 0, "max": 100 }, "zOrder": 0 },
-    { "key": "title", "type": "text", "rect": [12, 14, 176, 24], "font": { "size": 16, "weight": 600 }, "alignment": "left", "color": "#B0B0B8", "text-overflow": "ellipsis", "zOrder": 1 },
-    { "key": "value", "type": "text", "rect": [12, 40, 176, 30], "font": { "size": 22, "weight": 700 }, "alignment": "left", "text-overflow": "ellipsis", "zOrder": 2 },
-    { "key": "indicator", "type": "bar", "rect": [12, 80, 176, 8], "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#333333", "bar_fill_c": "#FFFFFF", "value": 0, "range": { "min": 0, "max": 100 }, "zOrder": 3 }
+    { "key": "accent", "type": "bar", "rect": [0, 0, 200, 5], "subtype": 0, "border_w": 0, "bar_h": 5, "bar_bg_c": "#111116", "bar_fill_c": "#E10600", "value": 100, "range": { "min": 0, "max": 100 }, "zOrder": 0 },
+    { "key": "icon", "type": "pixmap", "rect": [10, 14, 40, 40], "zOrder": 1 },
+    { "key": "title", "type": "text", "rect": [58, 12, 136, 18], "font": { "size": 13, "weight": 600 }, "alignment": "left", "color": "#9A9AA4", "text-overflow": "ellipsis", "zOrder": 2 },
+    { "key": "value", "type": "text", "rect": [58, 30, 136, 28], "font": { "size": 21, "weight": 700 }, "alignment": "left", "text-overflow": "ellipsis", "zOrder": 3 },
+    { "key": "detail", "type": "text", "rect": [10, 62, 184, 16], "font": { "size": 12, "weight": 500 }, "alignment": "left", "color": "#B4B4BE", "text-overflow": "ellipsis", "zOrder": 4 },
+    { "key": "indicator", "type": "bar", "rect": [10, 84, 180, 6], "subtype": 4, "border_w": 0, "bar_h": 6, "bar_bg_c": "#2A2A33", "bar_fill_c": "#FFFFFF", "value": 0, "range": { "min": 0, "max": 100 }, "zOrder": 5 }
   ]
 }

@@ -7,7 +7,6 @@ $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.f1.sdPlugin"
 dotnet build "$root\F1.csproj" -c Release -o "$root\out" -v q --nologo
 if ($LASTEXITCODE -ne 0) { throw 'build failed' }
 Start-Process "$root\out\F1.exe" -ArgumentList '--assets', "`"$root\sdPlugin\images`"" -Wait
-& "$root\make-profile.ps1"
 
 $running = Get-Process StreamDeck -ErrorAction SilentlyContinue
 $exe = if ($running) { $running[0].Path } else { 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe' }

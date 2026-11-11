@@ -2,8 +2,8 @@
   "UUID": "com.stan.f1",
   "Name": "F1",
   "Author": "Stan",
-  "Description": "F1 kijken met MultiViewer: vlaggen op je Hue-lampen, latency, volume, layouts voor race en kwalificatie en een F1-modus die je bureaublad en werkruimte klaarzet.",
-  "Version": "1.0.0.0",
+  "Description": "F1 kijken met MultiViewer en Ultimate F1 Viewer: vlaggen op je Hue-lampen, latency, volume, race- en quali-layouts en een F1 Mode die alles op een eigen bureaublad klaarzet.",
+  "Version": "1.2.0.0",
   "SDKVersion": 2,
   "Icon": "images/plugin",
   "Category": "F1",
@@ -12,22 +12,19 @@
   "PropertyInspectorPath": "pi.html",
   "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
   "Software": { "MinimumVersion": "6.5" },
-  "Profiles": [
-    { "Name": "F1", "DeviceType": 7, "ReadOnly": false, "DontAutoSwitchWhenInstalled": true, "AutoInstall": true }
-  ],
   "Actions": [
     {
       "UUID": "com.stan.f1.mode",
-      "Name": "F1-modus",
-      "Tooltip": "Naar bureaublad 2, PowerToys-werkruimte F1 starten, vlaggen aan en het F1-profiel openen.",
+      "Name": "F1 Mode",
+      "Tooltip": "Leeg bureaublad 2 (of een nieuw bureaublad), werkruimte F1 starten, vlaggen aan en de race- of quali-layout voor de live sessie openen.",
       "Icon": "images/action-mode",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "images/key-mode", "ShowTitle": false }]
     },
     {
       "UUID": "com.stan.f1.stop",
-      "Name": "F1 stoppen",
-      "Tooltip": "Lampen terug, naar bureaublad 1 en terug naar je vorige profiel.",
+      "Name": "Close F1",
+      "Tooltip": "Lampen terug, MultiViewer en Ultimate F1 Viewer sluiten, het F1-bureaublad weghalen en terug naar bureaublad 1.",
       "Icon": "images/action-stop",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "images/key-stop", "ShowTitle": false }]
@@ -48,21 +45,21 @@
     },
     {
       "UUID": "com.stan.f1.zone",
-      "Name": "Lampzone",
-      "Tooltip": "Kies welke Hue-ruimte of -zone de vlaggen toont.",
+      "Name": "Lampen voor vlaggen",
+      "Tooltip": "Wissel tussen Ceiling (plafond), Ambient (gradient + Play) en All lights.",
       "Icon": "images/action-zone",
       "Controllers": ["Encoder"],
       "States": [{ "Image": "images/action-zone", "ShowTitle": false }],
       "Encoder": {
         "layout": "layouts/f1.json",
         "Icon": "images/action-zone",
-        "TriggerDescription": { "Rotate": "Zone kiezen", "Push": "Test", "Touch": "Test" }
+        "TriggerDescription": { "Rotate": "Ceiling / Ambient / All lights" }
       }
     },
     {
       "UUID": "com.stan.f1.volume",
-      "Name": "MultiViewer volume",
-      "Tooltip": "Volume van de hoofdspeler in MultiViewer.",
+      "Name": "Volume",
+      "Tooltip": "Volume van het hoofdscherm in MultiViewer.",
       "Icon": "images/action-volume",
       "Controllers": ["Encoder"],
       "States": [{ "Image": "images/action-volume", "ShowTitle": false }],
@@ -74,7 +71,7 @@
     },
     {
       "UUID": "com.stan.f1.latency",
-      "Name": "Latency",
+      "Name": "Achter live",
       "Tooltip": "Vertraging ten opzichte van live, 1 seconde per klik.",
       "Icon": "images/action-latency",
       "Controllers": ["Encoder"],
@@ -88,7 +85,7 @@
     {
       "UUID": "com.stan.f1.live",
       "Name": "Naar live",
-      "Tooltip": "Haalt de toegevoegde vertraging weg en gaat terug naar live.",
+      "Tooltip": "Haalt de toegevoegde vertraging weg. Staat er +3 s op, dan zit je zoveel achter live.",
       "Icon": "images/action-live",
       "Controllers": ["Keypad"],
       "DisableAutomaticStates": true,
@@ -96,19 +93,11 @@
     },
     {
       "UUID": "com.stan.f1.sync",
-      "Name": "Sync spelers",
-      "Tooltip": "Zet alle MultiViewer-spelers gelijk met de hoofdspeler.",
+      "Name": "Sync",
+      "Tooltip": "Zet alle MultiViewer-spelers gelijk met het hoofdscherm.",
       "Icon": "images/action-sync",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "images/key-sync", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.test",
-      "Name": "Test vlaggen",
-      "Tooltip": "Laat alle vlagkleuren kort zien.",
-      "Icon": "images/action-test",
-      "Controllers": ["Keypad"],
-      "States": [{ "Image": "images/key-test", "ShowTitle": false }]
     },
     {
       "UUID": "com.stan.f1.pause",
@@ -120,21 +109,28 @@
       "States": [{ "Image": "images/key-pause", "ShowTitle": false }]
     },
     {
-      "UUID": "com.stan.f1.race",
-      "Name": "Race-layout",
-      "Tooltip": "Kort drukken: race-opstelling openen. 2 seconden vasthouden: huidige opstelling opslaan.",
-      "Icon": "images/action-layout",
+      "UUID": "com.stan.f1.fullscreen",
+      "Name": "Fullscreen",
+      "Tooltip": "Zet het hoofdscherm van MultiViewer schermvullend, of weer terug.",
+      "Icon": "images/action-fullscreen",
       "Controllers": ["Keypad"],
       "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-fullscreen", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.race",
+      "Name": "Race",
+      "Tooltip": "Kort drukken: layout Race van Ultimate F1 Viewer openen (vensters + streams). 2 seconden vasthouden: huidige opstelling opslaan als Race.",
+      "Icon": "images/action-race",
+      "Controllers": ["Keypad"],
       "States": [{ "Image": "images/key-race", "ShowTitle": false }]
     },
     {
       "UUID": "com.stan.f1.quali",
-      "Name": "Kwali-layout",
-      "Tooltip": "Kort drukken: kwalificatie-opstelling openen. 2 seconden vasthouden: huidige opstelling opslaan.",
-      "Icon": "images/action-layout",
+      "Name": "Quali",
+      "Tooltip": "Kort drukken: layout Qualifying van Ultimate F1 Viewer openen (vensters + streams). 2 seconden vasthouden: huidige opstelling opslaan als Qualifying.",
+      "Icon": "images/action-quali",
       "Controllers": ["Keypad"],
-      "DisableAutomaticStates": true,
       "States": [{ "Image": "images/key-quali", "ShowTitle": false }]
     }
   ]

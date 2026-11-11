@@ -12,5 +12,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src\**\*.cs" />
+    <!-- Same libraries as the Audio plugin: SVG artwork rendered to PNG for the dial touch strip. -->
+    <PackageReference Include="Svg" Version="3.4.8" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
   </ItemGroup>
 </Project>

@@ -1,112 +1,230 @@
+using System.Drawing.Imaging;
+using System.Globalization;
 using System.Net;
+using Svg;
 
 namespace F1;
 
-/// <summary>Key and action icons as SVG, so they can be recoloured at runtime.</summary>
+/// <summary>
+/// All artwork in one style: dark tile with a thin edge, white glyph with F1-red accents,
+/// white label at the bottom and an optional status pill top right. Glyphs are drawn around
+/// (0,0) in a box of roughly 90×70.
+/// </summary>
 public static class Art
 {
-    public const string Red = "#E10600", Dark = "#15151E", Grey = "#38383F";
+    // formula1.com palette: F1 red, the near-black navy of the site, carbon greys.
+    public const string Red = "#E10600", Tile = "#15151E", Edge = "#38383F", White = "#FFFFFF", Grey = "#949498";
+    public const string Green = "#21C55D", Amber = "#FFB800";
+    private const string Font = "Segoe UI Black, Segoe UI, Arial Black, sans-serif";
 
-    // Base64 rather than raw text: the '#' in colours would otherwise end the data URL.
+    // ------------------------------------------------------------ keys
+
+    /// <summary>
+    /// A key in the style of formula1.com cards: dark navy tile with the red border that runs along
+    /// the top and round the top-right corner, glyph in the middle, heavy capitals at the bottom,
+    /// optional status tag top left.
+    /// </summary>
+    /// <param name="upper">Labels are capitals; times like "-40s" keep their small s.</param>
+    public static string Key(string glyph, string label, string? pill = null, string pillColor = Green, string labelColor = White, bool upper = true) =>
+        Frame(pill, pillColor) +
+        $"<g transform='translate(72 62)'>{glyph}</g>" +
+        $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{E(upper ? label.ToUpperInvariant() : label)}</text>" +
+        "</svg>";
+
+    private static string Frame(string? pill, string pillColor)
+    {
+        var p = pill == null ? "" :
+            $"<rect x='8' y='10' width='32' height='18' rx='4' fill='{pillColor}'/>" +
+            $"<text x='24' y='23.5' font-family='{Font}' font-size='11' font-weight='900' text-anchor='middle' fill='{Tile}'>{E(pill)}</text>";
+        return "<svg xmlns='http://www.w3.org/2000/svg' width='144' height='144' viewBox='0 0 144 144'>" +
+               $"<rect x='1' y='1' width='142' height='142' rx='18' fill='{Tile}' stroke='{Edge}' stroke-width='1.5'/>" +
+               // the F1 site's red corner: along the top edge, round the corner and down the right side
+               $"<path d='M62 1.75 H124 A18.25 18.25 0 0 1 142.25 20 V82' fill='none' stroke='{Red}' stroke-width='3.5' stroke-linecap='round'/>" +
+               p;
+    }
+
+    /// <summary>
+    /// A key with the user's own logo file (for example the official F1 logo) instead of a glyph,
+    /// as PNG. The logo stays on this PC: it is read from the settings folder, never shipped.
+    /// </summary>
+    public static string? KeyWithLogo(string label)
+    {
+        var file = new[] { "f1-logo.svg", "f1-logo.png" }.Select(f => Path.Combine(Store.Dir, f)).FirstOrDefault(File.Exists);
+        if (file == null) return null;
+        try
+        {
+            var key = $"{file}|{File.GetLastWriteTimeUtc(file).Ticks}|{label}";
+            if (PngCache.TryGetValue(key, out var hit)) return hit;
+            var tile = SvgDocument.FromSvg<SvgDocument>(Frame(null, Green) +
+                $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{White}'>{E(label.ToUpperInvariant())}</text></svg>");
+            using var bmp = tile.Draw(144, 144);
+            using (var g = System.Drawing.Graphics.FromImage(bmp))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using var logo = file.EndsWith(".svg")
+                    ? SvgDocument.Open(file).Draw(400, 0)
+                    : new System.Drawing.Bitmap(file);
+                // Fit inside 104×56 above the label, centred.
+                double s = Math.Min(104.0 / logo.Width, 56.0 / logo.Height);
+                int w = (int)(logo.Width * s), h = (int)(logo.Height * s);
+                g.DrawImage(logo, 72 - w / 2, 62 - h / 2, w, h);
+            }
+            using var ms = new MemoryStream();
+            bmp.Save(ms, ImageFormat.Png);
+            return PngCache[key] = "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+        }
+        catch (Exception e) { Store.Log("logo: " + e.Message); return null; }
+    }
+
+    /// <summary>"F1" in heavy italic with speed lines, in the spirit of F1 graphics (not the trademarked logo).</summary>
+    public static string F1Mark() =>
+        $"<path d='M-46 -10 H-22 M-50 0 H-26 M-46 10 H-30' stroke='{White}' stroke-width='4' stroke-linecap='round'/>" +
+        $"<text x='12' y='17' font-family='{Font}' font-size='50' font-weight='900' font-style='italic' text-anchor='middle' fill='{Red}' letter-spacing='-2'>F1</text>";
+
+    /// <summary>Action-list / dial icon: only the glyph, on a transparent background.</summary>
+    public static string Icon(string glyph, int size = 72) =>
+        $"<svg xmlns='http://www.w3.org/2000/svg' width='{size}' height='{size}' viewBox='-50 -50 100 100'>{glyph}</svg>";
+
     public static string DataUrl(string svg) =>
         "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(svg));
 
-    /// <summary>A 144×144 key: coloured tile, glyph in the middle, label at the bottom.</summary>
-    public static string Key(string glyph, string label, string bg = Dark, string fg = "#FFFFFF", string? badge = null, string accent = Red)
+    private static readonly Dictionary<string, string> PngCache = new();
+
+    /// <summary>SVG rendered to a PNG data URL (the touch strip shows PNG reliably).</summary>
+    public static string Png(string svg, int size)
     {
-        var b = badge == null ? "" :
-            $"<rect x='86' y='10' width='48' height='24' rx='12' fill='{fg}' fill-opacity='0.92'/>" +
-            $"<text x='110' y='27' font-family='Segoe UI' font-size='14' font-weight='700' text-anchor='middle' fill='{bg}'>{E(badge)}</text>";
-        return "<svg xmlns='http://www.w3.org/2000/svg' width='144' height='144' viewBox='0 0 144 144'>" +
-               "<clipPath id='tile'><rect width='144' height='144' rx='18'/></clipPath>" +
-               $"<g clip-path='url(#tile)'><rect width='144' height='144' fill='{bg}'/>" +
-               $"<rect x='0' y='0' width='144' height='7' fill='{accent}'/></g>" +
-               $"<g fill='{fg}' stroke='{fg}' transform='translate(72 62)'>{glyph}</g>" +
-               $"<text x='72' y='128' font-family='Segoe UI' font-size='19' font-weight='700' text-anchor='middle' fill='{fg}'>{E(label)}</text>" +
-               b + "</svg>";
+        var key = size + svg;
+        if (PngCache.TryGetValue(key, out var hit)) return hit;
+        var doc = SvgDocument.FromSvg<SvgDocument>(svg);
+        doc.Width = size; doc.Height = size;
+        using var bmp = doc.Draw(size, size);
+        using var ms = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+        var url = "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+        if (PngCache.Count > 64) PngCache.Clear();
+        return PngCache[key] = url;
     }
 
-    /// <summary>20×20-ish action-list icon (scaled by Stream Deck).</summary>
-    public static string Icon(string glyph) =>
-        "<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='-36 -36 72 72'>" +
-        $"<g fill='#FFFFFF' stroke='#FFFFFF'>{glyph}</g></svg>";
-
     private static string E(string s) => WebUtility.HtmlEncode(s);
+    private static string N(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
 
-    // Glyphs are drawn around (0,0), roughly 64 px wide.
-    public const string Flag =
-        "<path d='M-20 -30 V34' stroke-width='6' stroke-linecap='round' fill='none'/>" +
-        "<path d='M-17 -28 C0 -36 10 -20 30 -26 V6 C10 12 0 -4 -17 4 Z' stroke='none'/>";
+    // ------------------------------------------------------------ glyphs
 
-    public const string Chequered =
-        "<path d='M-20 -30 V34' stroke-width='6' stroke-linecap='round' fill='none'/>" +
-        "<rect x='-17' y='-28' width='47' height='32' fill='none' stroke-width='3'/>" +
-        "<path d='M-17 -28h12v8h-12zM7 -28h12v8h-12zM-5 -20h12v8h-12zM19 -20h11v8h-11zM-17 -12h12v8h-12zM7 -12h12v8h-12zM-5 -4h12v8h-12zM19 -4h11v8h-11z' stroke='none'/>";
+    /// <summary>Waving flag on a pole.</summary>
+    public static string Flag(string color = Red) =>
+        $"<path d='M-26 -32 V34' stroke='{White}' stroke-width='6' stroke-linecap='round'/>" +
+        $"<path d='M-23 -30 C-6 -38 6 -22 30 -28 V4 C6 10 -6 -6 -23 2 Z' fill='{color}'/>";
 
-    public const string Live =
-        "<circle cx='-36' cy='0' r='8' stroke='none'/>" +
-        "<text x='8' y='10' font-family='Segoe UI' font-size='28' font-weight='800' text-anchor='middle' stroke='none'>LIVE</text>";
+    /// <summary>Chequered flag (race).</summary>
+    public static string Chequered()
+    {
+        var squares = "";
+        for (int r = 0; r < 4; r++)
+            for (int c = 0; c < 6; c++)
+                if ((r + c) % 2 == 0) squares += $"<rect x='{-23 + c * 9}' y='{-30 + r * 8}' width='9' height='8' fill='{White}'/>";
+        return $"<path d='M-26 -32 V34' stroke='{White}' stroke-width='6' stroke-linecap='round'/>" +
+               $"<rect x='-23' y='-30' width='54' height='32' fill='#050507' stroke='{White}' stroke-width='2'/>" + squares;
+    }
 
-    public const string Sync =
-        "<path d='M-24 -4 A24 24 0 0 1 18 -18' fill='none' stroke-width='6' stroke-linecap='round'/>" +
-        "<path d='M24 4 A24 24 0 0 1 -18 18' fill='none' stroke-width='6' stroke-linecap='round'/>" +
-        "<path d='M10 -28 L26 -20 L14 -6 Z' stroke='none'/><path d='M-10 28 L-26 20 L-14 6 Z' stroke='none'/>";
+    /// <summary>Stopwatch with a red hand (qualifying).</summary>
+    public static string Stopwatch(string hand = Red) =>
+        $"<circle cx='0' cy='4' r='27' fill='none' stroke='{White}' stroke-width='6'/>" +
+        $"<rect x='-7' y='-33' width='14' height='7' rx='2' fill='{White}'/>" +
+        $"<path d='M19 -20 L24 -25' stroke='{White}' stroke-width='5' stroke-linecap='round'/>" +
+        $"<path d='M0 4 L12 -10' stroke='{hand}' stroke-width='5' stroke-linecap='round'/>" +
+        $"<circle cx='0' cy='4' r='4' fill='{hand}'/>";
 
-    public const string Play = "<path d='M-14 -24 L24 0 L-14 24 Z' stroke='none'/>";
-    public const string Pause = "<rect x='-20' y='-24' width='14' height='48' rx='3' stroke='none'/><rect x='6' y='-24' width='14' height='48' rx='3' stroke='none'/>";
-    public const string PlayPause =
-        "<path d='M-30 -20 L-2 0 L-30 20 Z' stroke='none'/>" +
-        "<rect x='6' y='-20' width='9' height='40' rx='2' stroke='none'/><rect x='21' y='-20' width='9' height='40' rx='2' stroke='none'/>";
+    /// <summary>Red "on air" dot with rings plus LIVE.</summary>
+    public static string Live(string dot = Red) =>
+        $"<circle cx='-38' cy='-2' r='7' fill='{dot}'/>" +
+        $"<circle cx='-38' cy='-2' r='12' fill='none' stroke='{dot}' stroke-width='3' opacity='0.55'/>" +
+        $"<text x='14' y='9' font-family='{Font}' font-size='26' font-weight='900' text-anchor='middle' fill='{White}'>LIVE</text>";
 
-    public const string Car =
-        "<path d='M-34 10 L-30 -2 L-14 -6 L-6 -16 L14 -16 L20 -6 L34 -2 L34 10 Z' stroke='none'/>" +
-        "<circle cx='-18' cy='12' r='8' stroke='none'/><circle cx='20' cy='12' r='8' stroke='none'/>";
+    /// <summary>Two clockwise arrows around a circle.</summary>
+    public static string Sync() => Arc(200, 320, 26, White) + Arc(20, 140, 26, Red);
 
-    public const string Stop =
-        "<rect x='-30' y='-22' width='44' height='34' rx='4' fill='none' stroke-width='5'/>" +
-        "<path d='M2 0 H34 M22 -12 L34 0 L22 12' fill='none' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>";
+    /// <summary>Power symbol (close F1).</summary>
+    public static string Power() =>
+        $"<path d='{ArcPath(-60, 240, 27)}' fill='none' stroke='{Red}' stroke-width='7' stroke-linecap='round'/>" +
+        $"<path d='M0 -34 V-4' stroke='{White}' stroke-width='7' stroke-linecap='round'/>";
 
-    public const string Timer =
-        "<circle cx='0' cy='4' r='26' fill='none' stroke-width='6'/>" +
-        "<path d='M0 4 V-12 M-8 -30 H8' fill='none' stroke-width='6' stroke-linecap='round'/>";
+    public static string Play() => $"<path d='M-16 -26 L26 0 L-16 26 Z' fill='{White}'/>";
+    public static string Pause() =>
+        $"<rect x='-22' y='-26' width='15' height='52' rx='4' fill='{White}'/><rect x='7' y='-26' width='15' height='52' rx='4' fill='{White}'/>";
 
-    public const string Bulb =
-        "<path d='M0 -32 A22 22 0 0 1 13 8 V16 H-13 V8 A22 22 0 0 1 0 -32 Z' stroke='none'/>" +
-        "<rect x='-11' y='20' width='22' height='5' rx='2' stroke='none'/><rect x='-8' y='28' width='16' height='5' rx='2' stroke='none'/>";
+    /// <summary>Four corner arrows pointing out (go fullscreen).</summary>
+    public static string Expand(string color = White) => Corners(color, outward: true);
 
-    public const string Speaker =
-        "<path d='M-28 -10 H-14 L4 -26 V26 L-14 10 H-28 Z' stroke='none'/>" +
-        "<path d='M14 -12 A16 16 0 0 1 14 12 M22 -22 A28 28 0 0 1 22 22' fill='none' stroke-width='5' stroke-linecap='round'/>";
+    /// <summary>Four corner arrows pointing in (leave fullscreen).</summary>
+    public static string Collapse(string color = White) => Corners(color, outward: false);
 
-    public const string Layout =
-        "<rect x='-32' y='-24' width='40' height='26' rx='3' stroke='none'/>" +
-        "<rect x='12' y='-24' width='20' height='12' rx='2' stroke='none'/><rect x='12' y='-10' width='20' height='12' rx='2' stroke='none'/>" +
-        "<rect x='-32' y='6' width='20' height='18' rx='2' stroke='none'/><rect x='-8' y='6' width='20' height='18' rx='2' stroke='none'/><rect x='16' y='6' width='16' height='18' rx='2' stroke='none'/>";
+    private static string Corners(string color, bool outward)
+    {
+        // Each corner: an L-shaped bracket; outward brackets sit at the corners, inward ones near the centre.
+        double o = outward ? 30 : 10, l = 16;
+        string Br(int sx, int sy) =>
+            outward
+                ? $"M{N(sx * o)} {N(sy * (o - l))} V{N(sy * o)} H{N(sx * (o - l))}"
+                : $"M{N(sx * o)} {N(sy * (o + l))} V{N(sy * o)} H{N(sx * (o + l))}";
+        return $"<path d='{Br(-1, -1)} {Br(1, -1)} {Br(-1, 1)} {Br(1, 1)}' fill='none' stroke='{color}' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/>" +
+               (outward ? $"<rect x='-12' y='-9' width='24' height='18' rx='2' fill='{Red}'/>" : "");
+    }
 
-    public const string Test =
-        "<path d='M-20 -30 V34' stroke-width='6' stroke-linecap='round' fill='none'/>" +
-        "<path d='M-17 -28 H26 V4 H-17 Z' stroke='none' fill-opacity='0.35'/>" +
-        "<path d='M-6 -14 L4 -4 L22 -24' fill='none' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>";
+    public static string Bulb(string color = White) =>
+        $"<path d='M0 -34 A22 22 0 0 1 13 6 V14 H-13 V6 A22 22 0 0 1 0 -34 Z' fill='{color}'/>" +
+        $"<rect x='-11' y='18' width='22' height='5' rx='2' fill='{color}'/><rect x='-8' y='26' width='16' height='5' rx='2' fill='{color}'/>";
+
+    public static string Speaker(string color = White, bool muted = false) =>
+        $"<path d='M-30 -10 H-16 L4 -28 V28 L-16 10 H-30 Z' fill='{color}'/>" +
+        (muted
+            ? $"<path d='M14 -12 L34 8 M34 -12 L14 8' stroke='{Red}' stroke-width='6' stroke-linecap='round'/>"
+            : $"<path d='M14 -12 A16 16 0 0 1 14 12 M22 -22 A30 30 0 0 1 22 22' fill='none' stroke='{color}' stroke-width='5' stroke-linecap='round'/>");
+
+    public static string Clock(string color = White) =>
+        $"<circle cx='0' cy='0' r='28' fill='none' stroke='{color}' stroke-width='6'/>" +
+        $"<path d='M0 0 V-16 M0 0 L12 8' stroke='{color}' stroke-width='6' stroke-linecap='round'/>";
+
+    // An arc from a to b degrees (clockwise on screen) with an arrowhead at the end.
+    private static string Arc(double a, double b, double r, string color)
+    {
+        double rad = b * Math.PI / 180, ex = r * Math.Cos(rad), ey = r * Math.Sin(rad);
+        double tx = -Math.Sin(rad), ty = Math.Cos(rad);    // direction of travel at the end
+        double nx = Math.Cos(rad), ny = Math.Sin(rad);     // outward normal
+        double tipX = ex + tx * 11, tipY = ey + ty * 11;
+        return $"<path d='{ArcPath(a, b, r)}' fill='none' stroke='{color}' stroke-width='7' stroke-linecap='round'/>" +
+               $"<path d='M{N(ex + nx * 10)} {N(ey + ny * 10)} L{N(tipX)} {N(tipY)} L{N(ex - nx * 10)} {N(ey - ny * 10)} Z' fill='{color}'/>";
+    }
+
+    private static string ArcPath(double a, double b, double r)
+    {
+        double ra = a * Math.PI / 180, rb = b * Math.PI / 180;
+        int large = b - a > 180 ? 1 : 0;
+        return $"M{N(r * Math.Cos(ra))} {N(r * Math.Sin(ra))} A{N(r)} {N(r)} 0 {large} 1 {N(r * Math.Cos(rb))} {N(r * Math.Sin(rb))}";
+    }
+
+    // ------------------------------------------------------------ static files
 
     /// <summary>Static images written into the plugin folder at build time (name → svg).</summary>
     public static IEnumerable<(string Name, string Svg)> Assets()
     {
-        yield return ("plugin", Key(Flag, "F1", Red));
-        yield return ("category", Icon(Flag));
+        yield return ("plugin", Key(F1Mark(), "F1"));
+        yield return ("category", Icon(F1Mark(), 28));
         foreach (var (name, glyph) in new[]
         {
-            ("mode", Car), ("stop", Stop), ("flags", Flag), ("zone", Bulb), ("volume", Speaker),
-            ("latency", Timer), ("live", Live), ("sync", Sync), ("test", Test), ("pause", PlayPause), ("layout", Layout),
+            ("mode", F1Mark()), ("stop", Power()), ("flags", Flag(White)), ("zone", Bulb()), ("volume", Speaker()),
+            ("latency", Clock()), ("live", Live(White)), ("sync", Sync()), ("pause", Pause()),
+            ("race", Chequered()), ("quali", Stopwatch(White)), ("fullscreen", Expand()),
         })
-            yield return ("action-" + name, Icon(glyph));
-        yield return ("key-mode", Key(Car, "F1-modus", Red));
-        yield return ("key-stop", Key(Stop, "F1 stoppen", Grey));
-        yield return ("key-flags", Key(Flag, "Vlaggen"));
-        yield return ("key-live", Key(Live, "Naar live", accent: Red));
-        yield return ("key-sync", Key(Sync, "Sync spelers"));
-        yield return ("key-test", Key(Test, "Test vlaggen"));
-        yield return ("key-pause", Key(PlayPause, "Pauze / play"));
-        yield return ("key-race", Key(Layout, "Race", badge: "R"));
-        yield return ("key-quali", Key(Layout, "Kwali", badge: "Q"));
+            yield return ("action-" + name, Icon(glyph, 40));
+        yield return ("key-mode", Key(F1Mark(), "F1 Mode"));
+        yield return ("key-stop", Key(Power(), "Close F1"));
+        yield return ("key-flags", Key(Flag(), "Flags", "ON"));
+        yield return ("key-live", Key(Live(), "Go live"));
+        yield return ("key-sync", Key(Sync(), "Sync"));
+        yield return ("key-pause", Key(Pause(), "Pause"));
+        yield return ("key-race", Key(Chequered(), "Race"));
+        yield return ("key-quali", Key(Stopwatch(), "Quali"));
+        yield return ("key-fullscreen", Key(Expand(), "Fullscreen"));
     }
 }

@@ -48,12 +48,12 @@ public sealed class FlagEngine
 
     public static string Label(Flag f) => f switch
     {
-        Flag.Yellow => "Geel",
-        Flag.SafetyCar => "Safety car",
+        Flag.Yellow => "Yellow",
+        Flag.SafetyCar => "Safety Car",
         Flag.Vsc => "VSC",
-        Flag.Red => "Rood",
-        Flag.Chequered => "Finish",
-        _ => "Groen",
+        Flag.Red => "Red Flag",
+        Flag.Chequered => "Chequered",
+        _ => "Green",
     };
 
     public static string Color(Flag f) => f switch
@@ -69,7 +69,8 @@ public sealed class FlagEngine
     {
         if (_lightsGroup != S.Group || _lights.Count == 0)
         {
-            _lights = await Hue.LightsAsync(S.Group);
+            var zone = S.ZoneList.FirstOrDefault(z => z.Name == S.Group) ?? new ZoneDef { Name = S.Group, Group = S.Group };
+            _lights = await Hue.LightsAsync(zone);
             _lightsGroup = S.Group;
         }
         return _lights;
@@ -178,6 +179,9 @@ public sealed class FlagEngine
     }
 
     public void InvalidateLights() => _lights = new();
+
+    /// <summary>Number of colour lights in the current zone (0 until they have been looked up).</summary>
+    public int LightCount => _lightsGroup == S.Group ? _lights.Count : 0;
 
     // ------------------------------------------------------------ effects
 

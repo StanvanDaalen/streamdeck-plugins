@@ -30,10 +30,9 @@
   </div>
 
   <div id="modeBox" class="hide">
-    <h4>F1-modus</h4>
+    <h4>F1 Mode</h4>
     <div class="row"><span class="lbl">Werkruimte</span><input type="text" id="workspace" placeholder="F1"></div>
-    <div class="row"><span class="lbl">Bureaublad</span><input type="number" id="desktop" min="1" max="9" step="1"></div>
-    <p class="muted">Naam van de werkruimte in PowerToys Workspaces en het bureaublad (1, 2, …) waar F1 op komt.</p>
+    <p class="muted">Naam van de werkruimte in PowerToys Workspaces. Start Ultimate F1 Viewer daarin met <code>--remote-debugging-port=9333</code>, dan kan de plugin de race- en quali-layouts openen.</p>
   </div>
 
 <script>
@@ -44,20 +43,20 @@ const send = payload => ws && ws.readyState === 1 &&
   ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
 
 const HELP = {
-  mode: 'Gaat naar je F1-bureaublad, start de PowerToys-werkruimte, zet de vlaggen aan en opent het F1-profiel.',
-  stop: 'Zet de lampen terug, gaat naar bureaublad 1 en terug naar je vorige profiel.',
+  mode: 'Gaat naar bureaublad 2 als dat leeg is (anders een nieuw bureaublad), start de werkruimte, zet de vlaggen aan en opent bij een live sessie de race- of quali-layout.',
+  stop: 'Zet de lampen terug, sluit MultiViewer en Ultimate F1 Viewer, haalt het F1-bureaublad weg en gaat terug naar bureaublad 1.',
   flags: 'Knop: vlaggen aan/uit. Dial: draaien = helderheid, indrukken = aan/uit, tikken = test.',
-  zone: 'Draaien kiest de Hue-ruimte of -zone voor de vlaggen. Indrukken of tikken = test.',
-  volume: 'Draaien = volume van de hoofdspeler, indrukken = dempen.',
-  latency: 'Draaien = 1 seconde vertraging erbij of eraf per klik. Indrukken = naar live, tikken = pauze/play.',
-  live: 'Haalt alle vertraging weg die je met de latency-dial of pauze hebt toegevoegd.',
-  sync: 'Zet alle spelers gelijk met de hoofdspeler.',
-  test: 'Laat geel, safety car, rood en groen kort zien en zet de lampen terug.',
-  pause: 'Pauzeert of hervat alle spelers. De pauzetijd telt mee als latency.',
-  race: 'Kort drukken: race-opstelling openen voor de sessie die openstaat. 2 sec vasthouden: huidige opstelling opslaan.',
-  quali: 'Kort drukken: kwali-opstelling openen voor de sessie die openstaat. 2 sec vasthouden: huidige opstelling opslaan.',
+  zone: 'Draaien wisselt tussen Ceiling (plafond), Ambient (gradient-strip, tube en Play-lampen) en All lights.',
+  volume: 'Draaien = volume van het hoofdscherm, indrukken = dempen.',
+  latency: 'Een nieuwe live stream begint op de startvertraging van MultiViewer (40 s). Draaien = 1 seconde erbij of eraf per klik. Indrukken = naar live, tikken = pauze/play.',
+  live: 'Haalt alle vertraging weg die je met de dial of pauze hebt toegevoegd.',
+  sync: 'Zet alle spelers gelijk met het hoofdscherm.',
+  fullscreen: 'Zet het hoofdscherm van MultiViewer schermvullend, of weer terug.',
+  pause: 'Pauzeert of hervat alle spelers. De pauzetijd telt mee als achterstand op live.',
+  race: 'Kort drukken: layout Race van Ultimate F1 Viewer openen (eigen vensters + MultiViewer-streams; live sessie of de replay die openstaat). 2 sec vasthouden: huidige opstelling opslaan.',
+  quali: 'Kort drukken: layout Qualifying openen. 2 sec vasthouden: huidige opstelling opslaan.',
 };
-const HUE = ['flags', 'zone', 'test', 'mode'];
+const HUE = ['flags', 'zone', 'mode'];
 
 function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
   uuid = inUuid;
@@ -83,14 +82,12 @@ function apply(p) {
   $('group').value = p.group;
   if (document.activeElement !== $('greenSeconds')) $('greenSeconds').value = p.greenSeconds;
   if (document.activeElement !== $('workspace')) $('workspace').value = p.workspace;
-  if (document.activeElement !== $('desktop')) $('desktop').value = p.desktop;
 }
 
 $('pair').addEventListener('click', () => send({ pair: true }));
 $('group').addEventListener('change', () => send({ group: $('group').value }));
 $('greenSeconds').addEventListener('change', () => send({ greenSeconds: $('greenSeconds').value }));
 $('workspace').addEventListener('change', () => send({ workspace: $('workspace').value }));
-$('desktop').addEventListener('change', () => send({ desktop: $('desktop').value }));
 </script>
 </body>
 </html>

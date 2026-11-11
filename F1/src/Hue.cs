@@ -59,6 +59,18 @@ public static class Hue
             .ToList();
     }
 
+    /// <summary>Colour lights of a dial zone: its group, minus the lights of the excluded group.</summary>
+    public static async Task<List<string>> LightsAsync(ZoneDef zone)
+    {
+        var lights = await LightsAsync(zone.Group);
+        if (zone.Except is { Length: > 0 } except)
+        {
+            var skip = await LightsAsync(except);
+            lights = lights.Where(l => !skip.Contains(l)).ToList();
+        }
+        return lights;
+    }
+
     /// <summary>Finds bridges on the network through Philips' discovery service.</summary>
     public static async Task<List<string>> DiscoverAsync()
     {
