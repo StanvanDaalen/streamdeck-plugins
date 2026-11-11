@@ -1,0 +1,141 @@
+{
+  "UUID": "com.stan.f1",
+  "Name": "F1",
+  "Author": "Stan",
+  "Description": "F1 kijken met MultiViewer: vlaggen op je Hue-lampen, latency, volume, layouts voor race en kwalificatie en een F1-modus die je bureaublad en werkruimte klaarzet.",
+  "Version": "1.0.0.0",
+  "SDKVersion": 2,
+  "Icon": "images/plugin",
+  "Category": "F1",
+  "CategoryIcon": "images/category",
+  "CodePathWin": "bin/F1.exe",
+  "PropertyInspectorPath": "pi.html",
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Software": { "MinimumVersion": "6.5" },
+  "Profiles": [
+    { "Name": "F1", "DeviceType": 7, "ReadOnly": false, "DontAutoSwitchWhenInstalled": true, "AutoInstall": true }
+  ],
+  "Actions": [
+    {
+      "UUID": "com.stan.f1.mode",
+      "Name": "F1-modus",
+      "Tooltip": "Naar bureaublad 2, PowerToys-werkruimte F1 starten, vlaggen aan en het F1-profiel openen.",
+      "Icon": "images/action-mode",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "images/key-mode", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.stop",
+      "Name": "F1 stoppen",
+      "Tooltip": "Lampen terug, naar bureaublad 1 en terug naar je vorige profiel.",
+      "Icon": "images/action-stop",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "images/key-stop", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.flags",
+      "Name": "Vlaggen",
+      "Tooltip": "Gele vlag, safety car, VSC, rode vlag en finish op je Hue-lampen.",
+      "Icon": "images/action-flags",
+      "Controllers": ["Keypad", "Encoder"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-flags", "ShowTitle": false }],
+      "Encoder": {
+        "layout": "layouts/f1.json",
+        "Icon": "images/action-flags",
+        "TriggerDescription": { "Rotate": "Helderheid", "Push": "Vlaggen aan/uit", "Touch": "Test" }
+      }
+    },
+    {
+      "UUID": "com.stan.f1.zone",
+      "Name": "Lampzone",
+      "Tooltip": "Kies welke Hue-ruimte of -zone de vlaggen toont.",
+      "Icon": "images/action-zone",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "images/action-zone", "ShowTitle": false }],
+      "Encoder": {
+        "layout": "layouts/f1.json",
+        "Icon": "images/action-zone",
+        "TriggerDescription": { "Rotate": "Zone kiezen", "Push": "Test", "Touch": "Test" }
+      }
+    },
+    {
+      "UUID": "com.stan.f1.volume",
+      "Name": "MultiViewer volume",
+      "Tooltip": "Volume van de hoofdspeler in MultiViewer.",
+      "Icon": "images/action-volume",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "images/action-volume", "ShowTitle": false }],
+      "Encoder": {
+        "layout": "layouts/f1.json",
+        "Icon": "images/action-volume",
+        "TriggerDescription": { "Rotate": "Volume", "Push": "Dempen", "Touch": "Dempen" }
+      }
+    },
+    {
+      "UUID": "com.stan.f1.latency",
+      "Name": "Latency",
+      "Tooltip": "Vertraging ten opzichte van live, 1 seconde per klik.",
+      "Icon": "images/action-latency",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "images/action-latency", "ShowTitle": false }],
+      "Encoder": {
+        "layout": "layouts/f1.json",
+        "Icon": "images/action-latency",
+        "TriggerDescription": { "Rotate": "1 s per klik", "Push": "Naar live", "Touch": "Pauze / play" }
+      }
+    },
+    {
+      "UUID": "com.stan.f1.live",
+      "Name": "Naar live",
+      "Tooltip": "Haalt de toegevoegde vertraging weg en gaat terug naar live.",
+      "Icon": "images/action-live",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-live", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.sync",
+      "Name": "Sync spelers",
+      "Tooltip": "Zet alle MultiViewer-spelers gelijk met de hoofdspeler.",
+      "Icon": "images/action-sync",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "images/key-sync", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.test",
+      "Name": "Test vlaggen",
+      "Tooltip": "Laat alle vlagkleuren kort zien.",
+      "Icon": "images/action-test",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "images/key-test", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.pause",
+      "Name": "Pauze / play",
+      "Tooltip": "Pauzeert of hervat alle spelers.",
+      "Icon": "images/action-pause",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-pause", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.race",
+      "Name": "Race-layout",
+      "Tooltip": "Kort drukken: race-opstelling openen. 2 seconden vasthouden: huidige opstelling opslaan.",
+      "Icon": "images/action-layout",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-race", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.f1.quali",
+      "Name": "Kwali-layout",
+      "Tooltip": "Kort drukken: kwalificatie-opstelling openen. 2 seconden vasthouden: huidige opstelling opslaan.",
+      "Icon": "images/action-layout",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-quali", "ShowTitle": false }]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  h4.first { margin-top: 2px; border-top: 0; padding-top: 0; }
+  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; gap: 6px; }
+  .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  select, input[type=text], input[type=number] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #5a5a5a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  button:hover { background: #4a4a4a; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .status { color: #e0e0e0; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+  <h4 class="first">Bediening</h4>
+  <p class="muted" id="help"></p>
+
+  <div id="hueBox">
+    <h4>Philips Hue</h4>
+    <div class="row"><span class="lbl">Bridge</span><span id="bridge" class="status">–</span></div>
+    <div class="row"><span class="lbl"></span><button id="pair">Bridge koppelen</button></div>
+    <p class="muted status" id="pairStatus"></p>
+    <div class="row"><span class="lbl">Lampzone</span><select id="group"></select></div>
+    <div class="row"><span class="lbl">Groen (sec)</span><input type="number" id="greenSeconds" min="0" max="30" step="1"></div>
+  </div>
+
+  <div id="modeBox" class="hide">
+    <h4>F1-modus</h4>
+    <div class="row"><span class="lbl">Werkruimte</span><input type="text" id="workspace" placeholder="F1"></div>
+    <div class="row"><span class="lbl">Bureaublad</span><input type="number" id="desktop" min="1" max="9" step="1"></div>
+    <p class="muted">Naam van de werkruimte in PowerToys Workspaces en het bureaublad (1, 2, …) waar F1 op komt.</p>
+  </div>
+
+<script>
+let ws, uuid, actionId = '';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const send = payload => ws && ws.readyState === 1 &&
+  ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
+
+const HELP = {
+  mode: 'Gaat naar je F1-bureaublad, start de PowerToys-werkruimte, zet de vlaggen aan en opent het F1-profiel.',
+  stop: 'Zet de lampen terug, gaat naar bureaublad 1 en terug naar je vorige profiel.',
+  flags: 'Knop: vlaggen aan/uit. Dial: draaien = helderheid, indrukken = aan/uit, tikken = test.',
+  zone: 'Draaien kiest de Hue-ruimte of -zone voor de vlaggen. Indrukken of tikken = test.',
+  volume: 'Draaien = volume van de hoofdspeler, indrukken = dempen.',
+  latency: 'Draaien = 1 seconde vertraging erbij of eraf per klik. Indrukken = naar live, tikken = pauze/play.',
+  live: 'Haalt alle vertraging weg die je met de latency-dial of pauze hebt toegevoegd.',
+  sync: 'Zet alle spelers gelijk met de hoofdspeler.',
+  test: 'Laat geel, safety car, rood en groen kort zien en zet de lampen terug.',
+  pause: 'Pauzeert of hervat alle spelers. De pauzetijd telt mee als latency.',
+  race: 'Kort drukken: race-opstelling openen voor de sessie die openstaat. 2 sec vasthouden: huidige opstelling opslaan.',
+  quali: 'Kort drukken: kwali-opstelling openen voor de sessie die openstaat. 2 sec vasthouden: huidige opstelling opslaan.',
+};
+const HUE = ['flags', 'zone', 'test', 'mode'];
+
+function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+  uuid = inUuid;
+  try { actionId = JSON.parse(actionInfo).action; } catch {}
+  const kind = actionId.split('.').pop();
+  $('help').textContent = HELP[kind] || '';
+  $('hueBox').classList.toggle('hide', !HUE.includes(kind));
+  $('modeBox').classList.toggle('hide', kind !== 'mode');
+  ws = new WebSocket('ws://127.0.0.1:' + port);
+  ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.event === 'sendToPropertyInspector') apply(m.payload);
+  };
+}
+
+function apply(p) {
+  $('bridge').textContent = p.paired ? 'Gekoppeld (' + p.bridge + ')' : 'Niet gekoppeld';
+  $('pair').textContent = p.paired ? 'Opnieuw koppelen' : 'Bridge koppelen';
+  $('pairStatus').textContent = p.status || '';
+  const groups = [...new Set([...(p.groups || []), ...(p.group ? [p.group] : [])])];
+  $('group').innerHTML = groups.map(g => `<option>${esc(g)}</option>`).join('');
+  $('group').value = p.group;
+  if (document.activeElement !== $('greenSeconds')) $('greenSeconds').value = p.greenSeconds;
+  if (document.activeElement !== $('workspace')) $('workspace').value = p.workspace;
+  if (document.activeElement !== $('desktop')) $('desktop').value = p.desktop;
+}
+
+$('pair').addEventListener('click', () => send({ pair: true }));
+$('group').addEventListener('change', () => send({ group: $('group').value }));
+$('greenSeconds').addEventListener('change', () => send({ greenSeconds: $('greenSeconds').value }));
+$('workspace').addEventListener('change', () => send({ workspace: $('workspace').value }));
+$('desktop').addEventListener('change', () => send({ desktop: $('desktop').value }));
+</script>
+</body>
+</html>

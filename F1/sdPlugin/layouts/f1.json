@@ -1,0 +1,9 @@
+{
+  "id": "f1-dial",
+  "items": [
+    { "key": "accent", "type": "bar", "rect": [0, 0, 200, 6], "subtype": 0, "border_w": 0, "bar_h": 6, "bar_bg_c": "#15151E", "bar_fill_c": "#E10600", "value": 100, "range": { "min": 0, "max": 100 }, "zOrder": 0 },
+    { "key": "title", "type": "text", "rect": [12, 14, 176, 24], "font": { "size": 16, "weight": 600 }, "alignment": "left", "color": "#B0B0B8", "text-overflow": "ellipsis", "zOrder": 1 },
+    { "key": "value", "type": "text", "rect": [12, 40, 176, 30], "font": { "size": 22, "weight": 700 }, "alignment": "left", "text-overflow": "ellipsis", "zOrder": 2 },
+    { "key": "indicator", "type": "bar", "rect": [12, 80, 176, 8], "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#333333", "bar_fill_c": "#FFFFFF", "value": 0, "range": { "min": 0, "max": 100 }, "zOrder": 3 }
+  ]
+}
