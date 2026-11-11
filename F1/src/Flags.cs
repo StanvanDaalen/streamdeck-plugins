@@ -46,6 +46,15 @@ public sealed class FlagEngine
         _ => Flag.Green,
     };
 
+    /// <summary>Flags switched off in the settings count as green (the lights stay as they are).</summary>
+    private static Flag Wanted(Flag f) => f switch
+    {
+        Flag.Yellow when !S.ShowYellow => Flag.Green,
+        Flag.SafetyCar or Flag.Vsc when !S.ShowSafetyCar => Flag.Green,
+        Flag.Red when !S.ShowRed => Flag.Green,
+        _ => f,
+    };
+
     public static string Label(Flag f) => f switch
     {
         Flag.Yellow => "Yellow",
@@ -92,11 +101,11 @@ public sealed class FlagEngine
         if (cheq > _seenChequered)
         {
             _seenChequered = cheq;
-            await ShowAsync(Flag.Chequered);
+            if (S.ShowChequered) await ShowAsync(Flag.Chequered);
         }
         else if (Current != Flag.Chequered)
         {
-            await ShowAsync(FromTrackStatus(state.TrackStatus));
+            await ShowAsync(Wanted(FromTrackStatus(state.TrackStatus)));
         }
     }
 
@@ -123,7 +132,8 @@ public sealed class FlagEngine
             case Flag.Yellow: await Hue.SetAllAsync(lights, ColorState("yellow")); break;
             case Flag.SafetyCar: await Hue.SetAllAsync(lights, ColorState("orange")); break;
             case Flag.Red: await Hue.SetAllAsync(lights, ColorState("red")); break;
-            case Flag.Vsc: StartFx(t => PulseAsync(lights, t)); break;
+            case Flag.Vsc when S.VscPulse: StartFx(t => PulseAsync(lights, t)); break;
+            case Flag.Vsc: await Hue.SetAllAsync(lights, ColorState("orange")); break;
             case Flag.Chequered: StartFx(t => ChequeredAsync(lights, t)); break;
             case Flag.Green when _snapshot != null: StartFx(t => GreenAsync(lights, t)); break;
         }

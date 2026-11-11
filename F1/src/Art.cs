@@ -44,18 +44,32 @@ public static class Art
     }
 
     /// <summary>
+    /// An information key: a small title on top, one big value (a time, laps, a temperature) and
+    /// a caption under it, like the timing graphics.
+    /// </summary>
+    public static string InfoKey(string title, string big, string caption, string bigColor, string? captionLead = null) =>
+        Frame(null, Green) +
+        $"<text x='72' y='38' font-family='{Font}' font-size='15' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{Red}'>{E(title.ToUpperInvariant())}</text>" +
+        $"<text x='72' y='84' font-family='{Font}' font-size='{(big.Length > 6 ? 28 : 36)}' font-weight='900' text-anchor='middle' fill='{bigColor}'>{E(big)}</text>" +
+        $"<text x='72' y='112' font-family='{Font}' font-size='13' font-weight='700' text-anchor='middle' fill='{Grey}'>{E((captionLead != null ? captionLead + " · " : "") + caption)}</text>" +
+        "</svg>";
+
+    private static string? LogoFile => new[] { "f1-logo.svg", "f1-logo.png" }.Select(f => Path.Combine(Store.Dir, f)).FirstOrDefault(File.Exists);
+    public static bool HasLogo => LogoFile != null;
+
+    /// <summary>
     /// A key with the user's own logo file (for example the official F1 logo) instead of a glyph,
     /// as PNG. The logo stays on this PC: it is read from the settings folder, never shipped.
     /// </summary>
-    public static string? KeyWithLogo(string label)
+    public static string? KeyWithLogo(string label, string? pill = null, string pillColor = Green)
     {
-        var file = new[] { "f1-logo.svg", "f1-logo.png" }.Select(f => Path.Combine(Store.Dir, f)).FirstOrDefault(File.Exists);
+        var file = LogoFile;
         if (file == null) return null;
         try
         {
-            var key = $"{file}|{File.GetLastWriteTimeUtc(file).Ticks}|{label}";
+            var key = $"{file}|{File.GetLastWriteTimeUtc(file).Ticks}|{label}|{pill}|{pillColor}";
             if (PngCache.TryGetValue(key, out var hit)) return hit;
-            var tile = SvgDocument.FromSvg<SvgDocument>(Frame(null, Green) +
+            var tile = SvgDocument.FromSvg<SvgDocument>(Frame(pill, pillColor) +
                 $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{White}'>{E(label.ToUpperInvariant())}</text></svg>");
             using var bmp = tile.Draw(144, 144);
             using (var g = System.Drawing.Graphics.FromImage(bmp))
@@ -144,6 +158,12 @@ public static class Art
     /// <summary>Two clockwise arrows around a circle.</summary>
     public static string Sync() => Arc(200, 320, 26, White) + Arc(20, 140, 26, Red);
 
+    /// <summary>Timing tower: three rows with position bars (session info).</summary>
+    public static string Tower() =>
+        $"<rect x='-30' y='-28' width='12' height='12' rx='2' fill='{Red}'/><rect x='-12' y='-28' width='42' height='12' rx='2' fill='{White}'/>" +
+        $"<rect x='-30' y='-6' width='12' height='12' rx='2' fill='{White}'/><rect x='-12' y='-6' width='34' height='12' rx='2' fill='{White}'/>" +
+        $"<rect x='-30' y='16' width='12' height='12' rx='2' fill='{White}'/><rect x='-12' y='16' width='26' height='12' rx='2' fill='{White}'/>";
+
     /// <summary>Power symbol (close F1).</summary>
     public static string Power() =>
         $"<path d='{ArcPath(-60, 240, 27)}' fill='none' stroke='{Red}' stroke-width='7' stroke-linecap='round'/>" +
@@ -212,13 +232,13 @@ public static class Art
         yield return ("category", Icon(F1Mark(), 28));
         foreach (var (name, glyph) in new[]
         {
-            ("mode", F1Mark()), ("stop", Power()), ("flags", Flag(White)), ("zone", Bulb()), ("volume", Speaker()),
+            ("mode", F1Mark()), ("session", Tower()), ("flags", Flag(White)), ("zone", Bulb()), ("volume", Speaker()),
             ("latency", Clock()), ("live", Live(White)), ("sync", Sync()), ("pause", Pause()),
             ("race", Chequered()), ("quali", Stopwatch(White)), ("fullscreen", Expand()),
         })
             yield return ("action-" + name, Icon(glyph, 40));
         yield return ("key-mode", Key(F1Mark(), "F1 Mode"));
-        yield return ("key-stop", Key(Power(), "Close F1"));
+        yield return ("key-session", InfoKey("Session", "--:--", "Remaining", White));
         yield return ("key-flags", Key(Flag(), "Flags", "ON"));
         yield return ("key-live", Key(Live(), "Go live"));
         yield return ("key-sync", Key(Sync(), "Sync"));

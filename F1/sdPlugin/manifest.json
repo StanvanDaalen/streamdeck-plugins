@@ -1,137 +1,244 @@
 {
-  "UUID": "com.stan.f1",
-  "Name": "F1",
-  "Author": "Stan",
-  "Description": "F1 kijken met MultiViewer en Ultimate F1 Viewer: vlaggen op je Hue-lampen, latency, volume, race- en quali-layouts en een F1 Mode die alles op een eigen bureaublad klaarzet.",
-  "Version": "1.2.0.0",
-  "SDKVersion": 2,
-  "Icon": "images/plugin",
-  "Category": "F1",
-  "CategoryIcon": "images/category",
-  "CodePathWin": "bin/F1.exe",
-  "PropertyInspectorPath": "pi.html",
-  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
-  "Software": { "MinimumVersion": "6.5" },
-  "Actions": [
-    {
-      "UUID": "com.stan.f1.mode",
-      "Name": "F1 Mode",
-      "Tooltip": "Leeg bureaublad 2 (of een nieuw bureaublad), werkruimte F1 starten, vlaggen aan en de race- of quali-layout voor de live sessie openen.",
-      "Icon": "images/action-mode",
-      "Controllers": ["Keypad"],
-      "States": [{ "Image": "images/key-mode", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.stop",
-      "Name": "Close F1",
-      "Tooltip": "Lampen terug, MultiViewer en Ultimate F1 Viewer sluiten, het F1-bureaublad weghalen en terug naar bureaublad 1.",
-      "Icon": "images/action-stop",
-      "Controllers": ["Keypad"],
-      "States": [{ "Image": "images/key-stop", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.flags",
-      "Name": "Vlaggen",
-      "Tooltip": "Gele vlag, safety car, VSC, rode vlag en finish op je Hue-lampen.",
-      "Icon": "images/action-flags",
-      "Controllers": ["Keypad", "Encoder"],
-      "DisableAutomaticStates": true,
-      "States": [{ "Image": "images/key-flags", "ShowTitle": false }],
-      "Encoder": {
-        "layout": "layouts/f1.json",
-        "Icon": "images/action-flags",
-        "TriggerDescription": { "Rotate": "Helderheid", "Push": "Vlaggen aan/uit", "Touch": "Test" }
-      }
-    },
-    {
-      "UUID": "com.stan.f1.zone",
-      "Name": "Lampen voor vlaggen",
-      "Tooltip": "Wissel tussen Ceiling (plafond), Ambient (gradient + Play) en All lights.",
-      "Icon": "images/action-zone",
-      "Controllers": ["Encoder"],
-      "States": [{ "Image": "images/action-zone", "ShowTitle": false }],
-      "Encoder": {
-        "layout": "layouts/f1.json",
-        "Icon": "images/action-zone",
-        "TriggerDescription": { "Rotate": "Ceiling / Ambient / All lights" }
-      }
-    },
-    {
-      "UUID": "com.stan.f1.volume",
-      "Name": "Volume",
-      "Tooltip": "Volume van het hoofdscherm in MultiViewer.",
-      "Icon": "images/action-volume",
-      "Controllers": ["Encoder"],
-      "States": [{ "Image": "images/action-volume", "ShowTitle": false }],
-      "Encoder": {
-        "layout": "layouts/f1.json",
-        "Icon": "images/action-volume",
-        "TriggerDescription": { "Rotate": "Volume", "Push": "Dempen", "Touch": "Dempen" }
-      }
-    },
-    {
-      "UUID": "com.stan.f1.latency",
-      "Name": "Achter live",
-      "Tooltip": "Vertraging ten opzichte van live, 1 seconde per klik.",
-      "Icon": "images/action-latency",
-      "Controllers": ["Encoder"],
-      "States": [{ "Image": "images/action-latency", "ShowTitle": false }],
-      "Encoder": {
-        "layout": "layouts/f1.json",
-        "Icon": "images/action-latency",
-        "TriggerDescription": { "Rotate": "1 s per klik", "Push": "Naar live", "Touch": "Pauze / play" }
-      }
-    },
-    {
-      "UUID": "com.stan.f1.live",
-      "Name": "Naar live",
-      "Tooltip": "Haalt de toegevoegde vertraging weg. Staat er +3 s op, dan zit je zoveel achter live.",
-      "Icon": "images/action-live",
-      "Controllers": ["Keypad"],
-      "DisableAutomaticStates": true,
-      "States": [{ "Image": "images/key-live", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.sync",
-      "Name": "Sync",
-      "Tooltip": "Zet alle MultiViewer-spelers gelijk met het hoofdscherm.",
-      "Icon": "images/action-sync",
-      "Controllers": ["Keypad"],
-      "States": [{ "Image": "images/key-sync", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.pause",
-      "Name": "Pauze / play",
-      "Tooltip": "Pauzeert of hervat alle spelers.",
-      "Icon": "images/action-pause",
-      "Controllers": ["Keypad"],
-      "DisableAutomaticStates": true,
-      "States": [{ "Image": "images/key-pause", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.fullscreen",
-      "Name": "Fullscreen",
-      "Tooltip": "Zet het hoofdscherm van MultiViewer schermvullend, of weer terug.",
-      "Icon": "images/action-fullscreen",
-      "Controllers": ["Keypad"],
-      "DisableAutomaticStates": true,
-      "States": [{ "Image": "images/key-fullscreen", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.race",
-      "Name": "Race",
-      "Tooltip": "Kort drukken: layout Race van Ultimate F1 Viewer openen (vensters + streams). 2 seconden vasthouden: huidige opstelling opslaan als Race.",
-      "Icon": "images/action-race",
-      "Controllers": ["Keypad"],
-      "States": [{ "Image": "images/key-race", "ShowTitle": false }]
-    },
-    {
-      "UUID": "com.stan.f1.quali",
-      "Name": "Quali",
-      "Tooltip": "Kort drukken: layout Qualifying van Ultimate F1 Viewer openen (vensters + streams). 2 seconden vasthouden: huidige opstelling opslaan als Qualifying.",
-      "Icon": "images/action-quali",
-      "Controllers": ["Keypad"],
-      "States": [{ "Image": "images/key-quali", "ShowTitle": false }]
-    }
-  ]
+    "UUID":  "com.stan.f1",
+    "Name":  "F1",
+    "Author":  "Stan",
+    "Description":  "F1 kijken met MultiViewer en Ultimate F1 Viewer: vlaggen op je Hue-lampen, latency, volume, race- en quali-layouts en een F1 Mode die alles op een eigen bureaublad klaarzet.",
+    "Version":  "1.12.0.0",
+    "SDKVersion":  2,
+    "Icon":  "images/plugin",
+    "Category":  "F1",
+    "CategoryIcon":  "images/category",
+    "CodePathWin":  "bin/F1.exe",
+    "PropertyInspectorPath":  "pi.html",
+    "OS":  [
+               {
+                   "Platform":  "windows",
+                   "MinimumVersion":  "10"
+               }
+           ],
+    "Software":  {
+                     "MinimumVersion":  "6.5"
+                 },
+    "Actions":  [
+                    {
+                        "UUID":  "com.stan.f1.mode",
+                        "Name":  "F1 Mode",
+                        "Tooltip":  "Drukken = F1 starten op het bureaublad F1 (MultiViewer en Ultimate F1 Viewer op hun plek, vlaggen, juiste layout). 1 seconde vasthouden = alles sluiten. Dubbelklikken = alles minimaliseren en dempen, nog eens = terug.",
+                        "Icon":  "images/action-mode",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-mode",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.session",
+                        "Name":  "Session",
+                        "Tooltip":  "Sessie-info: resterende tijd (kwalificatie, training) of ronden (race). Drukken = wisselen naar het weer (baan- en luchttemperatuur, regen).",
+                        "Icon":  "images/action-session",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "DisableAutomaticStates":  true,
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-session",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.flags",
+                        "Name":  "Vlaggen",
+                        "Tooltip":  "Baanstatus op je Hue-lampen: geel, Safety Car/VSC, rood en finish. Knop = aan/uit. Dial: draaien = helderheid, indrukken = aan/uit, tikken = test.",
+                        "Icon":  "images/action-flags",
+                        "Controllers":  [
+                                            "Keypad",
+                                            "Encoder"
+                                        ],
+                        "DisableAutomaticStates":  true,
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-flags",
+                                           "ShowTitle":  false
+                                       }
+                                   ],
+                        "Encoder":  {
+                                        "layout":  "layouts/f1.json",
+                                        "Icon":  "images/action-flags",
+                                        "TriggerDescription":  {
+                                                                   "Rotate":  "Helderheid",
+                                                                   "Push":  "Vlaggen aan/uit",
+                                                                   "Touch":  "Test"
+                                                               }
+                                    }
+                    },
+                    {
+                        "UUID":  "com.stan.f1.zone",
+                        "Name":  "Lampen voor vlaggen",
+                        "Tooltip":  "Kies welke Hue-ruimte of -zone de vlaggen toont.",
+                        "Icon":  "images/action-zone",
+                        "Controllers":  [
+                                            "Encoder"
+                                        ],
+                        "States":  [
+                                       {
+                                           "Image":  "images/action-zone",
+                                           "ShowTitle":  false
+                                       }
+                                   ],
+                        "Encoder":  {
+                                        "layout":  "layouts/f1.json",
+                                        "Icon":  "images/action-zone",
+                                        "TriggerDescription":  {
+                                                                   "Rotate":  "Ruimte / zone kiezen"
+                                                               }
+                                    }
+                    },
+                    {
+                        "UUID":  "com.stan.f1.volume",
+                        "Name":  "Volume",
+                        "Tooltip":  "Volume van het hoofdscherm in MultiViewer. Draaien = harder/zachter, indrukken = dempen.",
+                        "Icon":  "images/action-volume",
+                        "Controllers":  [
+                                            "Encoder"
+                                        ],
+                        "States":  [
+                                       {
+                                           "Image":  "images/action-volume",
+                                           "ShowTitle":  false
+                                       }
+                                   ],
+                        "Encoder":  {
+                                        "layout":  "layouts/f1.json",
+                                        "Icon":  "images/action-volume",
+                                        "TriggerDescription":  {
+                                                                   "Rotate":  "Volume",
+                                                                   "Push":  "Dempen",
+                                                                   "Touch":  "Dempen"
+                                                               }
+                                    }
+                    },
+                    {
+                        "UUID":  "com.stan.f1.latency",
+                        "Name":  "Achter live",
+                        "Tooltip":  "Achterstand op live (of verschuiving van een replay) als 0s, -40s of +3s. Draaien = verschuiven, indrukken = naar live, tikken = pauze.",
+                        "Icon":  "images/action-latency",
+                        "Controllers":  [
+                                            "Encoder"
+                                        ],
+                        "States":  [
+                                       {
+                                           "Image":  "images/action-latency",
+                                           "ShowTitle":  false
+                                       }
+                                   ],
+                        "Encoder":  {
+                                        "layout":  "layouts/f1.json",
+                                        "Icon":  "images/action-latency",
+                                        "TriggerDescription":  {
+                                                                   "Rotate":  "1 s per klik",
+                                                                   "Push":  "Naar live",
+                                                                   "Touch":  "Pauze / play"
+                                                               }
+                                    }
+                    },
+                    {
+                        "UUID":  "com.stan.f1.live",
+                        "Name":  "Naar live",
+                        "Tooltip":  "Toont waar je bent (YOU\u0027RE LIVE, -40s, REPLAY). Indrukken = naar live, bij een replay terug naar 0s.",
+                        "Icon":  "images/action-live",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "DisableAutomaticStates":  true,
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-live",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.sync",
+                        "Name":  "Sync",
+                        "Tooltip":  "Zet alle spelers (onboards, extra feeds) gelijk met het hoofdscherm.",
+                        "Icon":  "images/action-sync",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-sync",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.pause",
+                        "Name":  "Pauze / play",
+                        "Tooltip":  "Pauzeert of hervat de streams; pauzetijd telt mee als achterstand op live.",
+                        "Icon":  "images/action-pause",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "DisableAutomaticStates":  true,
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-pause",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.fullscreen",
+                        "Name":  "Fullscreen",
+                        "Tooltip":  "Hoofdscherm van MultiViewer schermvullend aan/uit.",
+                        "Icon":  "images/action-fullscreen",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "DisableAutomaticStates":  true,
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-fullscreen",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.race",
+                        "Name":  "Race",
+                        "Tooltip":  "Opent je MultiViewer-setup Race en de Ultimate F1 Viewer-layout Race, met de twee beste coureurs van de rest in de vrije onboard-vakken. 1 seconde vasthouden = alles sluiten, net als F1 Mode.",
+                        "Icon":  "images/action-race",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-race",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.quali",
+                        "Name":  "Quali",
+                        "Tooltip":  "Opent je MultiViewer-setup Qualifying en de Ultimate F1 Viewer-layout Qualifying, met de twee beste coureurs van de rest in de vrije onboard-vakken. 1 seconde vasthouden = alles sluiten, net als F1 Mode.",
+                        "Icon":  "images/action-quali",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-quali",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    }
+                ]
 }

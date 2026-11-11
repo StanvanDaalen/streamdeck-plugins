@@ -7,64 +7,192 @@
   h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
   h4.first { margin-top: 2px; border-top: 0; padding-top: 0; }
   .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; gap: 6px; }
-  .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  .lbl { flex: 0 0 112px; color: #9a9a9a; }
   select, input[type=text], input[type=number] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  .check { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+  .check input { margin: 0; flex: none; }
   button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #5a5a5a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; }
   button:hover { background: #4a4a4a; }
   .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
-  .status { color: #e0e0e0; }
+  .help { color: #c8c8c8; font-size: 11.5px; line-height: 1.5; margin: 2px 0 4px; }
+  .help b { color: #fff; font-weight: 600; }
+  .help ul { margin: 4px 0 0; padding-left: 16px; }
+  .warn { color: #ffb800; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .status { margin: 8px 0 2px; }
+  .st { display: flex; align-items: baseline; gap: 7px; margin: 3px 0; font-size: 11.5px; }
+  .st .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; transform: translateY(1px); }
+  .st .name { flex: 0 0 120px; color: #d8d8d8; }
+  .st .what { color: #8a8a8a; }
+  .dot.ok { background: #21c55d; } .dot.mid { background: #ffb800; } .dot.bad { background: #e10600; }
   .hide { display: none !important; }
 </style>
 </head>
 <body>
-  <h4 class="first">Bediening</h4>
-  <p class="muted" id="help"></p>
+  <h4 class="first">Wat doet deze knop</h4>
+  <div class="help" id="help"></div>
+  <div class="status" id="status"></div>
 
-  <div id="hueBox">
-    <h4>Philips Hue</h4>
-    <div class="row"><span class="lbl">Bridge</span><span id="bridge" class="status">–</span></div>
-    <div class="row"><span class="lbl"></span><button id="pair">Bridge koppelen</button></div>
-    <p class="muted status" id="pairStatus"></p>
-    <div class="row"><span class="lbl">Lampzone</span><select id="group"></select></div>
-    <div class="row"><span class="lbl">Groen (sec)</span><input type="number" id="greenSeconds" min="0" max="30" step="1"></div>
+  <!-- F1 Mode -->
+  <div class="box" data-for="mode">
+    <h4>Instellingen</h4>
+    <div class="row"><span class="lbl">Bureaublad</span>
+      <select data-key="ModeDesktop">
+        <option value="f1">Bureaublad "F1" (wordt gemaakt als het er niet is)</option>
+        <option value="current">Op het huidige bureaublad blijven</option>
+      </select></div>
+    <div class="row"><span class="lbl">Layout bij start</span>
+      <select data-key="ModeLayout">
+        <option value="auto">Automatisch: quali bij kwalificatie, anders race (alleen bij een live sessie)</option>
+        <option value="race">Altijd Race</option>
+        <option value="quali">Altijd Quali</option>
+        <option value="none">Geen layout openen</option>
+      </select></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="ModeFlagsOn">Vlaggen op de lampen aanzetten</label></div>
+    <h4>Vensterposities</h4>
+    <p class="muted">Zijn MultiViewer en Ultimate F1 Viewer nog niet open, dan start F1 Mode ze zelf en zet hun hoofdvenster hier neer. Al open? Dan blijven ze staan waar ze staan.</p>
+    <div class="row"><span class="lbl">MultiViewer</span><span class="muted" id="placeMv">–</span></div>
+    <div class="row"><span class="lbl">Ultimate F1 Viewer</span><span class="muted" id="placeUf1">–</span></div>
+    <div class="row"><span class="lbl"></span><button id="savePlaces">Huidige posities opslaan</button></div>
+    <p class="muted">Zet beide hoofdvensters waar je ze wilt hebben en klik hierop.</p>
+    <h4>Bij vasthouden (sluiten)</h4>
+    <div class="row"><label class="check"><input type="checkbox" data-key="CloseMultiViewer">MultiViewer sluiten</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="CloseUf1">Ultimate F1 Viewer sluiten</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="CloseDesktop">F1-bureaublad weghalen als het leeg is</label></div>
   </div>
 
-  <div id="modeBox" class="hide">
-    <h4>F1 Mode</h4>
-    <div class="row"><span class="lbl">Werkruimte</span><input type="text" id="workspace" placeholder="F1"></div>
-    <p class="muted">Naam van de werkruimte in PowerToys Workspaces. Start Ultimate F1 Viewer daarin met <code>--remote-debugging-port=9333</code>, dan kan de plugin de race- en quali-layouts openen.</p>
+  <!-- Flags (key and dial) -->
+  <div class="box" data-for="flags">
+    <h4>Vlaggen</h4>
+    <div class="row"><label class="check"><input type="checkbox" data-key="FlagsEnabled">Vlaggen tonen op de lampen</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="ShowYellow">Gele vlag</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="ShowSafetyCar">Safety Car en VSC (oranje)</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="VscPulse">VSC laten pulseren</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="ShowRed">Rode vlag</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="ShowChequered">Finishvlag (wit knipperen)</label></div>
+    <div class="row"><span class="lbl">Groen na een vlag</span><input type="number" data-key="GreenSeconds" min="0" max="30" step="1"><span class="muted">sec</span></div>
+    <div class="row"><span class="lbl"></span><button id="test">Test de vlaggen nu</button></div>
+  </div>
+
+  <!-- Hue (flags, zone) -->
+  <div class="box" data-for="flags zone">
+    <h4>Philips Hue</h4>
+    <div class="row"><span class="lbl">Bridge</span><span id="bridge">–</span></div>
+    <div class="row"><span class="lbl"></span><button id="pair">Bridge koppelen</button></div>
+    <p class="muted" id="pairStatus"></p>
+    <div class="row"><span class="lbl">Lampen</span><select data-key="Group" id="zone"></select></div>
+    <p class="muted">De keuzes zijn de ruimtes en zones van je Hue Bridge. Alleen kleurlampen doen mee; stekkers en witte lampen nooit.</p>
+  </div>
+
+  <!-- Volume -->
+  <div class="box" data-for="volume">
+    <h4>Instellingen</h4>
+    <div class="row"><span class="lbl">Stap per klik</span>
+      <select data-key="VolumeStep"><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option></select></div>
+  </div>
+
+  <!-- Latency -->
+  <div class="box" data-for="latency">
+    <h4>Instellingen</h4>
+    <div class="row"><span class="lbl">Startvertraging</span><input type="number" data-key="BaseLatency" min="0" max="300" step="1"><span class="muted">sec</span></div>
+    <p class="muted">Zet dit gelijk aan de vertraging die je in MultiViewer hebt ingesteld voor live streams (bijv. 40). MultiViewer geeft die niet door, dus de plugin rekent ermee.</p>
+    <div class="row"><span class="lbl">Stap per klik</span>
+      <select data-key="LatencyStep"><option value="1">1 seconde</option><option value="2">2 seconden</option><option value="5">5 seconden</option><option value="10">10 seconden</option></select></div>
+    <div class="row"><span class="lbl">Indrukken</span>
+      <select data-key="LatencyPush"><option value="live">Naar live (replay: terug naar 0s); tikken = pauze</option><option value="pause">Pauze / play; tikken = naar live</option></select></div>
+  </div>
+
+  <!-- Go live -->
+  <div class="box" data-for="live">
+    <h4>Instellingen</h4>
+    <div class="row"><label class="check"><input type="checkbox" data-key="LiveSyncAll">Alle andere spelers meenemen (sync)</label></div>
+  </div>
+
+  <!-- Pause -->
+  <div class="box" data-for="pause">
+    <h4>Instellingen</h4>
+    <div class="row"><label class="check"><input type="checkbox" data-key="PauseAll">Alle spelers pauzeren (uit = alleen het hoofdscherm)</label></div>
+  </div>
+
+  <!-- Race / Quali -->
+  <div class="box" data-for="race quali">
+    <h4>Wat er opent</h4>
+    <div class="row"><span class="lbl">MultiViewer-setup</span><select id="mvSetup"></select></div>
+    <div class="row"><span class="lbl">Ultimate F1 Viewer</span><select id="layout"></select></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="OpenLatestReplay">Geen live sessie van dit soort? Dan de laatste replay openen</label></div>
+    <div class="race-only">
+      <h4>Battle mode (Ultimate F1 Viewer)</h4>
+      <div class="row"><label class="check"><input type="checkbox" data-key="BattleEnabled">Coureurs automatisch kiezen (links: top 4 van de race)</label></div>
+      <div class="row"><span class="lbl">Rechts</span>
+        <select data-key="BattleRight"><option value="champ3">Top 3 van het kampioenschap</option><option value="p5to8">Plek 5 tot en met 8</option></select></div>
+      <div class="row"><label class="check"><input type="checkbox" data-key="BattleLive">Tijdens de race bijwerken (elke 30 s)</label></div>
+    </div>
+    <h4>Best of the rest</h4>
+    <div class="row"><label class="check"><input type="checkbox" data-key="RestEnabled">Onboards van coureurs buiten de topteams vullen met de beste van de rest</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="RestLive">Tijdens de sessie bijwerken (elke 30 s)</label></div>
+    <div class="row"><span class="lbl">Topteams</span><input type="text" data-key="TopTeams" placeholder="McLaren, Ferrari, Mercedes, Red Bull Racing"></div>
+    <p class="muted">Elke onboard in je setup van een coureur buiten deze teams is een vak voor "de beste van de rest". Het hoogst geklasseerde komt linksboven.</p>
+    <div class="row"><label class="check"><input type="checkbox" data-key="LayoutCloseCurrent">Huidige vensters van Ultimate F1 Viewer eerst sluiten</label></div>
+    <div class="row"><span class="lbl"></span><button id="saveLayout">Huidige vensters opslaan</button></div>
+    <p class="muted" id="saveStatus">Slaat de vensters die nu in Ultimate F1 Viewer openstaan op als deze layout. Je MultiViewer-setup sla je in MultiViewer zelf op.</p>
   </div>
 
 <script>
-let ws, uuid, actionId = '';
+let ws, uuid, actionId = '', kind = '';
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const send = payload => ws && ws.readyState === 1 &&
   ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
 
 const HELP = {
-  mode: 'Gaat naar bureaublad 2 als dat leeg is (anders een nieuw bureaublad), start de werkruimte, zet de vlaggen aan en opent bij een live sessie de race- of quali-layout.',
-  stop: 'Zet de lampen terug, sluit MultiViewer en Ultimate F1 Viewer, haalt het F1-bureaublad weg en gaat terug naar bureaublad 1.',
-  flags: 'Knop: vlaggen aan/uit. Dial: draaien = helderheid, indrukken = aan/uit, tikken = test.',
-  zone: 'Draaien wisselt tussen Ceiling (plafond), Ambient (gradient-strip, tube en Play-lampen) en All lights.',
-  volume: 'Draaien = volume van het hoofdscherm, indrukken = dempen.',
-  latency: 'Een nieuwe live stream begint op de startvertraging van MultiViewer (40 s). Draaien = 1 seconde erbij of eraf per klik. Indrukken = naar live, tikken = pauze/play.',
-  live: 'Haalt alle vertraging weg die je met de dial of pauze hebt toegevoegd.',
-  sync: 'Zet alle spelers gelijk met het hoofdscherm.',
-  fullscreen: 'Zet het hoofdscherm van MultiViewer schermvullend, of weer terug.',
-  pause: 'Pauzeert of hervat alle spelers. De pauzetijd telt mee als achterstand op live.',
-  race: 'Kort drukken: layout Race van Ultimate F1 Viewer openen (eigen vensters + MultiViewer-streams; live sessie of de replay die openstaat). 2 sec vasthouden: huidige opstelling opslaan.',
-  quali: 'Kort drukken: layout Qualifying openen. 2 sec vasthouden: huidige opstelling opslaan.',
+  mode: `Eén knop voor F1 kijken:<ul>
+    <li><b>Drukken</b>: start alles (zie je linksboven <b>…</b>, dan is hij bezig; een druk in die tijd wordt daarna uitgevoerd): het bureaublad <b>F1</b> (gemaakt als het er niet is), MultiViewer en Ultimate F1 Viewer op hun vaste plek, de vlaggen op je lampen en bij een live sessie de juiste layout. Draait F1 al, dan gebeurt er niets.</li>
+    <li><b>Dubbelklikken</b>: verbergt F1: alle vensters geminimaliseerd en alle streams gedempt. Nog een keer dubbelklikken (of één keer drukken) haalt alles terug.</li>
+    <li><b>1 seconde vasthouden</b>: sluit alles: lampen terug, MultiViewer en Ultimate F1 Viewer dicht, terug naar bureaublad 1. Het bureaublad F1 blijft bestaan voor de volgende keer.</li></ul>
+    Linksboven staat <b>HID</b> zolang F1 verborgen is.`,
+  session: `Sessie-informatie uit de live timing:<ul>
+    <li>bij kwalificatie en training de <b>resterende tijd</b></li>
+    <li>bij de race het aantal <b>ronden</b> (bijv. 34/57)</li>
+    <li><b>Drukken</b>: wisselt naar het <b>weer</b>: baantemperatuur, luchttemperatuur en of het regent</li></ul>
+    Volgt ook een replay.`,
+  flags: `Laat de baanstatus uit MultiViewer zien op je Hue-lampen: <b>geel</b>, <b>Safety Car/VSC</b> (oranje), <b>rood</b> en de <b>finishvlag</b> (wit knipperen). Daarna gaan ze even groen en terug naar je eigen lichtstand.<ul>
+    <li><b>Knop</b>: vlaggen aan/uit</li>
+    <li><b>Dial draaien</b>: helderheid van de vlaggen</li>
+    <li><b>Dial indrukken</b>: aan/uit</li>
+    <li><b>Scherm tikken</b>: test alle kleuren</li></ul>`,
+  zone: `Kiest welke lampen de vlaggen tonen. <b>Draaien</b> wisselt tussen de ruimtes en zones van je Hue Bridge; de balk laat zien waar je in die lijst zit. Zonder Hue staat hier "Not set up".`,
+  volume: `Volume van het hoofdscherm in MultiViewer.<ul>
+    <li><b>Draaien</b>: harder/zachter</li>
+    <li><b>Indrukken of tikken</b>: dempen aan/uit</li></ul>`,
+  latency: `Hoe ver je achter live zit, of bij een replay hoeveel je hebt verschoven. De tijd staat als <b>0s</b>, <b>-40s</b> (achter) of <b>+3s</b> (vooruit).<ul>
+    <li><b>Draaien</b>: verschuiven per klik</li>
+    <li><b>Indrukken</b>: naar live (bij een replay terug naar 0s), of pauze; instelbaar</li>
+    <li><b>Tikken</b>: de andere van die twee</li></ul>
+    Een nieuwe live stream begint op je startvertraging.`,
+  live: `Laat zien waar je bent: <b>YOU'RE LIVE</b>, hoeveel je achterloopt (bijv. <b>-40s</b>) of <b>REPLAY</b>. Indrukken haalt de vertraging weg en gaat naar live; bij een replay terug naar het punt van voor het verschuiven.`,
+  sync: `Zet alle spelers in MultiViewer (onboards, extra feeds) gelijk met het hoofdscherm. Handig als een onboard achterloopt.`,
+  pause: `Pauzeert of hervat de streams. De tijd dat je op pauze staat telt mee als achterstand op live.`,
+  race: `Opent je hele race-opstelling in één keer, voor de live sessie of de replay die in MultiViewer openstaat:<ul>
+    <li>je <b>MultiViewer-setup</b> Race: alle onboards, F1 LIVE en de timing-vensters op hun plek</li>
+    <li>daarna de <b>Ultimate F1 Viewer</b>-layout Race erbovenop (vlaggenbalken, battle mode, statuses), met in de battle mode links de top 4 en rechts de top 3 van het kampioenschap</li>
+    <li><b>Best of the rest</b>: de onboards van coureurs buiten de topteams worden de twee beste coureurs van de rest, en blijven dat tijdens de sessie</li></ul>
+    <b>1 seconde vasthouden</b> sluit alles, net als bij F1 Mode. Vensters opslaan doe je hieronder.<br>
+    Is F1 Mode nog niet gestart, dan doet hij dat eerst (bureaublad F1, apps, vlaggen); anders gaat hij naar het bureaublad F1. Is er geen live sessie van dit soort, dan opent hij de laatste replay ervan.`,
+  quali: `Opent je hele kwalificatie-opstelling in één keer, voor de live sessie of de replay die in MultiViewer openstaat:<ul>
+    <li>je <b>MultiViewer-setup</b> Qualifying: alle onboards, F1 LIVE en de timing-vensters op hun plek</li>
+    <li>daarna de <b>Ultimate F1 Viewer</b>-layout Qualifying erbovenop (vlaggenbalken)</li>
+    <li><b>Best of the rest</b>: de onboards van coureurs buiten de topteams worden de twee beste coureurs van de rest, en blijven dat tijdens de sessie</li></ul>
+    <b>1 seconde vasthouden</b> sluit alles, net als bij F1 Mode. Vensters opslaan doe je hieronder.<br>
+    Is F1 Mode nog niet gestart, dan doet hij dat eerst (bureaublad F1, apps, vlaggen); anders gaat hij naar het bureaublad F1. Is er geen live sessie van dit soort, dan opent hij de laatste replay ervan.`,
+  fullscreen: `Zet het hoofdscherm van MultiViewer schermvullend, of weer terug. Linksboven staat ON zolang het schermvullend is.`,
 };
-const HUE = ['flags', 'zone', 'mode'];
 
 function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
   uuid = inUuid;
   try { actionId = JSON.parse(actionInfo).action; } catch {}
-  const kind = actionId.split('.').pop();
-  $('help').textContent = HELP[kind] || '';
-  $('hueBox').classList.toggle('hide', !HUE.includes(kind));
-  $('modeBox').classList.toggle('hide', kind !== 'mode');
+  kind = actionId.split('.').pop();
+  $('help').innerHTML = HELP[kind] || '';
+  document.querySelectorAll('.box').forEach(b => b.classList.toggle('hide', !b.dataset.for.split(' ').includes(kind)));
+  document.querySelectorAll('.race-only').forEach(b => b.classList.toggle('hide', kind !== 'race'));
   ws = new WebSocket('ws://127.0.0.1:' + port);
   ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
   ws.onmessage = e => {
@@ -73,21 +201,57 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   };
 }
 
+function nameOf(p, id) { const l = (p.layouts || []).find(x => x.id === id); return l ? l.name : id; }
+
 function apply(p) {
-  $('bridge').textContent = p.paired ? 'Gekoppeld (' + p.bridge + ')' : 'Niet gekoppeld';
+  const s = p.settings || {};
+  const row = (cls, name, what) => `<div class="st"><span class="dot ${cls}"></span><span class="name">${name}</span><span class="what">${what}</span></div>`;
+  $('status').innerHTML =
+    row(p.mvReady ? 'ok' : p.mvOnline ? 'mid' : 'bad', 'MultiViewer',
+        p.mvReady ? 'gekoppeld' : p.mvOnline ? 'open, maar niet via F1 Mode gestart: setups openen kan dan niet' : 'niet open') +
+    row(p.uf1Ready ? 'ok' : p.uf1Running ? 'mid' : 'bad', 'Ultimate F1 Viewer',
+        p.uf1Ready ? 'gekoppeld' : p.uf1Running ? 'draait zonder koppeling, wordt herstart bij F1 Mode, Race of Quali' : 'niet open') +
+    row(p.paired ? 'ok' : 'bad', 'Philips Hue', p.paired ? 'gekoppeld' : 'niet gekoppeld');
+
+  $('zone').innerHTML = (p.zones || []).map(z => `<option>${esc(z)}</option>`).join('');
+  $('bridge').textContent = p.paired ? 'Gekoppeld (' + (s.BridgeIp || '') + ')' : 'Niet gekoppeld';
   $('pair').textContent = p.paired ? 'Opnieuw koppelen' : 'Bridge koppelen';
   $('pairStatus').textContent = p.status || '';
-  const groups = [...new Set([...(p.groups || []), ...(p.group ? [p.group] : [])])];
-  $('group').innerHTML = groups.map(g => `<option>${esc(g)}</option>`).join('');
-  $('group').value = p.group;
-  if (document.activeElement !== $('greenSeconds')) $('greenSeconds').value = p.greenSeconds;
-  if (document.activeElement !== $('workspace')) $('workspace').value = p.workspace;
+  if ((kind === 'race' || kind === 'quali') && /opgeslagen|Opslaan lukte/.test(p.status || '')) $('saveStatus').textContent = p.status;
+  $('placeMv').textContent = p.placeMv || '–';
+  $('placeUf1').textContent = p.placeUf1 || '–';
+
+  // Race/Quali: any of the viewer's layouts can be chosen.
+  if (kind === 'race' || kind === 'quali') {
+    const key = kind === 'race' ? 'RaceLayout' : 'QualiLayout';
+    const found = kind === 'race' ? p.raceFound : p.qualiFound;
+    $('layout').dataset.key = key;
+    $('layout').innerHTML = `<option value="">Automatisch (op naam${found ? ': ' + esc(nameOf(p, found)) : ''})</option>` +
+      (p.layouts || []).map(l => `<option value="${esc(l.id)}">${esc(l.name)} – ${l.windows} vensters</option>`).join('');
+    const mvKey = kind === 'race' ? 'RaceMvSetup' : 'QualiMvSetup';
+    const mvFound = kind === 'race' ? p.raceSetupFound : p.qualiSetupFound;
+    $('mvSetup').dataset.key = mvKey;
+    $('mvSetup').innerHTML = `<option value="">Automatisch (op naam${mvFound ? ': ' + esc(mvFound) : ''})</option>` +
+      (p.mvSetups || []).map(m => `<option value="${esc(m.name)}">${esc(m.name)} – ${m.players} spelers, ${m.windows - m.players} timing-vensters</option>`).join('');
+  }
+
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const k = el.dataset.key;
+    if (!(k in s) || document.activeElement === el) return;
+    if (el.type === 'checkbox') el.checked = !!s[k];
+    else el.value = s[k] == null ? '' : String(s[k]);
+  });
 }
 
+document.addEventListener('change', e => {
+  const el = e.target, k = el.dataset && el.dataset.key;
+  if (!k) return;
+  send({ [k]: el.type === 'checkbox' ? el.checked : el.value });
+});
 $('pair').addEventListener('click', () => send({ pair: true }));
-$('group').addEventListener('change', () => send({ group: $('group').value }));
-$('greenSeconds').addEventListener('change', () => send({ greenSeconds: $('greenSeconds').value }));
-$('workspace').addEventListener('change', () => send({ workspace: $('workspace').value }));
+$('savePlaces').addEventListener('click', () => send({ SavePlaces: true }));
+$('saveLayout').addEventListener('click', () => send({ saveLayout: true }));
+$('test').addEventListener('click', () => send({ test: true }));
 </script>
 </body>
 </html>

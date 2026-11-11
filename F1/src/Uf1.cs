@@ -1,5 +1,3 @@
-using System.Net.WebSockets;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -13,49 +11,55 @@ namespace F1;
 public static class Uf1
 {
     public const string Process = "Ultimate-F1Viewer-With-F1MV";
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(2) };
-    private static string Base => $"http://127.0.0.1:{Store.Current.Uf1Port}";
 
-    private static async Task<List<JsonObject>> TargetsAsync()
-    {
-        try
-        {
-            var list = JsonNode.Parse(await Http.GetStringAsync(Base + "/json/list"))!.AsArray();
-            return list.OfType<JsonObject>().Where(t => (string?)t["type"] == "page").ToList();
-        }
-        catch { return new(); }
-    }
+    private static Task<List<JsonObject>> TargetsAsync() => Cdp.PagesAsync(Store.Current.Uf1Port);
 
     private static bool IsMain(JsonObject t) => ((string?)t["url"] ?? "").Contains("/main/index.html");
 
     public static async Task<bool> ReadyAsync() => (await TargetsAsync()).Any(IsMain);
 
+    /// <summary>
+    /// Makes sure the viewer can be driven: when it runs without the debug port (started outside the
+    /// workspace) it is restarted with it; when it does not run, it is started. Its own windows close
+    /// in a restart, which is fine before opening a layout (that replaces them anyway).
+    /// </summary>
+    public static async Task<bool> EnsureAsync()
+    {
+        // Only restart when the port really does not answer (three tries), not after one slow reply.
+        for (int i = 0; i < 3; i++)
+        {
+            if (await ReadyAsync()) return true;
+            await Task.Delay(500);
+        }
+        var exe = Apps.Uf1Exe;
+        foreach (var p in System.Diagnostics.Process.GetProcessesByName(Process))
+        {
+            try { if (p.MainModule?.FileName is { } f) exe = f; } catch { }
+            p.Dispose();
+        }
+        if (exe == null) return false; // not installed: the viewer is optional
+        if (System.Diagnostics.Process.GetProcessesByName(Process).Length > 0)
+        {
+            Store.Log("uf1 draait zonder debugpoort: herstarten met poort");
+            await Desktops.CloseAppAsync(Process);
+            await Task.Delay(1000);
+        }
+        if (!File.Exists(exe)) { Store.Log("uf1 niet gevonden: " + exe); return false; }
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, $"--remote-debugging-port={Store.Current.Uf1Port}") { UseShellExecute = false });
+        for (int i = 0; i < 40; i++)
+        {
+            await Task.Delay(750);
+            if (await ReadyAsync()) { await Task.Delay(1500); return true; } // let its session lookup run once
+        }
+        Store.Log("uf1 gestart maar debugpoort niet bereikbaar");
+        return false;
+    }
+
     /// <summary>Evaluates JavaScript in the main window and returns the value (JSON), or null on failure.</summary>
     private static async Task<JsonNode?> EvalAsync(string expression, bool awaitPromise = true, int timeoutSeconds = 10)
     {
         var main = (await TargetsAsync()).FirstOrDefault(IsMain);
-        if ((string?)main?["webSocketDebuggerUrl"] is not { } wsUrl) return null;
-        using var ws = new ClientWebSocket();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
-        await ws.ConnectAsync(new Uri(wsUrl), cts.Token);
-        var msg = new JsonObject
-        {
-            ["id"] = 1, ["method"] = "Runtime.evaluate",
-            ["params"] = new JsonObject { ["expression"] = expression, ["awaitPromise"] = awaitPromise, ["returnByValue"] = true },
-        };
-        await ws.SendAsync(Encoding.UTF8.GetBytes(msg.ToJsonString()), WebSocketMessageType.Text, true, cts.Token);
-        var buffer = new byte[1 << 16];
-        using var ms = new MemoryStream();
-        while (true)
-        {
-            ms.SetLength(0);
-            WebSocketReceiveResult r;
-            do { r = await ws.ReceiveAsync(buffer, cts.Token); ms.Write(buffer, 0, r.Count); } while (!r.EndOfMessage);
-            var reply = JsonNode.Parse(Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Length));
-            if ((int?)reply?["id"] != 1) continue; // events from the page
-            if (reply?["result"]?["exceptionDetails"] is { } ex) { Store.Log("uf1 js: " + ex.ToJsonString()); return null; }
-            return reply?["result"]?["result"]?["value"];
-        }
+        return main == null ? null : await Cdp.EvalAsync(main, expression, awaitPromise, timeoutSeconds);
     }
 
     /// <summary>The F1 TV live session as the viewer sees it: (found, session type such as "Race" or "Qualifying").</summary>
@@ -70,20 +74,62 @@ public static class Uf1
         catch (Exception e) { Store.Log("uf1 live: " + e.Message); return (false, null); }
     }
 
-    /// <summary>Layout id in the viewer's settings whose name fits "race" or "quali".</summary>
-    public static string? FindLayout(string kind)
+    /// <summary>
+    /// Waits (at most <paramref name="maxSeconds"/>) until the viewer has looked up the live session,
+    /// then tells whether there is one: no fixed long wait when there simply is no live session.
+    /// </summary>
+    public static async Task<(bool Live, string? Type)> WaitLiveSessionAsync(int maxSeconds = 8)
+    {
+        for (int i = 0; i < maxSeconds * 2; i++)
+        {
+            try
+            {
+                var v = await EvalAsync("JSON.stringify(typeof liveSessionInfo === 'undefined' ? null : liveSessionInfo)");
+                var info = (string?)v is { } s ? JsonNode.Parse(s) : null;
+                if (info != null) return ((bool?)info["liveSessionFound"] ?? false, (string?)info["sessionInfo"]?["sessionType"]);
+            }
+            catch { }
+            await Task.Delay(500);
+        }
+        return (false, null);
+    }
+
+    /// <summary>F1 TV content id of the live session (as the viewer found it), or null.</summary>
+    public static async Task<string?> LiveContentIdAsync()
+    {
+        try
+        {
+            var v = await EvalAsync("JSON.stringify(typeof liveSessionInfo === 'undefined' ? null : liveSessionInfo)");
+            var info = (string?)v is { } s ? JsonNode.Parse(s) : null;
+            return (bool?)info?["liveSessionFound"] == true ? info?["contentInfo"]?["contentId"]?.ToString() : null;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>All layouts saved in the viewer: (id, name, number of viewer windows, number of streams).</summary>
+    public static List<(string Id, string Name, int Windows, int Streams)> Layouts()
     {
         try
         {
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Process, "config.json");
             var layouts = JsonNode.Parse(File.ReadAllText(path))?["layouts"]?.AsObject();
-            if (layouts == null) return null;
-            var named = layouts.Select(kv => (Id: kv.Key, Name: ((string?)kv.Value?["name"] ?? "").ToLowerInvariant())).ToList();
-            return kind == "quali"
-                ? named.FirstOrDefault(l => l.Name.Contains("qual")).Id
-                : (named.FirstOrDefault(l => l.Name == "race").Id ?? named.FirstOrDefault(l => l.Name.Contains("race")).Id);
+            return layouts?.Select(kv => (kv.Key, (string?)kv.Value?["name"] ?? kv.Key,
+                    (kv.Value?["uf1Windows"] as JsonArray)?.Count ?? 0, (kv.Value?["mvWindows"] as JsonArray)?.Count ?? 0))
+                .ToList() ?? new();
         }
-        catch (Exception e) { Store.Log("uf1 layouts: " + e.Message); return null; }
+        catch (Exception e) { Store.Log("uf1 layouts: " + e.Message); return new(); }
+    }
+
+    /// <summary>Layout id for "race" or "quali": the one chosen in the key's settings, else found by name.</summary>
+    public static string? FindLayout(string kind)
+    {
+        var all = Layouts();
+        var chosen = kind == "quali" ? Store.Current.QualiLayout : Store.Current.RaceLayout;
+        if (chosen != null && all.Any(l => l.Id == chosen)) return chosen;
+        var named = all.Select(l => (l.Id, Name: l.Name.ToLowerInvariant())).ToList();
+        return kind == "quali"
+            ? named.FirstOrDefault(l => l.Name.Contains("qual")).Id
+            : (named.FirstOrDefault(l => l.Name == "race").Id ?? named.FirstOrDefault(l => l.Name.Contains("race")).Id);
     }
 
     /// <summary>
@@ -98,9 +144,22 @@ public static class Uf1
         // which is fine: it carries on and opens the streams when the session goes live.
         var js = $"(async () => {{ const f = document.getElementById('content-id-field'); if (f) f.value = {JsonSerializer.Serialize(contentId ?? "")}; " +
                  $"await restoreLayout({int.Parse(id)}); return true; }})()";
-        try { return (bool?)await EvalAsync(js, awaitPromise: true, timeoutSeconds: 60) == true; }
-        catch (OperationCanceledException) { Store.Log("uf1 restore: wacht op sessie"); return true; }
-        catch (Exception e) { Store.Log("uf1 restore: " + e.Message); return false; }
+        // One retry: the connection can drop while the viewer is still settling after a (re)start.
+        for (int attempt = 1; attempt <= 2; attempt++)
+        {
+            try { return (bool?)await EvalAsync(js, awaitPromise: true, timeoutSeconds: 60) == true; }
+            catch (OperationCanceledException) { Store.Log("uf1 restore: wacht op sessie"); return true; }
+            catch (Exception e)
+            {
+                Store.Log($"uf1 restore (poging {attempt}): " + e.Message);
+                if (attempt == 1)
+                {
+                    await Task.Delay(2000);
+                    await CloseExtraWindowsAsync(); // whatever the first attempt half-opened, so nothing doubles
+                }
+            }
+        }
+        return false;
     }
 
     public static async Task<bool> SaveLayoutAsync(string id)
@@ -109,13 +168,92 @@ public static class Uf1
         catch (Exception e) { Store.Log("uf1 save: " + e.Message); return false; }
     }
 
+    /// <summary>
+    /// Battle mode windows (left and right of the screens): shows exactly these drivers, by clicking the
+    /// window's own driver buttons. Returns false while a window has not loaded its driver list yet.
+    /// </summary>
+    private static readonly Dictionary<string, string> _lastBattle = new();
+
+    /// <summary>
+    /// Reloads the battle mode windows. They fetch the driver list once when they load; one that loaded
+    /// before the session's timing existed gives up for good, and a reload makes it start over.
+    /// </summary>
+    public static async Task ReloadBattleModeAsync()
+    {
+        foreach (var p in (await TargetsAsync()).Where(t => ((string?)t["url"] ?? "").Contains("/battlemode/")))
+        {
+            try { await Cdp.EvalAsync(p, "location.reload(); true", awaitPromise: false); Store.Log("battle mode opnieuw geladen"); }
+            catch (Exception e) { Store.Log("battle mode herladen: " + e.Message); }
+        }
+    }
+
+    public static async Task<bool> SetBattleDriversAsync(List<int> left, List<int> right)
+    {
+        var pages = (await TargetsAsync()).Where(t => ((string?)t["url"] ?? "").Contains("/battlemode/")).ToList();
+        if (pages.Count == 0) return true;
+        var placed = new List<(JsonObject Page, double X)>();
+        foreach (var p in pages)
+        {
+            try { placed.Add((p, (double?)await Cdp.EvalAsync(p, "window.screenX") ?? 0)); }
+            catch { }
+        }
+        placed = placed.OrderBy(x => x.X).ToList();
+        bool allReady = true;
+        for (int i = 0; i < placed.Count; i++)
+        {
+            var want = i == placed.Count - 1 && placed.Count > 1 ? right : left;
+            if (want.Count == 0) continue;
+            // The window makes its driver buttons once, at start. When that was before the session's
+            // driver list arrived, the buttons are missing: let it make them again from the current list.
+            var js = "(want => { if (typeof toggleDriver !== 'function' || typeof addButtons !== 'function' || typeof driverList === 'undefined' || !driverList) return 'not-ready'; " +
+                     "const missing = () => want.some(n => !document.getElementById('button' + n)); " +
+                     "if (missing()) { document.querySelectorAll('#buttons .driver-button').forEach(b => b.remove()); addButtons(); } " +
+                     "if (missing()) return 'no-buttons'; " +
+                     "const shown = [...document.querySelectorAll('.driver')].map(e => parseInt(e.id.replace('driver', ''))); " +
+                     "shown.filter(n => !want.includes(n)).forEach(n => toggleDriver(n)); " +
+                     "want.filter(n => !shown.includes(n)).forEach(n => toggleDriver(n)); return 'ok'; })(" +
+                     JsonSerializer.Serialize(want) + ")";
+            var side = i == placed.Count - 1 && placed.Count > 1 ? "rechts" : "links";
+            try
+            {
+                var r = (string?)await Cdp.EvalAsync(placed[i].Page, js) ?? "js-fout";
+                if (r != "ok") allReady = false;
+                if (r != _lastBattle.GetValueOrDefault(side)) Store.Log($"battle mode {side}: {r} [{string.Join(",", want)}]");
+                _lastBattle[side] = r;
+            }
+            catch (Exception e) { Store.Log("battle mode: " + e.Message); allReady = false; }
+        }
+        return allReady;
+    }
+
+    /// <summary>
+    /// Windows like Battle mode and Crash detection open in "Move Mode" (dragging instead of working);
+    /// pressing Escape in them switches it off. This does the same, only for windows still in move
+    /// mode. Returns how many windows were still loading (to try again).
+    /// </summary>
+    public static async Task<int> LockWindowsAsync()
+    {
+        const string js = "(() => { const b = document.getElementById('background'); " +
+                          "if (!b || typeof toggleMoveMode !== 'function') return document.readyState === 'complete' ? 'none' : 'loading'; " +
+                          "if (b.classList.contains('drag')) { toggleMoveMode(); return 'locked'; } return 'ok'; })()";
+        int loading = 0;
+        foreach (var page in (await TargetsAsync()).Where(t => !IsMain(t)))
+        {
+            try
+            {
+                var r = (string?)await Cdp.EvalAsync(page, js);
+                if (r == "loading") loading++;
+                else if (r == "locked") Store.Log($"move mode uit: {(string?)page["title"]}");
+            }
+            catch (Exception e) { Store.Log("move mode: " + e.Message); loading++; }
+        }
+        return loading;
+    }
+
     /// <summary>Closes the viewer's extra windows (not the main window, not auto camera switching).</summary>
     public static async Task CloseExtraWindowsAsync()
     {
         foreach (var t in (await TargetsAsync()).Where(t => !IsMain(t) && (string?)t["title"] != "Auto Onboard Camera Switching"))
-        {
-            try { using var _ = await Http.GetAsync($"{Base}/json/close/{(string?)t["id"]}"); }
-            catch (Exception e) { Store.Log("uf1 close: " + e.Message); }
-        }
+            await Cdp.CloseAsync(Store.Current.Uf1Port, (string)t["id"]!);
     }
 }

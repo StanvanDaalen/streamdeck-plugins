@@ -32,7 +32,31 @@ internal static class Program
             return 0;
         }
 
-        Store.Load(freshLog: Arg("--check") == null);
+        Apps.MakeDpiAware();
+        // Only the plugin itself (started by Stream Deck with -port) starts a new log; tools keep it readable.
+        Store.Load(freshLog: Arg("-port") != null);
+
+        // Test: give desktop N (1-based) a name, then read the name back from the registry.
+        if (Arg("--name-desktop") is { } nd && int.TryParse(nd, out var deskNo) && Arg("--name") is { } deskName)
+        {
+            var ids = Desktops.Info().Ids;
+            string result;
+            try
+            {
+                if (deskNo >= 1 && deskNo <= ids.Count) { Desktops.SetName(ids[deskNo - 1], deskName); result = "SetName aangeroepen"; }
+                else result = $"geen bureaublad {deskNo} (er zijn er {ids.Count})";
+            }
+            catch (Exception e) { result = "fout: " + e; }
+            File.WriteAllText(Path.Combine(Store.Dir, "name-test.txt"), $"{result}\ngevonden als '{deskName}': {Desktops.FindByName(deskName)}");
+            return 0;
+        }
+
+        // Test: stack MultiViewer's windows by height.
+        if (args.Contains("--stack"))
+        {
+            File.WriteAllText(Path.Combine(Store.Dir, "stack-test.txt"), $"gestapeld: {await MvSetups.StackAsync()}");
+            return 0;
+        }
 
         // Diagnostics without Stream Deck: what the plugin sees right now.
         // (WinExe has no console, so the report goes to a file.)
@@ -53,6 +77,10 @@ internal static class Program
                 $"multiviewer: online={mv.Online} session={mv.Session ?? "-"} track={mv.TrackStatus} players={mv.Players.Count} main={mv.Main?.Title ?? "-"}",
                 $"desktops: {ids.Count}, current={cur + 1}, {string.Join(' ', empty)}",
                 $"uf1: ready={await Uf1.ReadyAsync()} live={live} type={type ?? "-"} race={Uf1.FindLayout("race") ?? "-"} quali={Uf1.FindLayout("quali") ?? "-"}",
+                $"mv setups: {string.Join(", ", MvSetups.List().Select(s => $"{s.Name} ({s.Players} spelers)"))} · race={MvSetups.Find("race") ?? "-"} quali={MvSetups.Find("quali") ?? "-"} · koppeling={await MvSetups.ReadyAsync()}",
+                $"best of the rest: {string.Join(", ", await MvSetups.BestOfRestAsync())}",
+                $"laatste race: {await Replays.LatestAsync("race")} · laatste quali: {await Replays.LatestAsync("quali")}",
+                $"vooraf (weekend {Replays.LastMeetingKey}): race {string.Join(",", await Replays.ExpectedRestAsync("race", Replays.LastMeetingKey ?? 0))} · quali {string.Join(",", await Replays.ExpectedRestAsync("quali", Replays.LastMeetingKey ?? 0))}",
             });
             return 0;
         }

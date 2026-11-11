@@ -8,7 +8,8 @@ New-Item -ItemType Directory $dist | Out-Null
 $plugins = @(
     @{ Project = 'GameVolume'; Id = 'com.stan.gamevolume'; File = 'Audio' },
     @{ Project = 'Launcher'; Id = 'com.stan.launcher'; File = 'Launcher' },
-    @{ Project = 'Monitor'; Id = 'com.stan.monitor'; File = 'Monitor' }
+    @{ Project = 'Monitor'; Id = 'com.stan.monitor'; File = 'Monitor' },
+    @{ Project = 'F1'; Id = 'com.stan.f1'; File = 'F1' }
 )
 
 foreach ($p in $plugins) {

@@ -52,7 +52,14 @@ public static class Desktops
             await GoToAsync(1);
             return ids[1];
         }
-        CtrlWin(VK_D); // new desktop at the end; Windows switches to it straight away
+        return await NewDesktopAsync();
+    }
+
+    /// <summary>Creates a desktop at the end (Windows switches to it) and returns its id.</summary>
+    public static async Task<Guid?> NewDesktopAsync()
+    {
+        var (ids, _) = Info();
+        CtrlWin(VK_D);
         for (int i = 0; i < 10; i++)
         {
             await Task.Delay(300);
@@ -62,6 +69,96 @@ public static class Desktops
         Store.Log("nieuw bureaublad niet gezien");
         return null;
     }
+
+    // ------------------------------------------------------------ the named "F1" desktop
+
+    /// <summary>The desktop with this name (as shown in Task View), or null.</summary>
+    public static Guid? FindByName(string name)
+    {
+        var (ids, _) = Info();
+        foreach (var id in ids)
+        {
+            using var k = Registry.CurrentUser.OpenSubKey($@"{Key}\Desktops\{id:B}");
+            if (string.Equals(k?.GetValue("Name") as string, name, StringComparison.OrdinalIgnoreCase)) return id;
+        }
+        return null;
+    }
+
+    /// <summary>Goes to the desktop called <paramref name="name"/>, creating and naming it when it does not exist yet.</summary>
+    public static async Task<Guid?> GoToNamedAsync(string name)
+    {
+        if (FindByName(name) is { } existing)
+        {
+            await GoToAsync(Info().Ids.IndexOf(existing));
+            return existing;
+        }
+        var created = await NewDesktopAsync();
+        if (created is { } id) SetName(id, name);
+        return created;
+    }
+
+    /// <summary>
+    /// Names a desktop. Windows only offers this through its internal virtual desktop interface (the
+    /// Windows 11 24H2+ layout is used here); when that is not available the name is written where
+    /// Windows keeps it, which Task View shows after the next sign-in.
+    /// </summary>
+    public static void SetName(Guid desk, string name)
+    {
+        try
+        {
+            var shell = (IServiceProvider10)Activator.CreateInstance(Type.GetTypeFromCLSID(CLSID_ImmersiveShell)!)!;
+            var service = CLSID_VirtualDesktopManagerInternal; var iid = typeof(IVirtualDesktopManagerInternal).GUID;
+            var mgr = (IVirtualDesktopManagerInternal)shell.QueryService(ref service, ref iid);
+            var d = mgr.FindDesktop(ref desk);
+            WindowsCreateString(name, name.Length, out var hs);
+            try { mgr.SetDesktopName(d, hs); }
+            finally { WindowsDeleteString(hs); Marshal.Release(d); }
+            Store.Log($"bureaublad heet nu '{name}'");
+            return;
+        }
+        catch (Exception e) { Store.Log("bureaublad naam via Windows: " + e.Message); }
+        try
+        {
+            using var k = Registry.CurrentUser.CreateSubKey($@"{Key}\Desktops\{desk:B}");
+            k.SetValue("Name", name, RegistryValueKind.String);
+            Store.Log($"bureaublad naam '{name}' in het register gezet");
+        }
+        catch (Exception e) { Store.Log("bureaublad naam: " + e.Message); }
+    }
+
+    private static readonly Guid CLSID_ImmersiveShell = new("C2F03A33-21F5-47FA-B4BB-156362A2F239");
+    private static readonly Guid CLSID_VirtualDesktopManagerInternal = new("C5E0CDCA-7B6E-41B2-9FC4-D93975CC467B");
+
+    [ComImport, Guid("6D5140C1-7436-11CE-8034-00AA006009FA"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IServiceProvider10
+    {
+        [return: MarshalAs(UnmanagedType.IUnknown)]
+        object QueryService(ref Guid service, ref Guid riid);
+    }
+
+    // Windows 11 24H2 and later. Only the methods up to SetDesktopName are used; earlier ones are
+    // declared so the vtable order is right (their parameter types do not matter here).
+    [ComImport, Guid("53F5CA0B-158F-4124-900C-057158060B27"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IVirtualDesktopManagerInternal
+    {
+        int GetCount();
+        void MoveViewToDesktop(IntPtr view, IntPtr desktop);
+        bool CanViewMoveDesktops(IntPtr view);
+        IntPtr GetCurrentDesktop();
+        void GetDesktops(out IntPtr desktops);
+        [PreserveSig] int GetAdjacentDesktop(IntPtr from, int direction, out IntPtr desktop);
+        void SwitchDesktop(IntPtr desktop);
+        void SwitchDesktopAndMoveForegroundView(IntPtr desktop);
+        IntPtr CreateDesktop();
+        void MoveDesktop(IntPtr desktop, int index);
+        void RemoveDesktop(IntPtr desktop, IntPtr fallback);
+        IntPtr FindDesktop(ref Guid desktopId);
+        void GetDesktopSwitchIncludeExcludeViews(IntPtr desktop, out IntPtr include, out IntPtr exclude);
+        void SetDesktopName(IntPtr desktop, IntPtr name);
+    }
+
+    [DllImport("combase.dll", CharSet = CharSet.Unicode)] private static extern int WindowsCreateString(string s, int length, out IntPtr hstring);
+    [DllImport("combase.dll")] private static extern int WindowsDeleteString(IntPtr hstring);
 
     /// <summary>Removes a desktop when nothing is left on it, then goes to desktop 1.</summary>
     public static async Task CloseIfEmptyAsync(Guid desk)
@@ -125,26 +222,6 @@ public static class Desktops
         return true;
     }
 
-    public static bool LaunchWorkspace(string name)
-    {
-        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var launcher = new[]
-        {
-            Path.Combine(local, "PowerToys", "PowerToys.WorkspacesLauncher.exe"),
-            @"C:\Program Files\PowerToys\PowerToys.WorkspacesLauncher.exe",
-        }.FirstOrDefault(File.Exists);
-        try
-        {
-            var json = JsonNode.Parse(File.ReadAllText(Path.Combine(local, "Microsoft", "PowerToys", "Workspaces", "workspaces.json")));
-            var id = json?["workspaces"]?.AsArray()
-                .FirstOrDefault(w => string.Equals((string?)w?["name"], name, StringComparison.OrdinalIgnoreCase))?["id"];
-            if (launcher == null || id == null) { Store.Log($"workspace '{name}' of launcher niet gevonden"); return false; }
-            System.Diagnostics.Process.Start(new ProcessStartInfo(launcher, $"{(string)id!} 1") { UseShellExecute = false });
-            return true;
-        }
-        catch (Exception e) { Store.Log("workspace: " + e.Message); return false; }
-    }
-
     /// <summary>Closes an app's windows politely and ends it when it is still running after a few seconds.</summary>
     public static async Task CloseAppAsync(string processName)
     {
@@ -159,7 +236,30 @@ public static class Desktops
         }
     }
 
+    public static bool IsRunning(string processName) =>
+        System.Diagnostics.Process.GetProcessesByName(processName).Length > 0;
+
+    /// <summary>Visible application windows of the given processes.</summary>
+    public static List<IntPtr> AppWindows(params string[] processNames)
+    {
+        var pids = new HashSet<uint>(processNames.SelectMany(System.Diagnostics.Process.GetProcessesByName).Select(p => (uint)p.Id));
+        var list = new List<IntPtr>();
+        EnumWindows((hwnd, _) =>
+        {
+            if (IsAppWindow(hwnd) && GetWindowThreadProcessId(hwnd, out var pid) != 0 && pids.Contains(pid)) list.Add(hwnd);
+            return true;
+        }, IntPtr.Zero);
+        return list;
+    }
+
+    public static void Minimize(IEnumerable<IntPtr> windows) { foreach (var w in windows) ShowWindow(w, SW_MINIMIZE); }
+    public static void Restore(IEnumerable<IntPtr> windows) { foreach (var w in windows) if (IsWindow(w)) ShowWindow(w, SW_RESTORE); }
+
     // ------------------------------------------------------------ native
+
+    [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hwnd, int cmd);
+    [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
+    private const int SW_MINIMIZE = 6, SW_RESTORE = 9;
 
     private static readonly Guid CLSID_VirtualDesktopManager = new("aa509086-5ca9-4c25-8f95-589d3c07b48a");
 
