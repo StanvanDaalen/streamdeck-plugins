@@ -1023,7 +1023,7 @@ internal sealed class Plugin
         var name = _mv.SessionShort ?? "Session";
         // No session open: the next one on the calendar ("NEXT", "Quali", "Sat 16:00").
         if (_mv.Timing == null && Schedule.Next() is { } next)
-            return Art.InfoKey("Next", Schedule.Short(next.Name), Schedule.When(next.Start), Art.White);
+            return Art.NextKey(next.Location, Schedule.Short(next.Name), Schedule.When(next.Start));
         if (_mv.Timing == null) return Art.InfoKey("Session", "–", _mv.Online ? "No session" : "Offline", Art.Grey);
         if (_sessionView == 1)
         {
