@@ -22,6 +22,9 @@ New-Item -ItemType Directory -Force "$target\bin" | Out-Null
 Copy-Item "$root\sdPlugin\*" $target -Recurse -Force
 Copy-Item "$root\out\*" "$target\bin" -Recurse -Force
 
-Start-Process $exe
+# Started through Explorer so Stream Deck never inherits the environment of whatever ran this script:
+# a Store app (such as Claude) redirects new %APPDATA% folders into its own private copy, and Stream
+# Deck would then read settings that the normal Stream Deck (started at sign-in) never sees.
+Start-Process explorer.exe -ArgumentList "`"$exe`""
 Write-Output 'Stream Deck restarted.'
 if ($Publish) { & "$root\..\publish.ps1" -Message $Message }
