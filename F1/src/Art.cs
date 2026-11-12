@@ -63,12 +63,14 @@ public static class Art
         "</svg>";
 
     /// <summary>The next session: NEXT, where (the race weekend), what (FP1, Quali …) and when.</summary>
-    public static string NextKey(string where, string what, string when) =>
+    /// <param name="countdown">Time left ("6d 21h", "3h 25m", "12m"); amber in the last hour.</param>
+    public static string NextKey(string where, string what, string when, string countdown, bool soon) =>
         Frame(null, Green) +
-        $"<text x='72' y='32' font-family='{Font}' font-size='13' font-weight='900' letter-spacing='0.6' text-anchor='middle' fill='{Red}'>NEXT</text>" +
-        $"<text x='72' y='53' font-family='{Font}' font-size='{(where.Length > 10 ? 12 : 14)}' font-weight='900' letter-spacing='0.3' text-anchor='middle' fill='{White}'>{E(where.ToUpperInvariant())}</text>" +
-        $"<text x='72' y='93' font-family='{Font}' font-size='{(what.Length > 6 ? 26 : 34)}' font-weight='900' text-anchor='middle' fill='{White}'>{E(what)}</text>" +
-        $"<text x='72' y='118' font-family='{Font}' font-size='13' font-weight='700' text-anchor='middle' fill='{Grey}'>{E(when)}</text>" +
+        $"<text x='72' y='29' font-family='{Font}' font-size='12' font-weight='900' letter-spacing='0.6' text-anchor='middle' fill='{Red}'>NEXT</text>" +
+        $"<text x='72' y='48' font-family='{Font}' font-size='{(where.Length > 10 ? 12 : 14)}' font-weight='900' letter-spacing='0.3' text-anchor='middle' fill='{White}'>{E(where.ToUpperInvariant())}</text>" +
+        $"<text x='72' y='84' font-family='{Font}' font-size='{(what.Length > 6 ? 24 : 32)}' font-weight='900' text-anchor='middle' fill='{White}'>{E(what)}</text>" +
+        $"<text x='72' y='106' font-family='{Font}' font-size='12' font-weight='700' text-anchor='middle' fill='{Grey}'>{E(when)}</text>" +
+        $"<text x='72' y='127' font-family='{Font}' font-size='15' font-weight='900' text-anchor='middle' fill='{(soon ? Amber : White)}'>{E(countdown)}</text>" +
         "</svg>";
 
     private static string? LogoFile => new[] { "f1-logo.svg", "f1-logo.png" }.Select(f => Path.Combine(Store.Dir, f)).FirstOrDefault(File.Exists);

@@ -79,6 +79,16 @@ public static class Schedule
         _ => name,
     };
 
+    /// <summary>Time until a session starts: "6d 21h", "3h 25m", "12m" or "now".</summary>
+    public static string Countdown(DateTimeOffset start)
+    {
+        var left = start - DateTimeOffset.UtcNow;
+        if (left <= TimeSpan.Zero) return "now";
+        if (left.TotalDays >= 1) return $"{(int)left.TotalDays}d {left.Hours}h";
+        if (left.TotalHours >= 1) return $"{(int)left.TotalHours}h {left.Minutes:00}m";
+        return $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))}m";
+    }
+
     /// <summary>When a session starts, in this PC's time: "Today 16:00", "Tomorrow 01:30" or "Fri 01:30".</summary>
     public static string When(DateTimeOffset start)
     {
