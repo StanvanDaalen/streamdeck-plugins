@@ -25,11 +25,19 @@ public static class Art
     /// optional status tag top left.
     /// </summary>
     /// <param name="upper">Labels are capitals; times like "-40s" keep their small s.</param>
-    public static string Key(string glyph, string label, string? pill = null, string pillColor = Green, string labelColor = White, bool upper = true) =>
-        Frame(pill, pillColor) +
-        $"<g transform='translate(72 62)'>{glyph}</g>" +
-        $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{E(upper ? label.ToUpperInvariant() : label)}</text>" +
-        "</svg>";
+    /// <param name="caption">Optional small line under the label (for example which race a key opens); without it the key is unchanged.</param>
+    public static string Key(string glyph, string label, string? pill = null, string pillColor = Green, string labelColor = White, bool upper = true,
+        string? caption = null, string captionColor = Grey) =>
+        caption == null
+            ? Frame(pill, pillColor) +
+              $"<g transform='translate(72 62)'>{glyph}</g>" +
+              $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{E(upper ? label.ToUpperInvariant() : label)}</text>" +
+              "</svg>"
+            : Frame(pill, pillColor) +
+              $"<g transform='translate(72 57) scale(0.92)'>{glyph}</g>" +
+              $"<text x='72' y='114' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{E(upper ? label.ToUpperInvariant() : label)}</text>" +
+              $"<text x='72' y='132' font-family='{Font}' font-size='{(caption.Length > 13 ? 10 : 12)}' font-weight='700' text-anchor='middle' fill='{captionColor}'>{E(caption)}</text>" +
+              "</svg>";
 
     private static string Frame(string? pill, string pillColor)
     {

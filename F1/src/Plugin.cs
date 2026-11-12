@@ -169,6 +169,7 @@ internal sealed class Plugin
         while (_ws.State == WebSocketState.Open)
         {
             var state = await MultiViewer.StateAsync();
+            _ = Schedule.RefreshAsync(); // at most every 30 minutes
             await WithGate(async () =>
             {
                 bool wasOnline = _mv.Online;
@@ -944,8 +945,8 @@ internal sealed class Plugin
             Live => LiveKey(),
             Fullscreen => FullscreenKey(),
             Session => SessionKey(),
-            Race => Art.Key(Art.Chequered(), "Race", IsWorking(Race) ? "…" : null, Art.Amber),
-            Quali => Art.Key(Art.Stopwatch(), "Quali", IsWorking(Quali) ? "…" : null, Art.Amber),
+            Race => Art.Key(Art.Chequered(), "Race", IsWorking(Race) ? "…" : null, Art.Amber, caption: Opens("race", out var rc), captionColor: rc),
+            Quali => Art.Key(Art.Stopwatch(), "Quali", IsWorking(Quali) ? "…" : null, Art.Amber, caption: Opens("quali", out var qc), captionColor: qc),
             Mode when !Art.HasLogo => Art.Key(Art.F1Mark(), "F1 Mode", ModePill, ModePillColor),
             _ => null,
         };
@@ -1003,9 +1004,26 @@ internal sealed class Plugin
     /// Session key: session name on top, then the clock (qualifying, practice) or laps (race), or —
     /// after a press — the weather.
     /// </summary>
+    /// <summary>
+    /// Which session Race/Quali would open, for the small line on the key: the one open in MultiViewer,
+    /// a live one ("LIVE"), or the latest replay (its location). Null when unknown.
+    /// </summary>
+    private string? Opens(string kind, out string color)
+    {
+        color = Art.Grey;
+        var type = (string?)_mv.Timing?["SessionInfo"]?["Type"];
+        bool open = kind == "quali" ? (type ?? "").Contains("Qualifying", StringComparison.OrdinalIgnoreCase) : type == "Race";
+        if (open && (string?)_mv.Timing?["SessionInfo"]?["Meeting"]?["Location"] is { Length: > 0 } here) return here;
+        if (Schedule.LiveNow(kind) is { } live) { color = Art.Red; return "LIVE · " + live.Location; }
+        return S.OpenLatestReplay ? Schedule.LatestDone(kind)?.Location : null;
+    }
+
     private string SessionKey()
     {
         var name = _mv.SessionShort ?? "Session";
+        // No session open: the next one on the calendar ("NEXT", "Quali", "Sat 16:00").
+        if (_mv.Timing == null && Schedule.Next() is { } next)
+            return Art.InfoKey("Next", Schedule.Short(next.Name), Schedule.When(next.Start), Art.White);
         if (_mv.Timing == null) return Art.InfoKey("Session", "–", _mv.Online ? "No session" : "Offline", Art.Grey);
         if (_sessionView == 1)
         {
