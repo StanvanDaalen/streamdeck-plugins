@@ -149,8 +149,11 @@ internal static class Program
         var found = Detector.FindCurrent(_game);
         if (found == null && _game != null && ++_missedScans < 2) found = _game; // ride out a brief window swap
         else if (found != null) _missedScans = 0;
+        bool gameChanged = found?.Entry.Id != _game?.Entry.Id;
         _game = found;
         if (_game != null) Remember(_game);
+        // The game button's panel follows the game that is running, so its logo can be set right away.
+        if (gameChanged) foreach (var x in Contexts.Values.Where(x => x.Action != App && x.Action != FixedGame).ToList()) await SendPi(x);
 
         foreach (var c in Contexts.Values.ToList()) await Render(c);
         SaveExes();
@@ -466,11 +469,11 @@ internal static class Program
             await Send(new JsonObject { ["event"] = "setSettings", ["context"] = c.Id, ["payload"] = c.Settings.DeepClone() });
 
         // The logo is stored per game in the shared game library, so every button and the Audio dials show it too.
-        if (p["customImage"] is JsonValue image && Str(c, "gameId", "") is { Length: > 0 } gameId)
+        if (p["customImage"] is JsonValue image && LogoTarget(c) is { } gameId)
         {
             if (!G.Overrides.TryGetValue(gameId, out var o)) G.Overrides[gameId] = o = new GameOverride();
             var path = image.GetValue<string>();
-            o.Image = path.Length > 0 ? KeepLogo(gameId, path) : null;
+            o.Image = path.Length > 0 ? SettingsStore.KeepLogo(gameId, path) : null;
             SettingsStore.TouchOverride(gameId);
             SettingsStore.SaveIfDirty();
             SettingsStore.Reload();
@@ -484,21 +487,13 @@ internal static class Program
         await SendPi(c);
     }
 
-    /// <summary>Copies a chosen logo next to the settings, so it stays when the original file is moved or deleted.</summary>
-    private static string KeepLogo(string gameId, string source)
+    /// <summary>The game whose logo this button's panel edits: the chosen game, or for the game button the one running now.</summary>
+    private static string? LogoTarget(Ctx c) => c.Action switch
     {
-        try
-        {
-            var dir = Path.Combine(SettingsStore.Dir, "logos");
-            Directory.CreateDirectory(dir);
-            var safe = string.Concat(gameId.Select(ch => char.IsLetterOrDigit(ch) ? ch : '_'));
-            foreach (var old in Directory.EnumerateFiles(dir, safe + ".*")) File.Delete(old);
-            var target = Path.Combine(dir, safe + Path.GetExtension(source).ToLowerInvariant());
-            File.Copy(source, target, true);
-            return target;
-        }
-        catch (Exception e) { SettingsStore.Log("logo copy: " + e.Message); return source; }
-    }
+        FixedGame => Str(c, "gameId", "") is { Length: > 0 } id ? id : null,
+        App => null,
+        _ => _game?.Entry.Id,
+    };
 
     private static async Task SendPi(Ctx c)
     {
@@ -523,7 +518,8 @@ internal static class Program
             ["payload"] = new JsonObject
             {
                 ["app"] = Str(c, "app", ""), ["gameId"] = Str(c, "gameId", ""),
-                ["customImage"] = G.Overrides.GetValueOrDefault(Str(c, "gameId", ""))?.Image ?? "",
+                ["logoFor"] = LogoTarget(c) is { } target ? Library.Entries.FirstOrDefault(e => e.Id == target) is { } t ? DisplayName(t) : "" : "",
+                ["customImage"] = LogoTarget(c) is { } logoId ? G.Overrides.GetValueOrDefault(logoId)?.Image ?? "" : "",
                 ["showPlaytime"] = Bool(c, "showPlaytime", true),
                 ["showName"] = Bool(c, "showName", true),
                 ["showNamePlaying"] = Bool(c, "showNamePlaying", true),

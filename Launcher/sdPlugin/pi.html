@@ -22,10 +22,14 @@
   <div id="target" class="hide">
     <h4 class="first" id="targetTitle">Game</h4>
     <div class="row hide" id="gameRow"><span class="lbl">Game</span><select id="gameId"></select></div>
-    <div class="row hide" id="logoRow"><span class="lbl">Logo</span><span class="val" id="logoName">Automatisch</span>
+    <div class="row hide" id="appRow"><span class="lbl">App</span><select id="app"></select></div>
+  </div>
+  <div id="logoRow" class="hide">
+    <h4>Logo</h4>
+    <p class="muted hide" id="logoFor"></p>
+    <div class="row" id="logoBtns"><span class="lbl">Logo</span><span class="val" id="logoName">Automatisch</span>
       <label class="btn" for="logoFile">Bestand</label><button id="logoClear">Wis</button>
       <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml"></div>
-    <div class="row hide" id="appRow"><span class="lbl">App</span><select id="app"></select></div>
   </div>
 
   <h4>Weergave</h4>
@@ -74,7 +78,11 @@ function apply(p) {
   $('gameId').innerHTML = '<option value="">Kies een game…</option>' + p.games.map(g =>
     `<option value="${esc(g.id)}">${esc(g.name)}${seen[g.original] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}</option>`).join('');
   $('gameId').value = p.gameId;
-  $('logoRow').classList.toggle('hide', !actionId.endsWith('.fixedgame') || !p.gameId);
+  const isFixed = actionId.endsWith('.fixedgame'), isCurrent = !isFixed && !actionId.endsWith('.app');
+  $('logoRow').classList.toggle('hide', isFixed ? !p.gameId : !isCurrent);
+  $('logoFor').classList.toggle('hide', !isCurrent);
+  $('logoFor').textContent = p.logoFor ? 'Logo van ' + p.logoFor + ' (de game die nu open staat).' : 'Start een game om het logo ervan te kiezen.';
+  $('logoBtns').classList.toggle('hide', isCurrent && !p.logoFor);
   $('logoName').textContent = p.customImage ? p.customImage.split(/[\\/]/).pop() : 'Automatisch';
   const apps = [...new Set([...p.apps, ...(p.app ? [p.app] : [])])];
   $('app').innerHTML = '<option value="">Kies een app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');

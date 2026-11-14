@@ -251,12 +251,15 @@ internal sealed class Plugin
         if (found == null && _game != null && ++_missedScans < 2) found = _game; // ride out a brief window swap
         else if (found != null) _missedScans = 0;
 
-        if (found?.Entry.Id != _game?.Entry.Id)
+        bool gameChanged = found?.Entry.Id != _game?.Entry.Id;
+        if (gameChanged)
         {
             _appliedSessions.Clear();
             SettingsStore.Log("game: " + (found?.Entry.Name ?? "(none)"));
         }
         _game = found;
+        // An open settings panel jumps to the game that just started, so its logo can be set right away.
+        if (gameChanged) foreach (var x in _contexts.Values.ToList()) await SendPi(x);
 
         if (_game != null)
         {
@@ -800,7 +803,8 @@ internal sealed class Plugin
                     Override(editId).Name = v.GetValue<string>();
                     break;
                 case "customImage" when editId != null:
-                    Override(editId).Image = v.GetValue<string>();
+                    var image = v.GetValue<string>();
+                    Override(editId).Image = image.Length > 0 ? SettingsStore.KeepLogo(editId, image) : null;
                     _art.Invalidate(editId);
                     artChanged = true;
                     break;

@@ -111,6 +111,23 @@ public static class SettingsStore
         return changedOnDisk;
     }
 
+    /// <summary>Copies a chosen game logo next to the settings, so it stays when the original file is moved or deleted.</summary>
+    public static string KeepLogo(string gameId, string source)
+    {
+        try
+        {
+            var dir = Path.Combine(Dir, "logos");
+            Directory.CreateDirectory(dir);
+            if (Path.GetDirectoryName(Path.GetFullPath(source))!.Equals(dir, StringComparison.OrdinalIgnoreCase)) return source;
+            var safe = string.Concat(gameId.Select(ch => char.IsLetterOrDigit(ch) ? ch : '_'));
+            foreach (var old in Directory.EnumerateFiles(dir, safe + ".*")) File.Delete(old);
+            var target = Path.Combine(dir, safe + Path.GetExtension(source).ToLowerInvariant());
+            File.Copy(source, target, true);
+            return target;
+        }
+        catch (Exception e) { Log("logo copy: " + e.Message); return source; }
+    }
+
     public static void Log(string msg)
     {
         lock (LogLock)

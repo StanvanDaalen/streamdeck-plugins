@@ -28,7 +28,7 @@ Games worden automatisch gevonden via Steam, Epic, Xbox en Lunar Client. Andere 
 
 Klik om te minimaliseren, weer te geven of te starten. Vasthouden sluit af.
 
-Bij de vaste game-knop kies je onder Logo een eigen afbeelding (PNG, JPG of SVG) voor die game. De plugin bewaart een kopie in %APPDATA%\StanGameVolume\logos, dus het logo blijft staan als je het originele bestand verplaatst. Het logo geldt voor alle knoppen en dials van die game.
+Bij de game-knop en de vaste game-knop kies je onder Logo een eigen afbeelding (PNG, JPG of SVG) voor die game; de game-knop past het logo aan van de game die nu open staat. In de Gamebibliotheek van de Game Volume-dial staat de game die nu speelt bovenaan en is die al gekozen. De plugin bewaart een kopie in %APPDATA%\StanGameVolume\logos, dus het logo blijft staan als je het originele bestand verplaatst. Het logo geldt voor alle knoppen en dials van die game.
 
 ## Monitor
 

@@ -128,7 +128,7 @@
   </div>
 
 <script>
-let ws, uuid, actionId = '', lib = [], selected = null, addExe = '';
+let ws, uuid, actionId = '', lib = [], selected = null, addExe = '', lastCurrent = null;
 const $ = id => document.getElementById(id);
 const send = payload => ws && ws.readyState === 1 &&
   ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
@@ -234,12 +234,16 @@ function apply(p) {
 
   lib = p.library || [];
   $('libCount').textContent = `${lib.length} games automatisch en handmatig gevonden.`;
+  // The game that is running now comes first and is selected whenever a new game starts.
+  if (p.currentId && p.currentId !== lastCurrent) selected = p.currentId;
+  lastCurrent = p.currentId || null;
   selected = selected && lib.some(g => g.id === selected) ? selected : (p.currentId || (lib[0] && lib[0].id));
   const count = {};
   lib.forEach(g => { const n = g.customName || g.name; count[n] = (count[n] || 0) + 1; });
-  $('editId').innerHTML = lib.map(g => {
+  const ordered = [...lib.filter(g => g.id === p.currentId), ...lib.filter(g => g.id !== p.currentId)];
+  $('editId').innerHTML = ordered.map(g => {
     const n = g.customName || g.name;
-    return `<option value="${esc(g.id)}">${esc(n)}${count[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}${g.hidden ? ' (verborgen)' : ''}</option>`;
+    return `<option value="${esc(g.id)}">${esc(n)}${count[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}${g.id === p.currentId ? ' (nu bezig)' : ''}${g.hidden ? ' (verborgen)' : ''}</option>`;
   }).join('');
   if (selected) $('editId').value = selected;
   showGame();
