@@ -21,6 +21,21 @@ internal static class Program
     private static readonly Dictionary<string, int> Current = new();
     private static readonly Dictionary<string, DateTime> HoldUntil = new();
     private static HashSet<string> _connected = new();
+    /// <summary>Monitors taken out of the Windows desktop because they show another device; kept on disk across restarts.</summary>
+    private static readonly string DetachedPath = Path.Combine(Log.Dir, "detached.json");
+    private static HashSet<string> _detached = new();
+
+    private static void LoadDetached()
+    {
+        try { if (File.Exists(DetachedPath)) _detached = System.Text.Json.JsonSerializer.Deserialize<HashSet<string>>(File.ReadAllText(DetachedPath)) ?? new(); }
+        catch (Exception e) { Log.Write("detached: " + e.Message); }
+    }
+
+    private static void SaveDetached()
+    {
+        try { File.WriteAllText(DetachedPath, System.Text.Json.JsonSerializer.Serialize(_detached)); }
+        catch (Exception e) { Log.Write("detached save: " + e.Message); }
+    }
 
     private static async Task<int> Main(string[] args)
     {
@@ -28,6 +43,7 @@ internal static class Program
         if (Arg("--assets") is { } assets) { Art.WriteAssets(assets); return 0; }
         Log.Reset();
         Ddc.LoadCache();
+        LoadDetached();
         if (Arg("--dump") is { } dump) { Dump(dump); return 0; }
 
         var port = Arg("-port"); var uuid = Arg("-pluginUUID"); var reg = Arg("-registerEvent");
@@ -98,6 +114,9 @@ internal static class Program
         var used = Contexts.Values.Select(c => Str(c, "monitor", "")).Where(k => k.Length > 0).Distinct().ToList();
         var read = Ddc.ReadCurrent(used);
         _connected = read.Keys.ToHashSet();
+        // A monitor Windows shows again (after a restart, or put back by hand) is no longer detached.
+        if (_detached.RemoveWhere(read.ContainsKey) > 0) SaveDetached();
+        _connected.UnionWith(_detached);
         foreach (var (key, value) in read)
             if (value > 0 && DateTime.UtcNow >= HoldUntil.GetValueOrDefault(key)) Current[key] = value;
         foreach (var c in Contexts.Values.ToList()) await Render(c);
@@ -105,6 +124,9 @@ internal static class Program
 
     private static string Str(Ctx c, string key, string fallback) =>
         c.Settings[key] is JsonValue v && v.TryGetValue<string>(out var s) && s.Length > 0 ? s : fallback;
+
+    private static int Int(Ctx c, string key, int fallback) =>
+        c.Settings[key] is JsonValue v && v.TryGetValue<int>(out var i) ? i : fallback;
 
     private static bool Bool(Ctx c, string key, bool fallback) =>
         c.Settings[key] is JsonValue v && v.TryGetValue<bool>(out var b) ? b : fallback;
@@ -177,6 +199,7 @@ internal static class Program
     {
         var key = Str(c, "monitor", "");
         if (key.Length == 0) return;
+        if (_detached.Contains(key)) { _connected.Add(key); return; }
         var read = Ddc.ReadCurrent(new[] { key });
         _connected.Remove(key);
         if (read.TryGetValue(key, out var v))
@@ -236,6 +259,19 @@ internal static class Program
         int next = index < 0 ? 0 : (index + direction + list.Count) % list.Count;
         int target = list[next];
 
+        // Optional, per button: take the monitor out of Windows while it shows another device than this PC.
+        int pcInput = Int(c, "pcInput", -1);
+        bool detach = Bool(c, "detach", false) && pcInput > 0 && list.Contains(pcInput);
+        if (_detached.Contains(key))
+        {
+            // Windows must see the monitor again before it can be switched.
+            DisplayLayout.Restore();
+            _detached.Remove(key);
+            SaveDetached();
+            for (int i = 0; i < 20 && !Ddc.WithMonitors(l => l.Any(m => m.Key == key)); i++) await Task.Delay(300);
+            await Task.Delay(500);
+        }
+
         if (!Ddc.SetInput(key, target))
         {
             Log.Write($"switch failed: {Label(key)} -> {Ddc.DefaultInputName(target)}");
@@ -244,6 +280,17 @@ internal static class Program
         }
         Log.Write($"switched: {Label(key)} -> {Ddc.DefaultInputName(target)}");
         Current[key] = target;
+        if (detach && target != pcInput && Ddc.Known.TryGetValue(key, out var caps))
+        {
+            await Task.Delay(800);
+            if (DisplayLayout.Detach($@"\\.\DISPLAY{caps.Display}"))
+            {
+                _detached.Add(key);
+                SaveDetached();
+                _connected.Add(key);
+                Log.Write("detached: " + Label(key));
+            }
+        }
         HoldUntil[key] = DateTime.UtcNow.AddSeconds(4); // the monitor needs a moment before it reports the new input
         foreach (var x in Contexts.Values.Where(x => Str(x, "monitor", "") == key).ToList()) await Render(x);
     }
@@ -282,7 +329,7 @@ internal static class Program
         if (p["piLog"] != null) { Log.Write("pi file: " + p["piLog"]); return; }
 
         bool changed = false;
-        foreach (var field in new[] { "monitor", "previous", "showText", "enabled" })
+        foreach (var field in new[] { "monitor", "previous", "showText", "enabled", "detach", "pcInput" })
             if (p[field] is { } value) { c.Settings[field] = value.DeepClone(); changed = true; }
         if (p["monitor"] != null) c.Settings.Remove("enabled");
 
@@ -347,6 +394,8 @@ internal static class Program
                 ["current"] = Current.GetValueOrDefault(key, -1),
                 ["previous"] = Str(c, "previous", "double"),
                 ["showText"] = Bool(c, "showText", true),
+                ["detach"] = Bool(c, "detach", false),
+                ["pcInput"] = Int(c, "pcInput", -1),
                 ["monitorName"] = MonitorName(c, key),
                 ["model"] = Ddc.Known.GetValueOrDefault(key)?.Model ?? "",
             },

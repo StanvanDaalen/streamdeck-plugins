@@ -30,9 +30,15 @@ public static class LgInput
         if (LgCode(standardCode) is not int value) return false;
         try
         {
-            var status = Write($@"\\.\DISPLAY{display}", 0xF4, value);
-            if (status != 0) Log.Write($"lg nvapi DISPLAY{display}: status {status}");
-            return status == 0;
+            // The driver now and then refuses the first try, for example right after the screen layout changed.
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                var status = Write($@"\\.\DISPLAY{display}", 0xF4, value);
+                if (status == 0) return true;
+                Log.Write($"lg nvapi DISPLAY{display}: status {status}");
+                Thread.Sleep(400);
+            }
+            return false;
         }
         catch (Exception e)
         {

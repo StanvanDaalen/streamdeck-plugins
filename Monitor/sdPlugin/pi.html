@@ -50,6 +50,11 @@
     <div class="row"><span class="lbl">Volgende input</span><span>Klik</span></div>
     <div class="row"><span class="lbl">Vorige input</span>
       <select id="previous"><option value="double">Dubbelklik</option><option value="long">Lang indrukken</option><option value="none">Uit</option></select></div>
+
+    <h4>Windows</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="detach">Loskoppelen als het niet op deze pc staat</label></div>
+    <div class="row" id="pcRow"><span class="lbl">Input van deze pc</span><select id="pcInput"></select></div>
+    <p class="muted" id="detachHint">Staat de monitor op een andere input, zoals een console, dan haalt Windows hem uit de schermindeling. De muis gaat dan direct naar het volgende scherm. Terug naar deze pc zet alles terug. Deze instelling geldt alleen voor deze knop op deze pc.</p>
   </div>
   <p class="muted" id="empty">Kies hierboven een monitor.</p>
 
@@ -89,6 +94,12 @@ function apply(p) {
   $('monitorName').placeholder = p.model;
   $('previous').value = p.previous;
   $('showText').checked = p.showText;
+  $('detach').checked = p.detach;
+  $('pcInput').innerHTML = '<option value="-1">Kies…</option>' + p.inputs.filter(i => i.enabled)
+    .map(i => `<option value="${i.code}">${esc(display(i))}</option>`).join('');
+  $('pcInput').value = String(p.inputs.some(i => i.enabled && i.code === p.pcInput) ? p.pcInput : -1);
+  $('pcRow').classList.toggle('hide', !p.detach);
+  $('detachHint').classList.toggle('hide', !p.detach);
 
   $('inputs').innerHTML = p.inputs.map(i => `<div class="row"><label class="check">
     <input type="checkbox" data-code="${i.code}" ${i.enabled ? 'checked' : ''}>${esc(display(i))}${i.code === p.current ? '<span class="now">actief</span>' : ''}</label></div>`).join('');
@@ -153,6 +164,13 @@ $('inputs').addEventListener('change', () => {
 $('editInput').addEventListener('change', () => { selected = Number($('editInput').value); showInput(); });
 $('inputName').addEventListener('change', () => send({ code: selected, inputName: $('inputName').value }));
 $('libBtn').addEventListener('click', openLibrary);
+$('detach').addEventListener('change', () => {
+  const on = $('detach').checked;
+  // Default to the input the monitor is on now, since that is normally this PC.
+  const pc = Number($('pcInput').value) > 0 ? Number($('pcInput').value) : (state && state.current > 0 ? state.current : -1);
+  send(on ? { detach: true, pcInput: pc } : { detach: false });
+});
+$('pcInput').addEventListener('change', () => send({ pcInput: Number($('pcInput').value) }));
 $('iconClear').addEventListener('click', () => send({ code: selected, inputIcon: '' }));
 $('iconFile').addEventListener('change', e => {
   const raw = e.target.value;

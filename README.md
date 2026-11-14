@@ -38,6 +38,8 @@ Vink in het menu alleen inputs aan waar iets op is aangesloten. Een monitor geef
 
 LG-monitors negeren het standaardcommando voor inputs. Op een pc met een NVIDIA-videokaart stuurt de plugin daarom LG's eigen commando via de videokaart. Een LG-monitor meldt niet welke input actief is; de knop toont de input waar hij zelf het laatst naartoe wisselde. Andere merken, zoals Alienware, werken zoals altijd. De modelnaam komt uit de EDID van de monitor, omdat sommige monitors (waaronder LG) via DDC/CI een verkeerde modelnaam doorgeven.
 
+Optie "Loskoppelen als het niet op deze pc staat" (standaard uit, per knop): wisselt de monitor naar een andere input dan die van deze pc, zoals een console, dan haalt Windows hem uit de schermindeling, zodat de muis direct naar het volgende scherm gaat. Terug naar de pc zet de indeling terug. Lukt dat ooit niet, dan zet Windows + P → Uitbreiden alles terug.
+
 Per input kun je een eigen icoon kiezen. De plugin levert een PC- en een PS5-icoon mee; die staan in de Bibliotheek onder "Monitor".
 
 ## F1
