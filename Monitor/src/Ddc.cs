@@ -28,6 +28,36 @@ public static class Ddc
     {
         try { if (File.Exists(CachePath)) Known = JsonSerializer.Deserialize<Dictionary<string, MonitorCaps>>(File.ReadAllText(CachePath)) ?? new(); }
         catch (Exception e) { Log.Write("cache: " + e.Message); }
+        // Older caches hold the model from the capabilities string; prefer the EDID name where there is one.
+        bool fixedAny = false;
+        foreach (var (key, caps) in Known)
+            if (EdidName(key) is { } name && name != caps.Model) { caps.Model = name; fixedAny = true; }
+        if (fixedAny) SaveCache();
+    }
+
+    /// <summary>
+    /// The monitor name from its EDID. Some firmware (LG among others) reports a wrong model in the
+    /// DDC/CI capabilities string, while the EDID name matches the monitor.
+    /// </summary>
+    public static string? EdidName(string key)
+    {
+        // Key: \\?\DISPLAY#GSM5C7C#5&24873784&0&UID4355#{guid} -> Enum\DISPLAY\GSM5C7C\5&24873784&0&UID4355
+        var parts = key.Split('#');
+        if (parts.Length < 3) return null;
+        try
+        {
+            using var reg = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                $@"SYSTEM\CurrentControlSet\Enum\DISPLAY\{parts[1]}\{parts[2]}\Device Parameters");
+            if (reg?.GetValue("EDID") is not byte[] edid || edid.Length < 128) return null;
+            for (int d = 54; d + 18 <= 126; d += 18)
+                if (edid[d] == 0 && edid[d + 1] == 0 && edid[d + 3] == 0xFC)
+                {
+                    var name = Encoding.ASCII.GetString(edid, d + 5, 13).Split('\n')[0].Trim();
+                    return name.Length > 0 ? name : null;
+                }
+        }
+        catch (Exception e) { Log.Write("edid: " + e.Message); }
+        return null;
     }
 
     private static void SaveCache()
@@ -123,7 +153,8 @@ public static class Ddc
                 .Where(v => v > 0).Distinct().ToList();
             if (inputs.Count == 0) continue;
             var model = Regex.Match(text, @"model\(([^)]*)\)").Groups[1].Value;
-            return new MonitorCaps { Model = model.Length > 0 ? model : m.Description, Display = m.Display, Inputs = inputs };
+            var edidName = EdidName(m.Key);
+            return new MonitorCaps { Model = edidName ?? (model.Length > 0 ? model : m.Description), Display = m.Display, Inputs = inputs };
         }
         return null;
     }
@@ -143,6 +174,8 @@ public static class Ddc
 
     private static int ReadInput(OpenMonitor m)
     {
+        // LG always reports the same input over 0x60, so trust the last input this plugin switched to.
+        if (LgInput.IsLg(m.Key) && LgInput.Last.TryGetValue(m.Key, out int last)) return last;
         for (int attempt = 0; attempt < 2; attempt++)
         {
             if (GetVCPFeatureAndVCPFeatureReply(m.Handle, InputSelect, IntPtr.Zero, out uint current, out _))
@@ -155,7 +188,13 @@ public static class Ddc
     public static bool SetInput(string key, int code) => WithMonitors(list =>
     {
         var m = list.FirstOrDefault(x => x.Key == key);
-        return m != null && SetVCPFeature(m.Handle, InputSelect, (uint)code);
+        if (m == null) return false;
+        if (LgInput.IsLg(key) && LgInput.TrySet(m.Display, code))
+        {
+            LgInput.Last[key] = code;
+            return true;
+        }
+        return SetVCPFeature(m.Handle, InputSelect, (uint)code);
     });
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
