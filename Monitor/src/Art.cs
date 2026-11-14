@@ -128,6 +128,14 @@ public static class Art
     public static JsonArray IconLibrary()
     {
         var result = new JsonArray();
+        // The plugin's own icons (such as PC and PS5) come first; the program runs from the plugin's bin folder.
+        var own = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "icons"));
+        if (Directory.Exists(own))
+        {
+            var icons = new JsonArray();
+            foreach (var f in Images(own)) icons.Add(Icon(Path.GetFileNameWithoutExtension(f).ToUpperInvariant(), Path.GetFileName(f)));
+            if (icons.Count > 0) result.Add(new JsonObject { ["name"] = "Monitor", ["dir"] = own, ["icons"] = icons });
+        }
         var data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Elgato", "StreamDeck");
         var program = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Elgato", "StreamDeck");
         foreach (var root in new[] { Path.Combine(data, "IconPacks"), Path.Combine(data, "Plugins", "com.elgato.keycreator.sdPlugin", "static") })
