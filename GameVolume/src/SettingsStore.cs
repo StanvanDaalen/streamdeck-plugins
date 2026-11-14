@@ -43,6 +43,9 @@ public static class SettingsStore
     private static string LogPath => Path.Combine(Dir, LogFile);
     private static readonly object LogLock = new();
     private static bool _dirty;
+    private static DateTime _knownTime;
+    /// <summary>Game overrides this process changed since its last save; other overrides follow the file on disk.</summary>
+    private static readonly HashSet<string> TouchedOverrides = new();
 
     /// <summary>Each plugin process keeps its own log; set this before calling Load.</summary>
     public static string LogFile { get; set; } = "plugin.log";
@@ -63,24 +66,49 @@ public static class SettingsStore
         try
         {
             if (File.Exists(FilePath))
+            {
+                _knownTime = FileTime;
                 Current = JsonSerializer.Deserialize<GlobalSettings>(File.ReadAllText(FilePath)) ?? new();
+            }
         }
         catch (Exception e) { Log("settings load: " + e.Message); }
     }
 
     public static void MarkDirty() => _dirty = true;
 
-    public static void SaveIfDirty()
+    /// <summary>Marks a game's name or image as changed here, so a save keeps this version over the one on disk.</summary>
+    public static void TouchOverride(string id) { TouchedOverrides.Add(id); _dirty = true; }
+
+    /// <summary>
+    /// Saves pending changes. Audio and Launcher share this file, so names and images set in the other plugin
+    /// are taken over first instead of being overwritten. Returns true when it loaded changes from the other plugin.
+    /// </summary>
+    public static bool SaveIfDirty()
     {
-        if (!_dirty) return;
+        bool changedOnDisk = File.Exists(FilePath) && FileTime != _knownTime;
+        if (!_dirty)
+        {
+            if (changedOnDisk) Reload();
+            return changedOnDisk;
+        }
         _dirty = false;
         try
         {
+            if (changedOnDisk && JsonSerializer.Deserialize<GlobalSettings>(File.ReadAllText(FilePath)) is { } disk)
+            {
+                foreach (var id in Current.Overrides.Keys.Where(k => !TouchedOverrides.Contains(k) && !disk.Overrides.ContainsKey(k)).ToList())
+                    Current.Overrides.Remove(id);
+                foreach (var (id, o) in disk.Overrides)
+                    if (!TouchedOverrides.Contains(id)) Current.Overrides[id] = o;
+            }
+            TouchedOverrides.Clear();
             var tmp = FilePath + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true }));
             File.Move(tmp, FilePath, true);
+            _knownTime = FileTime;
         }
         catch (Exception e) { Log("settings save: " + e.Message); }
+        return changedOnDisk;
     }
 
     public static void Log(string msg)

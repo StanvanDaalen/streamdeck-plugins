@@ -18,7 +18,7 @@ public sealed class RunningGame
 public sealed class GameLibrary
 {
     private static readonly Regex NotAGame = new(
-        @"crash|report|launcher|bootstrap|easyanticheat|beservice|battleye|webhelper|cefprocess|redist|setup|unins|install|updater|overlay",
+        @"crash|report|launcher|bootstrap|easyanticheat|_eac|eac_|beservice|battleye|webhelper|cefprocess|redist|setup|unins|install|updater|overlay",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly Dictionary<string, string> KnownNames = new(StringComparer.OrdinalIgnoreCase)
@@ -66,6 +66,9 @@ public sealed class GameLibrary
         }
         catch (Exception ex) { SettingsStore.Log("guess exe: " + ex.Message); return null; }
     }
+
+    /// <summary>True for helper programs such as launchers and anti-cheat, which are never the game itself.</summary>
+    public static bool IsHelper(string path) => NotAGame.IsMatch(Path.GetFileNameWithoutExtension(path));
 
     private static bool Hidden(GameEntry e) => SettingsStore.Current.HiddenGames.Contains(e.Id);
 

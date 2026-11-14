@@ -28,6 +28,8 @@ Games worden automatisch gevonden via Steam, Epic, Xbox en Lunar Client. Andere 
 
 Klik om te minimaliseren, weer te geven of te starten. Vasthouden sluit af.
 
+Bij de vaste game-knop kies je onder Logo een eigen afbeelding (PNG, JPG of SVG) voor die game. De plugin bewaart een kopie in %APPDATA%\StanGameVolume\logos, dus het logo blijft staan als je het originele bestand verplaatst. Het logo geldt voor alle knoppen en dials van die game.
+
 ## Monitor
 
 - **Monitor Input**: wissel met een knop tussen de inputs van een monitor. De monitor moet DDC/CI ondersteunen.

@@ -34,13 +34,15 @@ public sealed class ArtworkService
 
     public void Invalidate(string id) => _cache.Remove(id);
 
+    public void Clear() => _cache.Clear();
+
     public Art ForGame(RunningGame g)
     {
         if (_cache.TryGetValue(g.Entry.Id, out var a)) return a;
         Bitmap? custom = null;
         var img = SettingsStore.Current.Overrides.GetValueOrDefault(g.Entry.Id)?.Image;
         if (!string.IsNullOrEmpty(img) && File.Exists(img))
-            try { custom = new Bitmap(img); } catch (Exception e) { SettingsStore.Log("custom image: " + e.Message); }
+            try { custom = LoadImageFile(img); } catch (Exception e) { SettingsStore.Log("custom image: " + e.Message); }
 
         using var icon = custom != null ? Cover(custom, 96, 96) : LoadIcon(g.Entry.IconExe ?? g.ExePath);
         Bitmap? wide = custom;

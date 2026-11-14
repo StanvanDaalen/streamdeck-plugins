@@ -275,7 +275,12 @@ internal sealed class Plugin
         }
 
         UpdateDuck();
-        SettingsStore.SaveIfDirty();
+        if (SettingsStore.SaveIfDirty())
+        {
+            // Names or images set in the Launcher plugin
+            _art.Clear();
+            foreach (var x in _contexts.Values) { x.ArtId = null; x.KeyHash = null; x.LastJson = null; }
+        }
         await RenderAllAsync();
     }
 
@@ -855,6 +860,7 @@ internal sealed class Plugin
     private GameOverride Override(string id)
     {
         if (!G.Overrides.TryGetValue(id, out var o)) G.Overrides[id] = o = new GameOverride();
+        SettingsStore.TouchOverride(id);
         return o;
     }
 

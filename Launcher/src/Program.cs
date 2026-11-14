@@ -312,7 +312,8 @@ internal static class Program
 
     private static string? KnownExe(GameEntry e)
     {
-        if (_gameExes.TryGetValue(e.Id, out var known)) return known;
+        // A path remembered by an older version can be an anti-cheat helper, whose icon is not the game's.
+        if (_gameExes.TryGetValue(e.Id, out var known) && !GameLibrary.IsHelper(known)) return known;
         var guess = GameLibrary.GuessExe(e);
         if (guess != null)
         {
@@ -463,9 +464,40 @@ internal static class Program
             if (p[field] is { } value) { c.Settings[field] = value.DeepClone(); changed = true; }
         if (changed)
             await Send(new JsonObject { ["event"] = "setSettings", ["context"] = c.Id, ["payload"] = c.Settings.DeepClone() });
+
+        // The logo is stored per game in the shared game library, so every button and the Audio dials show it too.
+        if (p["customImage"] is JsonValue image && Str(c, "gameId", "") is { Length: > 0 } gameId)
+        {
+            if (!G.Overrides.TryGetValue(gameId, out var o)) G.Overrides[gameId] = o = new GameOverride();
+            var path = image.GetValue<string>();
+            o.Image = path.Length > 0 ? KeepLogo(gameId, path) : null;
+            SettingsStore.TouchOverride(gameId);
+            SettingsStore.SaveIfDirty();
+            SettingsStore.Reload();
+            _settingsTime = SettingsStore.FileTime;
+            _art = new ArtworkService(Library);
+            foreach (var x in Contexts.Values) x.Hash = null;
+            foreach (var x in Contexts.Values.ToList()) await Render(x);
+        }
         c.Hash = null;
         await Render(c);
         await SendPi(c);
+    }
+
+    /// <summary>Copies a chosen logo next to the settings, so it stays when the original file is moved or deleted.</summary>
+    private static string KeepLogo(string gameId, string source)
+    {
+        try
+        {
+            var dir = Path.Combine(SettingsStore.Dir, "logos");
+            Directory.CreateDirectory(dir);
+            var safe = string.Concat(gameId.Select(ch => char.IsLetterOrDigit(ch) ? ch : '_'));
+            foreach (var old in Directory.EnumerateFiles(dir, safe + ".*")) File.Delete(old);
+            var target = Path.Combine(dir, safe + Path.GetExtension(source).ToLowerInvariant());
+            File.Copy(source, target, true);
+            return target;
+        }
+        catch (Exception e) { SettingsStore.Log("logo copy: " + e.Message); return source; }
     }
 
     private static async Task SendPi(Ctx c)
@@ -491,6 +523,7 @@ internal static class Program
             ["payload"] = new JsonObject
             {
                 ["app"] = Str(c, "app", ""), ["gameId"] = Str(c, "gameId", ""),
+                ["customImage"] = G.Overrides.GetValueOrDefault(Str(c, "gameId", ""))?.Image ?? "",
                 ["showPlaytime"] = Bool(c, "showPlaytime", true),
                 ["showName"] = Bool(c, "showName", true),
                 ["showNamePlaying"] = Bool(c, "showNamePlaying", true),

@@ -13,12 +13,18 @@
   .check input { margin: 0; flex: none; }
   .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
   .hide { display: none !important; }
+  .val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn, button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 2px 8px; font: inherit; cursor: pointer; margin-left: 4px; }
+  #logoFile { display: none; }
 </style>
 </head>
 <body>
   <div id="target" class="hide">
     <h4 class="first" id="targetTitle">Game</h4>
     <div class="row hide" id="gameRow"><span class="lbl">Game</span><select id="gameId"></select></div>
+    <div class="row hide" id="logoRow"><span class="lbl">Logo</span><span class="val" id="logoName">Automatisch</span>
+      <label class="btn" for="logoFile">Bestand</label><button id="logoClear">Wis</button>
+      <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml"></div>
     <div class="row hide" id="appRow"><span class="lbl">App</span><select id="app"></select></div>
   </div>
 
@@ -68,6 +74,8 @@ function apply(p) {
   $('gameId').innerHTML = '<option value="">Kies een game…</option>' + p.games.map(g =>
     `<option value="${esc(g.id)}">${esc(g.name)}${seen[g.original] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}</option>`).join('');
   $('gameId').value = p.gameId;
+  $('logoRow').classList.toggle('hide', !actionId.endsWith('.fixedgame') || !p.gameId);
+  $('logoName').textContent = p.customImage ? p.customImage.split(/[\\/]/).pop() : 'Automatisch';
   const apps = [...new Set([...p.apps, ...(p.app ? [p.app] : [])])];
   $('app').innerHTML = '<option value="">Kies een app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
   $('app').value = p.app;
@@ -76,6 +84,16 @@ function apply(p) {
 
 $('gameId').addEventListener('change', () => send({ gameId: $('gameId').value }));
 $('app').addEventListener('change', () => send({ app: $('app').value }));
+$('logoClear').addEventListener('click', () => send({ customImage: '' }));
+$('logoFile').addEventListener('change', e => {
+  const raw = e.target.value;
+  if (raw) {
+    let path = raw.replace(/^C:\\fakepath\\/, '');
+    try { path = decodeURIComponent(path); } catch {}
+    send({ customImage: path.replace(/\//g, '\\') });
+  }
+  e.target.value = '';
+});
 for (const k of ['showName', 'showNamePlaying', 'showPlaytime'])
   $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 </script>
