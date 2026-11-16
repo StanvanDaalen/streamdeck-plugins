@@ -26,6 +26,7 @@ internal static class Program
     {
         string? Arg(string n) { int i = Array.IndexOf(args, n); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         if (Arg("--assets") is { } assets) { Art.WriteAssets(assets); return 0; }
+        if (Arg("--preview") is { } preview) { Art.WritePreviews(preview); return 0; }
         Log.Reset();
         Ddc.LoadCache();
         if (Arg("--dump") is { } dump) { Dump(dump); return 0; }
@@ -129,6 +130,16 @@ internal static class Program
         (c.Settings[map] as JsonObject)?[code.ToString()]?.GetValue<string>() is { Length: > 0 } s ? s : null;
 
     private static string InputName(Ctx c, int code) => Mapped(c, "names", code) ?? Ddc.DefaultInputName(code);
+
+    private static string InputDevice(Ctx c, int code)
+    {
+        string configured = Mapped(c, "devices", code) ?? "auto";
+        if (configured != "auto") return configured is "pc" or "ps5" ? configured : "none";
+        string name = InputName(c, code);
+        if (System.Text.RegularExpressions.Regex.IsMatch(name, @"(^|\W)(ps\s*5|p5|playstation|console)(\W|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "ps5";
+        if (System.Text.RegularExpressions.Regex.IsMatch(name, @"(^|\W)(pc|computer|desktop)(\W|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "pc";
+        return "none";
+    }
 
     /// <summary>Inputs the button cycles through. Until the user ticks some, only the current one counts, so a press can never land on an empty input.</summary>
     private static List<int> Enabled(Ctx c, string key)
@@ -255,20 +266,24 @@ internal static class Program
         bool online = chosen && _connected.Contains(key);
         int cur = Current.GetValueOrDefault(key, -1);
         bool showText = Bool(c, "showText", true);
+        string style = Str(c, "style", "basic");
+        if (style is not ("basic" or "tile" or "icon")) style = "basic";
 
-        string? icon = online && cur > 0 ? Mapped(c, "icons", cur) : null;
+        string? icon = cur > 0 ? Mapped(c, "icons", cur) : null;
+        string device = cur > 0 ? InputDevice(c, cur) : "none";
+        string inputName = cur > 0 ? InputName(c, cur) : "Monitor";
         var ownName = MonitorName(c, key);
         string line1 = !chosen ? "Kies monitor" : ownName.Length > 0 ? ownName : Ddc.Known.GetValueOrDefault(key)?.Model ?? "Monitor";
         string line2 = !chosen ? "" : !online ? "Niet verbonden" : cur > 0 ? InputName(c, cur) : "";
         if (!showText && online) (line1, line2) = ("", "");
 
-        var hash = $"{icon}|{line1}|{line2}|{online}";
+        var hash = $"{icon}|{device}|{style}|{line1}|{line2}|{inputName}|{online}";
         if (hash == c.Hash) return;
         c.Hash = hash;
         await Send(new JsonObject
         {
             ["event"] = "setImage", ["context"] = c.Id,
-            ["payload"] = new JsonObject { ["image"] = Art.Key(icon, line1, line2, online), ["target"] = 0 },
+            ["payload"] = new JsonObject { ["image"] = Art.Key(icon, device, style, line1, line2, inputName, online), ["target"] = 0 },
         });
     }
 
@@ -282,7 +297,7 @@ internal static class Program
         if (p["piLog"] != null) { Log.Write("pi file: " + p["piLog"]); return; }
 
         bool changed = false;
-        foreach (var field in new[] { "monitor", "previous", "showText", "enabled" })
+        foreach (var field in new[] { "monitor", "previous", "showText", "style", "enabled" })
             if (p[field] is { } value) { c.Settings[field] = value.DeepClone(); changed = true; }
         if (p["monitor"] != null) c.Settings.Remove("enabled");
 
@@ -308,6 +323,7 @@ internal static class Program
         }
         if (p["inputName"] is { } name) SetMapped("names", name.GetValue<string>().Trim());
         if (p["inputIcon"] is { } path) SetMapped("icons", path.GetValue<string>());
+        if (p["inputDevice"] is { } device) SetMapped("devices", device.GetValue<string>() == "auto" ? "" : device.GetValue<string>());
 
         if (changed)
             await Send(new JsonObject { ["event"] = "setSettings", ["context"] = c.Id, ["payload"] = c.Settings.DeepClone() });
@@ -335,7 +351,7 @@ internal static class Program
                 inputs.Add(new JsonObject
                 {
                     ["code"] = code, ["default"] = Ddc.DefaultInputName(code), ["name"] = Mapped(c, "names", code) ?? "",
-                    ["icon"] = Mapped(c, "icons", code) ?? "", ["enabled"] = enabled.Contains(code),
+                    ["icon"] = Mapped(c, "icons", code) ?? "", ["device"] = Mapped(c, "devices", code) ?? "auto", ["enabled"] = enabled.Contains(code),
                 });
         }
         await Send(new JsonObject
@@ -347,6 +363,7 @@ internal static class Program
                 ["current"] = Current.GetValueOrDefault(key, -1),
                 ["previous"] = Str(c, "previous", "double"),
                 ["showText"] = Bool(c, "showText", true),
+                ["style"] = Str(c, "style", "basic"),
                 ["monitorName"] = MonitorName(c, key),
                 ["model"] = Ddc.Known.GetValueOrDefault(key)?.Model ?? "",
             },
