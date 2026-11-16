@@ -52,6 +52,10 @@
     </select></div>
     <div class="row" id="showTextRow"><label class="check"><input type="checkbox" id="showText">Tekst tonen op de knop</label></div>
 
+    <h4>PlayStation</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="keepAwake">Schermen wakker houden als de PS5 in beeld is</label></div>
+    <p class="muted">De pc en de andere schermen gaan dan niet in slaap, zodat OBS en Discord blijven doorlopen.</p>
+
     <h4>Bediening</h4>
     <div class="row"><span class="lbl">Volgende input</span><span>Klik</span></div>
     <div class="row"><span class="lbl">Vorige input</span>
@@ -96,6 +100,7 @@ function apply(p) {
   $('previous').value = p.previous;
   $('style').value = p.style;
   $('showText').checked = p.showText;
+  $('keepAwake').checked = p.keepAwake;
   $('showTextRow').classList.toggle('hide', p.style !== 'basic');
 
   $('inputs').innerHTML = p.inputs.map(i => `<div class="row"><label class="check">
@@ -157,6 +162,7 @@ $('monitorName').addEventListener('change', () => send({ monitorName: $('monitor
 $('previous').addEventListener('change', () => send({ previous: $('previous').value }));
 $('style').addEventListener('change', () => send({ style: $('style').value }));
 $('showText').addEventListener('change', () => send({ showText: $('showText').checked }));
+$('keepAwake').addEventListener('change', () => send({ keepAwake: $('keepAwake').checked }));
 $('inputs').addEventListener('change', () => {
   send({ enabled: [...document.querySelectorAll('#inputs input:checked')].map(c => Number(c.dataset.code)) });
 });
