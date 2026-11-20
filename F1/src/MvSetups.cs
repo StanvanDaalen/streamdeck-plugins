@@ -144,6 +144,7 @@ public static class MvSetups
             {
                 var r = (string?)await Cdp.EvalAsync(page, js, awaitPromise: true, timeoutSeconds: 60);
                 if (r is "ok" or "no-setup") return r;
+                if (r != null && r.StartsWith("error:")) { Store.Log("MultiViewer weigerde de setup: " + r); return r; }
             }
             catch (OperationCanceledException) { return "ok"; } // still opening windows; that carries on
             catch (Exception e) { Store.Log("mv restore: " + e.Message); }
@@ -176,7 +177,8 @@ public static class MvSetups
             if (props) break;
           }
           if (!props) return 'no-session';
-          const payload = { f1: { sessionInfo: props.sessionInfo }, f1tv: { contentId: props.contentId, streams: props.streams } };
+          // MultiViewer 2.17+ checks this payload and requires f1.isLive (a boolean, from the same session page).
+          const payload = { f1: { sessionInfo: props.sessionInfo, isLive: props.isLive === true }, f1tv: { contentId: props.contentId, streams: props.streams } };
 
           const copy = JSON.parse(JSON.stringify(setup));
           if (rest.length) {
@@ -191,7 +193,8 @@ public static class MvSetups
               w.state.streamData = { ...(w.state.streamData || {}), title: s.title, channelId: s.channelId };
             });
           }
-          await window.f1mv.setupManager.restoreSetup(copy, payload);
+          try { await window.f1mv.setupManager.restoreSetup(copy, payload); }
+          catch (e) { return 'error: ' + ((e && e.message) || e); } // e.g. MultiViewer changed what it expects
           return 'ok';
         })()
         """;
