@@ -45,6 +45,13 @@ internal static class Program
         string? Arg(string n) { int i = Array.IndexOf(args, n); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         if (Arg("--assets") is { } assets) { Art.WriteAssets(assets); return 0; }
         if (Arg("--preview") is { } preview) { Art.WritePreviews(preview); return 0; }
+        if (Arg("--desktop-info") is { } info)   // read-only: main display + desktop icon positions
+        {
+            var icons = Primary.SaveIcons();
+            File.WriteAllText(info, $"main: {Primary.Current()}\nicons: {(icons == null ? "auto-arrange or not found" : icons.Count.ToString())}\n" +
+                string.Join("\n", (icons ?? new()).Take(8).Select(k => $"  {k.Key} @ {string.Join(" ", k.Value.Select(p => $"{p.X},{p.Y}"))}")));
+            return 0;
+        }
         Log.Reset();
         Ddc.LoadCache();
         LoadDetached();
@@ -116,7 +123,7 @@ internal static class Program
     {
         Ddc.RefreshCaps();
         // Only monitors with a placed button are read, to keep DDC traffic low.
-        var used = Contexts.Values.Concat(Remembered.Values.Where(c => Bool(c, "keepAwake", true)))
+        var used = Contexts.Values.Concat(Remembered.Values.Where(c => Bool(c, "keepAwake", true) || Str(c, "primaryOnPs5", "").Length > 0))
             .Select(c => Str(c, "monitor", "")).Where(k => k.Length > 0).Distinct().ToList();
         var read = Ddc.ReadCurrent(used);
         _connected = read.Keys.ToHashSet();
@@ -187,11 +194,78 @@ internal static class Program
             Bool(c, "keepAwake", true) && Str(c, "monitor", "") is { Length: > 0 } key && _connected.Contains(key) &&
             Current.TryGetValue(key, out var cur) && InputDevice(c, cur) == "ps5");
         _wantAwake = awake;
+        ApplyPrimary();
         if (awake != _awake || !_awakeLogged)
             Log.Write($"keep awake: {(awake ? "on (PlayStation input)" : "off")} | buttons {Remembered.Count} | " +
                       string.Join(", ", Remembered.Values.Select(c => Str(c, "monitor", "") is { Length: > 0 } k && Current.TryGetValue(k, out var v)
                           ? $"{InputName(c, v)}={InputDevice(c, v)}" : "?")));
         _awake = awake; _awakeLogged = true;
+    }
+
+    private static Primary.State? _primary;
+    private static DateTime _primaryQuietUntil;
+
+    /// <summary>
+    /// While a button with "main display during PS5" shows a PlayStation input, that other monitor becomes the Windows
+    /// main display (system tray); back on the PC input the original main display returns. Desktop icons are put back
+    /// where they were each time. The state is kept on disk so a plugin restart can still switch back.
+    /// </summary>
+    private static void ApplyPrimary()
+    {
+        _primary ??= Primary.Load();
+        if (DateTime.UtcNow < _primaryQuietUntil) return;   // let Windows settle after a switch
+        // Only buttons with a fresh, successful reading count. "PS5" switches to the target; switching back needs a
+        // positive non-PS5 reading, so a monitor that briefly drops out of one poll can never make the screens flap.
+        var readings = Remembered.Values
+            .Where(c => Str(c, "primaryOnPs5", "").Length > 0 && Str(c, "monitor", "") is { Length: > 0 } key &&
+                        _connected.Contains(key) && Current.TryGetValue(key, out _))
+            .Select(c => (Target: Str(c, "primaryOnPs5", ""), Ps5: InputDevice(c, Current[Str(c, "monitor", "")]) == "ps5"))
+            .ToList();
+        string want = readings.FirstOrDefault(r => r.Ps5).Target ?? "";
+        bool backOnPc = readings.Count > 0 && readings.All(r => !r.Ps5);
+        var s = _primary;
+
+        if (want.Length > 0)
+        {
+            if (s.Applied == want && string.Equals(Primary.Current(), want, StringComparison.OrdinalIgnoreCase)) return;
+            if (!Primary.IsActive(want)) return;                       // target off or disconnected: try again later
+            if (s.Applied.Length == 0)
+            {
+                // Recovery information first: no switch without a known original and a safely written state file.
+                var original = Primary.Current();
+                if (original.Length == 0 || string.Equals(original, want, StringComparison.OrdinalIgnoreCase)) return;
+                s.Original = original;
+                s.Icons = Primary.Pack(Primary.SaveIcons());
+            }
+            s.Applied = want;
+            if (!Primary.Save(s)) { s.Applied = ""; Log.Write("primary: state not saved, not switching"); return; }
+            _primaryQuietUntil = DateTime.UtcNow.AddSeconds(8);
+            if (Primary.MakeMain(want)) RestoreIconsSoon(s.Icons);    // on failure Applied stays set, so PC still restores
+        }
+        else if (backOnPc && s.Applied.Length > 0)
+        {
+            if (s.Original.Length > 0 && !Primary.IsActive(s.Original)) return;   // original screen off: keep state, retry
+            _primaryQuietUntil = DateTime.UtcNow.AddSeconds(8);
+            if (s.Original.Length > 0 && !Primary.MakeMain(s.Original)) return;
+            var icons = s.Icons;
+            s.Applied = ""; s.Original = ""; s.Icons = new();
+            if (Primary.Save(s)) RestoreIconsSoon(icons);
+        }
+    }
+
+    // Explorer re-lays the desktop a moment after the main display changes; put the icons back twice.
+    private static void RestoreIconsSoon(Dictionary<string, int[]> packed)
+    {
+        var icons = Primary.Unpack(packed);
+        if (icons.Count == 0) return;
+        _ = Task.Run(async () =>
+        {
+            foreach (var wait in new[] { 2500, 4000 })
+            {
+                await Task.Delay(wait);
+                try { Primary.RestoreIcons(icons); } catch (Exception e) { Log.Write("icons: " + e.Message); }
+            }
+        });
     }
 
     private static string Str(Ctx c, string key, string fallback) =>
@@ -424,7 +498,7 @@ internal static class Program
         if (p["piLog"] != null) { Log.Write("pi file: " + p["piLog"]); return; }
 
         bool changed = false;
-        foreach (var field in new[] { "monitor", "previous", "showText", "enabled", "detach", "pcInput", "style", "keepAwake" })
+        foreach (var field in new[] { "monitor", "previous", "showText", "enabled", "detach", "pcInput", "style", "keepAwake", "primaryOnPs5" })
             if (p[field] is { } value) { c.Settings[field] = value.DeepClone(); changed = true; }
         if (p["monitor"] != null) c.Settings.Remove("enabled");
 
@@ -494,6 +568,7 @@ internal static class Program
                 ["pcInput"] = Int(c, "pcInput", -1),
                 ["style"] = Str(c, "style", "basic"),
                 ["keepAwake"] = Bool(c, "keepAwake", true),
+                ["primaryOnPs5"] = Str(c, "primaryOnPs5", ""),
                 ["monitorName"] = MonitorName(c, key),
                 ["model"] = Ddc.Known.GetValueOrDefault(key)?.Model ?? "",
             },

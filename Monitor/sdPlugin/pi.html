@@ -55,6 +55,8 @@
     <h4>PlayStation</h4>
     <div class="row"><label class="check"><input type="checkbox" id="keepAwake">Keep displays awake while the PS5 is on screen</label></div>
     <p class="muted">The PC and the other displays then stay awake, so OBS and Discord keep running.</p>
+    <div class="row"><span class="lbl">Main display</span><select id="primaryOnPs5"></select></div>
+    <p class="muted">Which display becomes the main display (with the system tray) while the PS5 is on screen. Switching back to the PC restores the old main display; desktop icons stay where they are.</p>
 
     <h4>Controls</h4>
     <div class="row"><span class="lbl">Next input</span><span>Click</span></div>
@@ -112,6 +114,9 @@ function apply(p) {
   $('pcRow').classList.toggle('hide', !p.detach);
   $('detachHint').classList.toggle('hide', !p.detach);
   $('keepAwake').checked = p.keepAwake;
+  $('primaryOnPs5').innerHTML = '<option value="">Keep current</option>' +
+    p.monitors.filter(m => m.key !== p.monitor).map(m => `<option value="${esc(m.key)}">${esc(m.label)}</option>`).join('');
+  $('primaryOnPs5').value = p.primaryOnPs5 || '';
   $('showTextRow').classList.toggle('hide', p.style !== 'basic');
 
   $('inputs').innerHTML = p.inputs.map(i => `<div class="row"><label class="check">
@@ -174,6 +179,7 @@ $('previous').addEventListener('change', () => send({ previous: $('previous').va
 $('style').addEventListener('change', () => send({ style: $('style').value }));
 $('showText').addEventListener('change', () => send({ showText: $('showText').checked }));
 $('keepAwake').addEventListener('change', () => send({ keepAwake: $('keepAwake').checked }));
+$('primaryOnPs5').addEventListener('change', () => send({ primaryOnPs5: $('primaryOnPs5').value }));
 $('inputs').addEventListener('change', () => {
   send({ enabled: [...document.querySelectorAll('#inputs input:checked')].map(c => Number(c.dataset.code)) });
 });
