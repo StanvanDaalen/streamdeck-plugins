@@ -504,6 +504,7 @@ internal sealed class Plugin
         if (!CheckApps()) return false;
         Taskbar.MainOnlyForF1(); // straight away and silently: the other taskbars just disappear
         Guid? desk = S.ModeDesktop == "current" ? null : await Desktops.GoToNamedAsync(S.DesktopName);
+        Wallpaper.BlackForF1(); // on F1's desktop, before any window opens
         await WithGate(async () =>
         {
             S.F1DesktopId = desk?.ToString();
@@ -544,6 +545,7 @@ internal sealed class Plugin
     private async Task<bool> CloseF1Async()
     {
         await WithGate(async () => { _closing = true; await _flags.BackToNormalAsync(); });
+        Wallpaper.RestoreAfterF1(); // while still on F1's desktop, before the apps close
         try
         {
             var closing = new List<Task>();
@@ -599,6 +601,7 @@ internal sealed class Plugin
                 if (!await StartF1Async(openLayout: false)) Store.Log($"layout {kind}: F1 Mode starten mislukt");
             }
             else if (S.ModeDesktop != "current") await Desktops.GoToNamedAsync(S.DesktopName);
+            Wallpaper.BlackForF1();
         }
         Job.Check();
         if (!await MvSetups.EnsureAsync()) { Store.Log($"layout {kind}: MultiViewer niet bereikbaar"); return false; }
@@ -916,6 +919,10 @@ internal sealed class Plugin
                 case "CloseMultiViewer": S.CloseMultiViewer = B(v); break;
                 case "CloseUf1": S.CloseUf1 = B(v); break;
                 case "CloseDesktop": S.CloseDesktop = B(v); break;
+                case "BlackWallpaper":
+                    S.BlackWallpaper = B(v);
+                    if (!S.BlackWallpaper) Wallpaper.RestoreAfterF1(); // switched off mid-session: wallpaper back
+                    break;
                 case "TaskbarMainOnly":
                     S.TaskbarMainOnly = B(v);
                     if (!S.TaskbarMainOnly) Taskbar.RestoreAfterF1(); // switched off mid-session: show it again

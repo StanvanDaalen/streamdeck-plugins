@@ -47,6 +47,11 @@ public sealed class F1Settings
     public bool TaskbarMainOnly { get; set; } = true;
     /// <summary>F1 took the taskbar off the other displays, so closing F1 puts it back.</summary>
     public bool TaskbarRestore { get; set; }
+    /// <summary>Plain black desktop background while F1 runs (own wallpaper back when F1 closes).</summary>
+    public bool BlackWallpaper { get; set; } = true;
+    /// <summary>Each monitor's wallpaper from before F1 made it black; null when F1 did not change it.</summary>
+    public List<WallpaperEntry>? WallpaperRestore { get; set; }
+    public uint? WallpaperColor { get; set; }
 
     // ---- Flags
     public bool ShowYellow { get; set; } = true;
