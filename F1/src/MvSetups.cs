@@ -214,9 +214,20 @@ public static class MvSetups
     public static async Task UpdateRestSlotsAsync(bool force = false)
     {
         if (!Active || !Store.Current.RestEnabled || (!force && !Store.Current.RestLive)) return;
+        // A swap opens a new player window, and Windows puts it on the desktop that is showing. So swap
+        // only while F1's own desktop shows; elsewhere the slot waits until you are back on it.
+        if (!OnF1Desktop()) return;
         if (!await Lock.WaitAsync(force ? 5000 : 0)) return; // a setup is being opened right now
         try { await UpdateRestSlotsCoreAsync(force); }
         finally { Lock.Release(); }
+    }
+
+    private static bool OnF1Desktop()
+    {
+        var s = Store.Current;
+        if (s.ModeDesktop == "current" || !Guid.TryParse(s.F1DesktopId, out var f1)) return true;
+        var (ids, current) = Desktops.Info();
+        return ids.Count == 0 || ids[current] == f1;
     }
 
     private static async Task UpdateRestSlotsCoreAsync(bool force)
@@ -242,7 +253,8 @@ public static class MvSetups
             swapped = true;
         }
         // A new player opens on top of everything; put the stacking right again.
-        if (swapped) { await Job.Delay(1000); await StackAsync(); }
+        // The new player lands a pixel or two off and with Windows' own edge: close the seams again.
+        if (swapped) { await Job.Delay(1000); await StackAsync(); Seams.Close(); }
     }
 
     /// <summary>Opening a setup and updating its slots never run at the same time.</summary>

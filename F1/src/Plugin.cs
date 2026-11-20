@@ -251,6 +251,12 @@ internal sealed class Plugin
             {
                 try { Apps.KeepBattleModeOnTop(); } catch (Exception e) { Store.Log("battle mode voor: " + e.Message); }
             }
+            // Windows' own edge and rounded corners off on every F1 window (new ones included), so the
+            // desktop never shows through as a thin line between them.
+            if (_ticks % 10 == 0 && _f1Running)
+            {
+                try { Seams.Flatten(); } catch (Exception e) { Store.Log("randen: " + e.Message); }
+            }
             await Task.Delay(state.Online ? 500 : 2000);
         }
     }
@@ -644,6 +650,7 @@ internal sealed class Plugin
 
         // Higher windows in front of lower ones, so overlapping edges hide the title bars below.
         Store.Log($"vensters op hoogte gestapeld: {await MvSetups.StackAsync()}");
+        Store.Log($"naden dicht: {Seams.Close()} vensters bijgezet");
 
         // Only now the viewer's layout: battle mode and crash detection read the driver list once,
         // when their window opens, so they must open after the timing is there.
@@ -687,6 +694,8 @@ internal sealed class Plugin
             Store.Log(battleOk ? "battle mode: coureurs gezet" : "battle mode: lukte niet");
             Apps.KeepBattleModeOnTop(); // in front of the flag display behind it
         }
+        // Once more now that the viewer's windows are there too (its main window joins F1 Live and MultiViewer).
+        Store.Log($"naden dicht (na layout): {Seams.Close()} vensters bijgezet");
         if (any | ok) _layoutOpen = kind;
         return any | ok;
     }
