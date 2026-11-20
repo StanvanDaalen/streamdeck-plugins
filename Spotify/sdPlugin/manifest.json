@@ -1,0 +1,31 @@
+{
+  "UUID": "com.stan.spotify",
+  "Name": "Better Spotify Dial",
+  "Author": "Stan",
+  "Description": "Spotify op de dial, zoals de officiële plugin, met zelf te kiezen acties voor klikken, dubbelklikken, driemaal klikken en vasthouden.",
+  "Version": "1.0.0.0",
+  "SDKVersion": 2,
+  "Icon": "imgs/plugin",
+  "Category": "Better Spotify Dial",
+  "CategoryIcon": "imgs/category",
+  "CodePathWin": "bin/StanSpotify.exe",
+  "PropertyInspectorPath": "pi.html",
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Software": { "MinimumVersion": "6.5" },
+  "ApplicationsToMonitor": { "windows": ["Spotify.exe"] },
+  "Actions": [
+    {
+      "UUID": "com.stan.spotify.player",
+      "Name": "Better Spotify Dial",
+      "Tooltip": "Nummer, hoes en voortgang. Draaien = volume of vorige/volgende. Klik, dubbelklik, 3x klikken en vasthouden stel je zelf in.",
+      "Icon": "imgs/action",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "imgs/action" }],
+      "Encoder": {
+        "layout": "layouts/player.json",
+        "Icon": "imgs/action",
+        "TriggerDescription": { "Rotate": "Volume / Skip", "Push": "1x, 2x, 3x, Hold", "Touch": "Play / Pause", "LongTouch": "Previous / Next" }
+      }
+    }
+  ]
+}

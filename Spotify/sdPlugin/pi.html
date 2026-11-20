@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  h4.first { margin-top: 2px; border-top: 0; padding-top: 0; }
+  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
+  .row > label:first-child, .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  .row select, .row input[type=text] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  .row input[type=range] { flex: 1; min-width: 0; }
+  .val { flex: 0 0 34px; text-align: right; color: #9a9a9a; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+  <h4 class="first">Draaien</h4>
+  <div class="row"><label for="preferVolume">Draaien</label>
+    <select id="preferVolume"><option value="1">Volume</option><option value="0">Vorige / volgende</option></select></div>
+  <div class="row"><label for="volumeStep">Volumestap</label>
+    <input type="range" id="volumeStep" min="1" max="10" step="1"><span class="val" id="stepVal"></span></div>
+  <p class="muted">Ingedrukt draaien doet het andere: bij Volume sla je dan nummers over, en andersom.</p>
+
+  <h4>Klikken</h4>
+  <div class="row"><label for="press1">1x klikken</label><select id="press1" class="action"></select></div>
+  <div class="row"><label for="press2">2x klikken</label><select id="press2" class="action"></select></div>
+  <div class="row"><label for="press3">3x klikken</label><select id="press3" class="action"></select></div>
+  <div class="row"><label for="pressHold">Vasthouden</label><select id="pressHold" class="action hold"></select></div>
+  <div class="row"><label for="touch">Tik op scherm</label><select id="touch" class="action"></select></div>
+  <div class="row hide" id="playlistRow"><label for="playlistUri">Playlist</label>
+    <input type="text" id="playlistUri" placeholder="Plak een Spotify-link"></div>
+  <p class="muted">Staat 2x of 3x klikken op Niets, dan reageert de knop sneller. Lang tikken op het scherm: links = vorige, rechts = volgende. Staat Spotify uit, dan start elke actie Spotify.</p>
+
+<script>
+const $ = id => document.getElementById(id);
+const ACTIONS = [
+  ['none', 'Niets'],
+  ['playPause', 'Afspelen / pauze'],
+  ['next', 'Volgend nummer'],
+  ['previous', 'Vorig nummer'],
+  ['volumeUp', 'Volume omhoog'],
+  ['volumeDown', 'Volume omlaag'],
+  ['mute', 'Dempen aan/uit'],
+  ['shuffle', 'Shuffle aan/uit'],
+  ['repeat', 'Herhalen wisselen'],
+  ['window', 'Spotify tonen / verbergen'],
+  ['playlist', 'Playlist openen'],
+];
+const DEFAULTS = { press1: 'playPause', press2: 'next', press3: 'previous', pressHold: 'window', touch: 'playPause',
+                   preferVolume: true, volumeStep: 5, playlistUri: '' };
+let ws, uuid, settings = {};
+
+for (const sel of document.querySelectorAll('select.action')) {
+  const list = sel.classList.contains('hold') ? [...ACTIONS, ['showVolume', 'Volume tonen']] : ACTIONS;
+  for (const [v, t] of list) sel.add(new Option(t, v));
+}
+
+function value(key) { return settings[key] ?? DEFAULTS[key]; }
+
+function render() {
+  for (const k of ['press1', 'press2', 'press3', 'pressHold', 'touch']) $(k).value = value(k);
+  $('preferVolume').value = value('preferVolume') ? '1' : '0';
+  $('volumeStep').value = value('volumeStep');
+  $('stepVal').textContent = value('volumeStep') + '%';
+  $('playlistUri').value = value('playlistUri');
+  const usesPlaylist = ['press1', 'press2', 'press3', 'pressHold', 'touch'].some(k => value(k) === 'playlist');
+  $('playlistRow').classList.toggle('hide', !usesPlaylist);
+}
+
+function save() {
+  ws?.send(JSON.stringify({ event: 'setSettings', context: uuid, payload: settings }));
+  render();
+}
+
+for (const k of ['press1', 'press2', 'press3', 'pressHold', 'touch'])
+  $(k).addEventListener('change', e => { settings[k] = e.target.value; save(); });
+$('preferVolume').addEventListener('change', e => { settings.preferVolume = e.target.value === '1'; save(); });
+$('volumeStep').addEventListener('input', e => { settings.volumeStep = Number(e.target.value); save(); });
+$('playlistUri').addEventListener('change', e => { settings.playlistUri = e.target.value.trim(); save(); });
+
+function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+  uuid = inUuid;
+  try { settings = JSON.parse(actionInfo).payload.settings || {}; } catch { settings = {}; }
+  render();
+  ws = new WebSocket('ws://127.0.0.1:' + port);
+  ws.onopen = () => ws.send(JSON.stringify({ event: registerEvent, uuid }));
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.event === 'didReceiveSettings') { settings = m.payload.settings || {}; render(); }
+  };
+}
+</script>
+</body>
+</html>

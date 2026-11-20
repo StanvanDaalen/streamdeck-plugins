@@ -5,7 +5,7 @@ Eigen plugins voor de Elgato Stream Deck op Windows. De F1-plugin werkt ook op L
 ## Installeren
 
 1. Open de [nieuwste release](https://github.com/StanvanDaalen/streamdeck-plugins/releases/latest).
-2. Download `Audio.streamDeckPlugin`, `Launcher.streamDeckPlugin`, `Monitor.streamDeckPlugin` en/of `F1.streamDeckPlugin`. Launcher gebruikt de gamebibliotheek van Audio voor eigen namen en afbeeldingen, maar werkt ook los.
+2. Download `Audio.streamDeckPlugin`, `Launcher.streamDeckPlugin`, `Monitor.streamDeckPlugin`, `BetterSpotifyDial.streamDeckPlugin` en/of `F1.streamDeckPlugin`. Launcher gebruikt de gamebibliotheek van Audio voor eigen namen en afbeeldingen, maar werkt ook los.
 3. Dubbelklik op het bestand en bevestig de installatie in Stream Deck.
 
 Op Linux (alleen F1): installeer [OpenDeck](https://github.com/nekename/OpenDeck), open daarin het tabblad **Plugins** en kies het gedownloade `F1.streamDeckPlugin`.
@@ -42,6 +42,17 @@ Optie "Loskoppelen als het niet op deze pc staat" (standaard uit, per knop): wis
 
 Per input kun je een eigen icoon kiezen. De plugin levert een PC- en een PS5-icoon mee; die staan in de Bibliotheek onder "Monitor".
 
+## Better Spotify Dial
+
+Spotify op een dial van de Stream Deck +, met hetzelfde scherm als de officiële Spotify-plugin: hoes, titel, artiest, tijd, voortgang, shuffle, afspelen en herhalen. Het verschil: je kiest zelf wat de dial doet.
+
+- **1x, 2x en 3x klikken, vasthouden en tikken op het scherm**: kies per gebaar afspelen/pauze, volgend of vorig nummer, volume, dempen, shuffle, herhalen, het Spotify-venster tonen of een playlist openen. Standaard: klik = afspelen/pauze, dubbelklik = volgend nummer, 3x klikken = vorig nummer, vasthouden = Spotify tonen of verbergen.
+- **Draaien**: volume van Spotify of vorige/volgende. Ingedrukt draaien doet het andere.
+- **Lang tikken op het scherm**: links vorig nummer, rechts volgend nummer.
+- Staat Spotify uit, dan start elke actie Spotify.
+
+Werkt met de Spotify-app voor Windows, zonder Spotify-account of inlog in de plugin: alles gaat via de mediabediening van Windows. Is de officiële Spotify-plugin van Elgato ook geïnstalleerd, dan gebruikt de dial diens icoontjes, zodat hij er precies zo uitziet.
+
 ## F1
 
 Voor F1 kijken met [MultiViewer](https://multiviewer.app/download) (nodig) en [Ultimate F1 Viewer](https://github.com/MRAJEKO/UF1-Viewer-with-F1MV/releases/latest) (optioneel). Ontbreekt een van de twee, dan meldt de plugin dat en biedt de downloadpagina aan.
@@ -73,4 +84,4 @@ Op Linux vindt de plugin MultiViewer als .deb/.rpm (`multiviewer`), als Flatpak 
 
 ## Zelf bouwen
 
-Vereist de .NET 10 SDK. Met `install.ps1` in `GameVolume`, `Launcher`, `Monitor` of `F1` bouw en installeer je een plugin op deze pc. Elke `install.ps1` zet de update daarna ook op GitHub met een nieuwe release, via `publish.ps1`. Met `package.ps1` maak je alleen de installatiebestanden in `dist\`.
+Vereist de .NET 10 SDK. Met `install.ps1` in `GameVolume`, `Launcher`, `Monitor`, `Spotify` of `F1` bouw en installeer je een plugin op deze pc. Elke `install.ps1` zet de update daarna ook op GitHub met een nieuwe release, via `publish.ps1`. Met `package.ps1` maak je alleen de installatiebestanden in `dist\`.
