@@ -25,21 +25,6 @@ public sealed class MvState
         ?? Players.FirstOrDefault(p => p.Main)
         ?? Players.FirstOrDefault();
 
-    /// <summary>
-    /// What the volume dial controls: only the broadcast feed (F1 LIVE, else the international feed or
-    /// another broadcast stream), never an onboard, the Driver Tracker or the data channel. Null when
-    /// no such stream is open.
-    /// </summary>
-    public PlayerInfo? Broadcast =>
-        Players.FirstOrDefault(p => string.Equals(p.Title, "F1 LIVE", StringComparison.OrdinalIgnoreCase))
-        ?? Players.FirstOrDefault(p => p.Main && (p.Title ?? "").Contains("INTERNATIONAL", StringComparison.OrdinalIgnoreCase))
-        ?? Players.FirstOrDefault(p => p.Main && !IsSideFeed(p.Title));
-
-    private static bool IsSideFeed(string? title) =>
-        title != null && (title.Contains("TRACKER", StringComparison.OrdinalIgnoreCase)
-                          || title.Contains("DATA", StringComparison.OrdinalIgnoreCase)
-                          || title.Contains("PIT LANE", StringComparison.OrdinalIgnoreCase));
-
     public string TrackStatus => (string?)Timing?["TrackStatus"]?["Status"] ?? "1";
 
     /// <summary>"Race", "Qualifying", "Practice 1", …</summary>

@@ -231,6 +231,7 @@ internal sealed class Plugin
         while (_ws.State == WebSocketState.Open)
         {
             var state = await MultiViewer.StateAsync();
+            if (state.Online) await MainAudio.RefreshAsync(); // sound of the stream on the main monitor
             _ = Schedule.RefreshAsync(); // at most every 30 minutes
             await WithGate(async () =>
             {
@@ -435,13 +436,14 @@ internal sealed class Plugin
                 _flags.InvalidateLights();
                 break;
             case Volume:
-                if (_mv.Broadcast is not { } p) { await Alert(c); return; }
-                double scale = VolumeScale;
-                double v = Math.Clamp(p.Volume + ticks * S.VolumeStep / 100.0 * scale, 0, scale);
-                if (p.Muted && ticks > 0) await MultiViewer.SetMutedAsync(p.Id, false);
-                if (await MultiViewer.SetVolumeAsync(p.Id, v))
-                    _mv.Players[_mv.Players.IndexOf(p)] = p with { Volume = v, Muted = p.Muted && ticks <= 0 };
+            {
+                // The stream on the main monitor (see MainAudio); turning down while muted stays muted.
+                if (MainAudio.Current is not { } a) { await Alert(c); return; }
+                double v = Math.Clamp(a.Volume + ticks * S.VolumeStep / 100.0, 0, 1);
+                if (a.Muted && ticks <= 0) break;
+                if (!await MainAudio.SetVolumeAsync(v)) await Alert(c);
                 break;
+            }
             case Latency:
                 await ShiftLatency(c, ticks);
                 break;
@@ -454,8 +456,7 @@ internal sealed class Plugin
         {
             case Flags: await ToggleFlags(); break;
             case Volume:
-                if (_mv.Broadcast is { } p && await MultiViewer.SetMutedAsync(p.Id, !p.Muted))
-                    _mv.Players[_mv.Players.IndexOf(p)] = p with { Muted = !p.Muted };
+                if (!await MainAudio.ToggleMuteAsync()) await Alert(c);
                 break;
             case Latency:
                 if (S.LatencyPush == "pause") await TogglePause(c); else await GoLive(c);
@@ -1178,13 +1179,13 @@ internal sealed class Plugin
             }
             case Volume:
             {
-                main = _mv.Broadcast; // only the broadcast feed, never an onboard
-                int pct = main == null ? 0 : (int)Math.Round(main.Volume / VolumeScale * 100);
-                icon = Art.Speaker(Art.White, main?.Muted == true);
+                var a = MainAudio.Current; // the stream on the main monitor
+                int pct = a == null ? 0 : (int)Math.Round(a.Volume * 100);
+                icon = Art.Speaker(Art.White, a?.Muted == true);
                 title = "Volume";
-                value = main == null ? (online ? "No F1 LIVE" : noPlayer) : main.Muted ? "Muted" : $"{pct}%";
-                detail = main == null ? (online ? "Main feed not open" : noPlayerWhy) : main.Title ?? "Main feed";
-                bar = main?.Muted == true ? 0 : pct;
+                value = a == null ? noPlayer : a.Muted ? "Muted" : $"{pct}%";
+                detail = a == null ? noPlayerWhy : a.Title;
+                bar = a?.Muted == true ? 0 : pct;
                 accent = "#2D9CDB";
                 break;
             }
