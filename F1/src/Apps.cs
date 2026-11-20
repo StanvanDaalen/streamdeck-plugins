@@ -147,13 +147,13 @@ public static class Apps
         IntPtr hwnd = IntPtr.Zero;
         for (int i = 0; i < 60 && hwnd == IntPtr.Zero; i++)
         {
-            await Task.Delay(500);
+            await Job.Delay(500);
             var windows = Windows(process);
             hwnd = windows.FirstOrDefault(w => isMain(w.Title)).Hwnd;
             if (hwnd == IntPtr.Zero && i >= 20 && windows.Count == 1) hwnd = windows[0].Hwnd;
         }
         if (hwnd == IntPtr.Zero) { Store.Log($"{process}: hoofdvenster niet gevonden"); return true; }
-        await Task.Delay(500); // apps often set their own last position right after showing
+        await Job.Delay(500); // apps often set their own last position right after showing
         Place(hwnd, place);
         return true;
     }

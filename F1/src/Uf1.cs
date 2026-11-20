@@ -29,7 +29,7 @@ public static class Uf1
         for (int i = 0; i < 3; i++)
         {
             if (await ReadyAsync()) return true;
-            await Task.Delay(500);
+            await Job.Delay(500);
         }
         var exe = Apps.Uf1Exe;
         // On Windows the running copy tells where it is installed. A Linux AppImage runs from a temporary
@@ -45,15 +45,15 @@ public static class Uf1
         {
             Store.Log("uf1 draait zonder debugpoort: herstarten met poort");
             await Desktops.CloseAppAsync(Process);
-            await Task.Delay(1000);
+            await Job.Delay(1000);
         }
         if (!File.Exists(exe)) { Store.Log("uf1 niet gevonden: " + exe); return false; }
         if (!OperatingSystem.IsWindows() && !LinuxApps.MakeExecutable(exe)) return false;
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, $"--remote-debugging-port={Store.Current.Uf1Port}") { UseShellExecute = false });
         for (int i = 0; i < 40; i++)
         {
-            await Task.Delay(750);
-            if (await ReadyAsync()) { await Task.Delay(1500); return true; } // let its session lookup run once
+            await Job.Delay(750);
+            if (await ReadyAsync()) { await Job.Delay(1500); return true; } // let its session lookup run once
         }
         Store.Log("uf1 gestart maar debugpoort niet bereikbaar");
         return false;
@@ -93,7 +93,7 @@ public static class Uf1
                 if (info != null) return ((bool?)info["liveSessionFound"] ?? false, (string?)info["sessionInfo"]?["sessionType"]);
             }
             catch { }
-            await Task.Delay(500);
+            await Job.Delay(500);
         }
         return (false, null);
     }
@@ -158,7 +158,7 @@ public static class Uf1
                 Store.Log($"uf1 restore (poging {attempt}): " + e.Message);
                 if (attempt == 1)
                 {
-                    await Task.Delay(2000);
+                    await Job.Delay(2000);
                     await CloseExtraWindowsAsync(); // whatever the first attempt half-opened, so nothing doubles
                 }
             }

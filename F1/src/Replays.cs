@@ -18,7 +18,7 @@ public static class Replays
         for (int attempt = 1; ; attempt++)
         {
             using var r = await Http.GetAsync(url);
-            if ((int)r.StatusCode == 429 && attempt < 4) { await Task.Delay(1200 * attempt); continue; }
+            if ((int)r.StatusCode == 429 && attempt < 4) { await Job.Delay(1200 * attempt); continue; }
             r.EnsureSuccessStatusCode();
             return await r.Content.ReadAsStringAsync();
         }

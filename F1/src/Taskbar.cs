@@ -1,75 +1,64 @@
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 
 namespace F1;
 
 /// <summary>
-/// Windows taskbar auto-hide, switched directly through the shell (the same setting as "Automatically
-/// hide the taskbar" in Settings), so nothing opens on screen. Applies to the taskbars on all monitors.
+/// While F1 runs, the Windows taskbar shows on the main monitor only (Settings → Taskbar → "Show my
+/// taskbar on all displays" off). Switched directly in the registry and announced to the shell, so the
+/// extra taskbars simply disappear: no settings window, no Explorer restart.
 /// </summary>
 public static class Taskbar
 {
-    /// <summary>True/false on Windows, null where there is no Windows taskbar.</summary>
-    public static bool? IsAutoHide()
+    private const string Key = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
+    private const string Value = "MMTaskbarEnabled";
+
+    /// <summary>True when the taskbar shows on all displays; null where there is no Windows taskbar.</summary>
+    public static bool? OnAllDisplays()
     {
         if (!OperatingSystem.IsWindows()) return null;
-        var data = new APPBARDATA { cbSize = Marshal.SizeOf<APPBARDATA>() };
-        return ((int)SHAppBarMessage(ABM_GETSTATE, ref data) & ABS_AUTOHIDE) != 0;
+        using var k = Registry.CurrentUser.OpenSubKey(Key);
+        return k?.GetValue(Value) is int v ? v != 0 : null;
     }
 
-    public static void SetAutoHide(bool on)
+    public static void SetOnAllDisplays(bool on)
     {
         if (!OperatingSystem.IsWindows()) return;
-        var data = new APPBARDATA
-        {
-            cbSize = Marshal.SizeOf<APPBARDATA>(),
-            hWnd = FindWindow("Shell_TrayWnd", null),
-            lParam = on ? ABS_AUTOHIDE : ABS_ALWAYSONTOP,
-        };
-        SHAppBarMessage(ABM_SETSTATE, ref data);
+        using (var k = Registry.CurrentUser.CreateSubKey(Key))
+            k.SetValue(Value, on ? 1 : 0, RegistryValueKind.DWord);
+        // The shell rereads its taskbar settings on this broadcast (what the Settings app does too).
+        SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, UIntPtr.Zero, "TraySettings", SMTO_ABORTIFHUNG, 2000, out _);
     }
 
     /// <summary>
-    /// Turns auto-hide on for F1 (when that setting is on) and remembers that it was off, so closing
-    /// F1 can put it back. Does nothing when auto-hide was already on.
+    /// Main monitor only for F1 (when that setting is on), remembering that it was on all displays, so
+    /// closing F1 can put it back. Does nothing when it already is on the main monitor only.
     /// </summary>
-    public static void HideForF1()
+    public static void MainOnlyForF1()
     {
         var s = Store.Current;
-        if (!s.HideTaskbar || IsAutoHide() != false) return;
-        SetAutoHide(true);
+        if (!s.TaskbarMainOnly || OnAllDisplays() != true) return;
+        SetOnAllDisplays(false);
         s.TaskbarRestore = true;
         Store.Save();
-        Store.Log("taakbalk: automatisch verbergen aan");
+        Store.Log("taakbalk: alleen op het hoofdscherm");
     }
 
-    /// <summary>Puts the taskbar back as it was before F1 (only when F1 changed it).</summary>
+    /// <summary>Taskbar back on all displays, as before F1 (only when F1 changed it).</summary>
     public static void RestoreAfterF1()
     {
         var s = Store.Current;
         if (!s.TaskbarRestore) return;
-        SetAutoHide(false);
+        SetOnAllDisplays(true);
         s.TaskbarRestore = false;
         Store.Save();
-        Store.Log("taakbalk: weer zichtbaar");
+        Store.Log("taakbalk: weer op alle schermen");
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT { public int Left, Top, Right, Bottom; }
+    private static readonly IntPtr HWND_BROADCAST = new(0xffff);
+    private const uint WM_SETTINGCHANGE = 0x001A, SMTO_ABORTIFHUNG = 0x0002;
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct APPBARDATA
-    {
-        public int cbSize;
-        public IntPtr hWnd;
-        public uint uCallbackMessage;
-        public uint uEdge;
-        public RECT rc;
-        public int lParam;
-    }
-
-    private const uint ABM_GETSTATE = 4, ABM_SETSTATE = 10;
-    private const int ABS_AUTOHIDE = 1, ABS_ALWAYSONTOP = 2;
-
-    [DllImport("shell32.dll")] private static extern IntPtr SHAppBarMessage(uint msg, ref APPBARDATA data);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr FindWindow(string cls, string? name);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, UIntPtr wParam, string lParam,
+        uint flags, uint timeout, out UIntPtr result);
 }

@@ -50,20 +50,20 @@ public static class MvSetups
         for (int i = 0; i < 3; i++)
         {
             if (await ReadyAsync()) return true;
-            await Task.Delay(500);
+            await Job.Delay(500);
         }
         if (Desktops.IsRunning(MultiViewer.Process))
         {
             Store.Log("MultiViewer draait zonder debugpoort: herstarten met poort");
             await Desktops.CloseAppAsync(MultiViewer.Process);
-            await Task.Delay(1000);
+            await Job.Delay(1000);
         }
         await Apps.LaunchAsync(MultiViewer.Process, Apps.MultiViewerExe, $"--remote-debugging-port={Store.Current.MvPort}",
             Store.Current.PlaceMultiViewer, t => t == "MultiViewer");
         for (int i = 0; i < 40; i++)
         {
-            if (await ReadyAsync()) { await Task.Delay(1000); return true; }
-            await Task.Delay(750);
+            if (await ReadyAsync()) { await Job.Delay(1000); return true; }
+            await Job.Delay(750);
         }
         Store.Log("MultiViewer gestart maar debugpoort niet bereikbaar");
         return false;
@@ -242,7 +242,7 @@ public static class MvSetups
             swapped = true;
         }
         // A new player opens on top of everything; put the stacking right again.
-        if (swapped) { await Task.Delay(1000); await StackAsync(); }
+        if (swapped) { await Job.Delay(1000); await StackAsync(); }
     }
 
     /// <summary>Opening a setup and updating its slots never run at the same time.</summary>
