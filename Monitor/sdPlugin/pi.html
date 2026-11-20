@@ -37,6 +37,9 @@
     <h4>Input aanpassen</h4>
     <div class="row"><span class="lbl">Input</span><select id="editInput"></select></div>
     <div class="row"><span class="lbl">Naam</span><input type="text" id="inputName"></div>
+    <div class="row"><span class="lbl">Apparaat</span><select id="inputDevice">
+      <option value="auto">Automatisch</option><option value="pc">PC</option><option value="ps5">PlayStation 5 Pro</option><option value="none">Geen</option>
+    </select></div>
     <div class="row"><span class="lbl">Icoon</span><div class="file">
       <span id="iconName">Standaard</span>
       <button id="libBtn">Bibliotheek</button><label class="btn" for="iconFile">Bestand</label><button id="iconClear">Wis</button>
@@ -44,7 +47,14 @@
     <div id="libPanel" class="hide"></div>
 
     <h4>Weergave</h4>
-    <div class="row"><label class="check"><input type="checkbox" id="showText">Tekst tonen op de knop</label></div>
+    <div class="row"><span class="lbl">Stijl</span><select id="style">
+      <option value="basic">Basis</option><option value="tile">Tegel</option><option value="icon">Alleen icoon</option>
+    </select></div>
+    <div class="row" id="showTextRow"><label class="check"><input type="checkbox" id="showText">Tekst tonen op de knop</label></div>
+
+    <h4>PlayStation</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="keepAwake">Schermen wakker houden als de PS5 in beeld is</label></div>
+    <p class="muted">De pc en de andere schermen gaan dan niet in slaap, zodat OBS en Discord blijven doorlopen.</p>
 
     <h4>Bediening</h4>
     <div class="row"><span class="lbl">Volgende input</span><span>Klik</span></div>
@@ -93,6 +103,7 @@ function apply(p) {
   if (document.activeElement !== $('monitorName')) $('monitorName').value = p.monitorName;
   $('monitorName').placeholder = p.model;
   $('previous').value = p.previous;
+  $('style').value = p.style;
   $('showText').checked = p.showText;
   $('detach').checked = p.detach;
   $('pcInput').innerHTML = '<option value="-1">Kies…</option>' + p.inputs.filter(i => i.enabled)
@@ -100,6 +111,8 @@ function apply(p) {
   $('pcInput').value = String(p.inputs.some(i => i.enabled && i.code === p.pcInput) ? p.pcInput : -1);
   $('pcRow').classList.toggle('hide', !p.detach);
   $('detachHint').classList.toggle('hide', !p.detach);
+  $('keepAwake').checked = p.keepAwake;
+  $('showTextRow').classList.toggle('hide', p.style !== 'basic');
 
   $('inputs').innerHTML = p.inputs.map(i => `<div class="row"><label class="check">
     <input type="checkbox" data-code="${i.code}" ${i.enabled ? 'checked' : ''}>${esc(display(i))}${i.code === p.current ? '<span class="now">actief</span>' : ''}</label></div>`).join('');
@@ -119,6 +132,7 @@ function showInput() {
   if (!i) return;
   if (document.activeElement !== $('inputName')) $('inputName').value = i.name;
   $('inputName').placeholder = i.default;
+  $('inputDevice').value = i.device;
   $('iconName').textContent = i.icon ? baseName(i.icon) : 'Standaard';
 }
 
@@ -157,12 +171,15 @@ window.addEventListener('message', e => {
 $('monitor').addEventListener('change', () => { selected = null; send({ monitor: $('monitor').value }); });
 $('monitorName').addEventListener('change', () => send({ monitorName: $('monitorName').value.trim() }));
 $('previous').addEventListener('change', () => send({ previous: $('previous').value }));
+$('style').addEventListener('change', () => send({ style: $('style').value }));
 $('showText').addEventListener('change', () => send({ showText: $('showText').checked }));
+$('keepAwake').addEventListener('change', () => send({ keepAwake: $('keepAwake').checked }));
 $('inputs').addEventListener('change', () => {
   send({ enabled: [...document.querySelectorAll('#inputs input:checked')].map(c => Number(c.dataset.code)) });
 });
 $('editInput').addEventListener('change', () => { selected = Number($('editInput').value); showInput(); });
 $('inputName').addEventListener('change', () => send({ code: selected, inputName: $('inputName').value }));
+$('inputDevice').addEventListener('change', () => send({ code: selected, inputDevice: $('inputDevice').value }));
 $('libBtn').addEventListener('click', openLibrary);
 $('detach').addEventListener('change', () => {
   const on = $('detach').checked;

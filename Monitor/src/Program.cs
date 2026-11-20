@@ -11,6 +11,7 @@ internal sealed class Ctx
     public string? Hash;
     public CancellationTokenSource? Pending;
     public bool LongFired;
+    public DateTime LastSeen = DateTime.UtcNow;
 }
 
 internal static class Program
@@ -18,6 +19,8 @@ internal static class Program
     private static readonly ClientWebSocket Ws = new();
     private static readonly SemaphoreSlim Gate = new(1, 1), SendLock = new(1, 1);
     private static readonly Dictionary<string, Ctx> Contexts = new();
+    // Buttons seen this session, kept after they leave the screen (another page), so keep-awake keeps working.
+    private static readonly Dictionary<string, Ctx> Remembered = new();
     private static readonly Dictionary<string, int> Current = new();
     private static readonly Dictionary<string, DateTime> HoldUntil = new();
     private static HashSet<string> _connected = new();
@@ -41,6 +44,7 @@ internal static class Program
     {
         string? Arg(string n) { int i = Array.IndexOf(args, n); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         if (Arg("--assets") is { } assets) { Art.WriteAssets(assets); return 0; }
+        if (Arg("--preview") is { } preview) { Art.WritePreviews(preview); return 0; }
         Log.Reset();
         Ddc.LoadCache();
         LoadDetached();
@@ -52,6 +56,7 @@ internal static class Program
         await Ws.ConnectAsync(new Uri($"ws://127.0.0.1:{port}"), CancellationToken.None);
         await Send(new JsonObject { ["event"] = reg, ["uuid"] = uuid });
         _ = Task.Run(PollLoop);
+        new Thread(AwakeLoop) { IsBackground = true, Name = "keep-awake" }.Start();
 
         var buffer = new byte[1 << 16];
         using var ms = new MemoryStream();
@@ -111,7 +116,8 @@ internal static class Program
     {
         Ddc.RefreshCaps();
         // Only monitors with a placed button are read, to keep DDC traffic low.
-        var used = Contexts.Values.Select(c => Str(c, "monitor", "")).Where(k => k.Length > 0).Distinct().ToList();
+        var used = Contexts.Values.Concat(Remembered.Values.Where(c => Bool(c, "keepAwake", true)))
+            .Select(c => Str(c, "monitor", "")).Where(k => k.Length > 0).Distinct().ToList();
         var read = Ddc.ReadCurrent(used);
         _connected = read.Keys.ToHashSet();
         // A monitor Windows shows again (after a restart, or put back by hand) is no longer detached.
@@ -120,6 +126,72 @@ internal static class Program
         foreach (var (key, value) in read)
             if (value > 0 && DateTime.UtcNow >= HoldUntil.GetValueOrDefault(key)) Current[key] = value;
         foreach (var c in Contexts.Values.ToList()) await Render(c);
+        await PruneRemembered();
+        KeepAwake();
+    }
+
+    private static DateTime _lastPing = DateTime.MinValue;
+
+    /// <summary>
+    /// Buttons on another page stay remembered, but Stream Deck never says when one is deleted. Off-page buttons are
+    /// asked for their settings every minute; one that has not answered for 3 minutes no longer exists and is forgotten.
+    /// </summary>
+    private static async Task PruneRemembered()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var c in Contexts.Values) c.LastSeen = now;
+        foreach (var gone in Remembered.Values.Where(c => now - c.LastSeen > TimeSpan.FromMinutes(3)).ToList())
+        {
+            Remembered.Remove(gone.Id);
+            Log.Write("button forgotten (no answer from Stream Deck)");
+        }
+        if (now - _lastPing < TimeSpan.FromMinutes(1)) return;
+        _lastPing = now;
+        foreach (var c in Remembered.Values.Where(c => !Contexts.ContainsKey(c.Id)).ToList())
+            await Send(new JsonObject { ["event"] = "getSettings", ["context"] = c.Id });
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern uint SetThreadExecutionState(uint flags);
+    private const uint EsSystemRequired = 0x1, EsDisplayRequired = 0x2, EsContinuous = 0x80000000;
+    private static volatile bool _wantAwake;
+    private static bool _awake, _awakeLogged;
+
+    /// <summary>
+    /// Holds the wake request on one dedicated thread: ES_CONTINUOUS keeps it in force until it is released here,
+    /// independent of how long a DDC poll takes or how short the Windows idle timeout is.
+    /// </summary>
+    private static void AwakeLoop()
+    {
+        bool held = false;
+        while (true)
+        {
+            bool want = _wantAwake;
+            if (want != held)
+            {
+                SetThreadExecutionState(want ? EsContinuous | EsSystemRequired | EsDisplayRequired : EsContinuous);
+                held = want;
+            }
+            Thread.Sleep(500);
+        }
+    }
+
+    /// <summary>
+    /// While a button shows a PlayStation input, the PC has no keyboard or mouse activity, so Windows would turn the
+    /// screens off and could even sleep (which stops OBS). The wake request is only held for monitors that answered
+    /// the last DDC read, so an unplugged or unreachable screen never keeps the PC awake.
+    /// </summary>
+    private static void KeepAwake()
+    {
+        bool awake = Remembered.Values.Any(c =>
+            Bool(c, "keepAwake", true) && Str(c, "monitor", "") is { Length: > 0 } key && _connected.Contains(key) &&
+            Current.TryGetValue(key, out var cur) && InputDevice(c, cur) == "ps5");
+        _wantAwake = awake;
+        if (awake != _awake || !_awakeLogged)
+            Log.Write($"keep awake: {(awake ? "on (PlayStation input)" : "off")} | buttons {Remembered.Count} | " +
+                      string.Join(", ", Remembered.Values.Select(c => Str(c, "monitor", "") is { Length: > 0 } k && Current.TryGetValue(k, out var v)
+                          ? $"{InputName(c, v)}={InputDevice(c, v)}" : "?")));
+        _awake = awake; _awakeLogged = true;
     }
 
     private static string Str(Ctx c, string key, string fallback) =>
@@ -152,6 +224,16 @@ internal static class Program
 
     private static string InputName(Ctx c, int code) => Mapped(c, "names", code) ?? Ddc.DefaultInputName(code);
 
+    private static string InputDevice(Ctx c, int code)
+    {
+        string configured = Mapped(c, "devices", code) ?? "auto";
+        if (configured != "auto") return configured is "pc" or "ps5" ? configured : "none";
+        string name = InputName(c, code);
+        if (System.Text.RegularExpressions.Regex.IsMatch(name, @"(^|\W)(ps\s*5|p5|playstation|console)(\W|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "ps5";
+        if (System.Text.RegularExpressions.Regex.IsMatch(name, @"(^|\W)(pc|computer|desktop)(\W|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return "pc";
+        return "none";
+    }
+
     /// <summary>Inputs the button cycles through. Until the user ticks some, only the current one counts, so a press can never land on an empty input.</summary>
     private static List<int> Enabled(Ctx c, string key)
     {
@@ -175,11 +257,19 @@ internal static class Program
         {
             var added = new Ctx { Id = id, Settings = payload?["settings"]?.DeepClone() as JsonObject ?? new() };
             Contexts[id] = added;
+            Remembered[id] = added;
+            Log.Write($"button: {Str(added, "monitor", "(geen monitor)")}");
             await RefreshFor(added);
             await Render(added);
             return;
         }
         if (ev == "willDisappear" && id != null) { Contexts.Remove(id); return; }
+        if (ev == "didReceiveSettings" && id != null && !Contexts.ContainsKey(id) && Remembered.TryGetValue(id, out var off))
+        {
+            off.Settings = payload?["settings"]?.DeepClone() as JsonObject ?? new();
+            off.LastSeen = DateTime.UtcNow;
+            return;
+        }
         if (id == null || !Contexts.TryGetValue(id, out var c)) return;
 
         switch (ev)
@@ -293,6 +383,7 @@ internal static class Program
         }
         HoldUntil[key] = DateTime.UtcNow.AddSeconds(4); // the monitor needs a moment before it reports the new input
         foreach (var x in Contexts.Values.Where(x => Str(x, "monitor", "") == key).ToList()) await Render(x);
+        KeepAwake();
     }
 
     private static async Task Render(Ctx c)
@@ -302,20 +393,24 @@ internal static class Program
         bool online = chosen && _connected.Contains(key);
         int cur = Current.GetValueOrDefault(key, -1);
         bool showText = Bool(c, "showText", true);
+        string style = Str(c, "style", "basic");
+        if (style is not ("basic" or "tile" or "icon")) style = "basic";
 
-        string? icon = online && cur > 0 ? Mapped(c, "icons", cur) : null;
+        string? icon = cur > 0 ? Mapped(c, "icons", cur) : null;
+        string device = cur > 0 ? InputDevice(c, cur) : "none";
+        string inputName = cur > 0 ? InputName(c, cur) : "Monitor";
         var ownName = MonitorName(c, key);
         string line1 = !chosen ? "Kies monitor" : ownName.Length > 0 ? ownName : Ddc.Known.GetValueOrDefault(key)?.Model ?? "Monitor";
         string line2 = !chosen ? "" : !online ? "Niet verbonden" : cur > 0 ? InputName(c, cur) : "";
         if (!showText && online) (line1, line2) = ("", "");
 
-        var hash = $"{icon}|{line1}|{line2}|{online}";
+        var hash = $"{icon}|{device}|{style}|{line1}|{line2}|{inputName}|{online}";
         if (hash == c.Hash) return;
         c.Hash = hash;
         await Send(new JsonObject
         {
             ["event"] = "setImage", ["context"] = c.Id,
-            ["payload"] = new JsonObject { ["image"] = Art.Key(icon, line1, line2, online), ["target"] = 0 },
+            ["payload"] = new JsonObject { ["image"] = Art.Key(icon, device, style, line1, line2, inputName, online), ["target"] = 0 },
         });
     }
 
@@ -329,7 +424,7 @@ internal static class Program
         if (p["piLog"] != null) { Log.Write("pi file: " + p["piLog"]); return; }
 
         bool changed = false;
-        foreach (var field in new[] { "monitor", "previous", "showText", "enabled", "detach", "pcInput" })
+        foreach (var field in new[] { "monitor", "previous", "showText", "enabled", "detach", "pcInput", "style", "keepAwake" })
             if (p[field] is { } value) { c.Settings[field] = value.DeepClone(); changed = true; }
         if (p["monitor"] != null) c.Settings.Remove("enabled");
 
@@ -355,6 +450,7 @@ internal static class Program
         }
         if (p["inputName"] is { } name) SetMapped("names", name.GetValue<string>().Trim());
         if (p["inputIcon"] is { } path) SetMapped("icons", path.GetValue<string>());
+        if (p["inputDevice"] is { } device) SetMapped("devices", device.GetValue<string>() == "auto" ? "" : device.GetValue<string>());
 
         if (changed)
             await Send(new JsonObject { ["event"] = "setSettings", ["context"] = c.Id, ["payload"] = c.Settings.DeepClone() });
@@ -382,7 +478,7 @@ internal static class Program
                 inputs.Add(new JsonObject
                 {
                     ["code"] = code, ["default"] = Ddc.DefaultInputName(code), ["name"] = Mapped(c, "names", code) ?? "",
-                    ["icon"] = Mapped(c, "icons", code) ?? "", ["enabled"] = enabled.Contains(code),
+                    ["icon"] = Mapped(c, "icons", code) ?? "", ["device"] = Mapped(c, "devices", code) ?? "auto", ["enabled"] = enabled.Contains(code),
                 });
         }
         await Send(new JsonObject
@@ -396,6 +492,8 @@ internal static class Program
                 ["showText"] = Bool(c, "showText", true),
                 ["detach"] = Bool(c, "detach", false),
                 ["pcInput"] = Int(c, "pcInput", -1),
+                ["style"] = Str(c, "style", "basic"),
+                ["keepAwake"] = Bool(c, "keepAwake", true),
                 ["monitorName"] = MonitorName(c, key),
                 ["model"] = Ddc.Known.GetValueOrDefault(key)?.Model ?? "",
             },
