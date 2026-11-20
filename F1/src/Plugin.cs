@@ -106,51 +106,113 @@ internal sealed class Plugin
 
     /// <summary>Long jobs (apps, desktops, layouts) run outside the gate so dials and flags keep working.</summary>
     /// <remarks>
-    /// One job runs at a time. A press while one runs is remembered (only the latest) and runs right
-    /// after it, instead of being refused; the keys involved show "…" meanwhile.
+    /// One job runs at a time, and every press looks at what is running or waiting first:
+    /// - the same job again (Race while Race is starting): nothing, it is already on its way;
+    /// - F1 Mode while Race/Quali starts: nothing, those include F1 Mode;
+    /// - Race while Quali starts (or the other way round): the one starting stops, the new one follows;
+    /// - Race/Quali while F1 Mode starts: follows right after it (F1 Mode then skips its own layout);
+    /// - Close (hold): stops whatever runs, forgets what waits, and closes;
+    /// - anything while closing: nothing.
+    /// The keys involved show "…" meanwhile.
     /// </remarks>
-    private void Background(Ctx c, string what, Func<Task<bool>> job)
+    private void Request(Ctx c, string kind)
     {
+        Func<Task<bool>> job = kind switch
+        {
+            "close" => CloseF1Async,
+            "mode" => StartF1Async,
+            _ => () => OpenLayoutAsync(kind, closeCurrent: true),
+        };
         lock (_jobLock)
         {
-            if (_busy)
+            string? run = _running?.Kind, pend = _pending?.Kind;
+            if (kind == "close")
             {
-                _pending = (c, what, job);
-                Store.Log($"{what}: wacht tot {_runningWhat} klaar is");
-                return;
+                if (run == "close") return;
+                if (_busy)
+                {
+                    _pending = (c, kind, job);
+                    _jobCts?.Cancel();
+                    Store.Log($"Close F1: {run} wordt afgebroken");
+                    return;
+                }
+            }
+            else
+            {
+                if (run == "close" || pend == "close") { Store.Log($"{kind}: genegeerd, F1 wordt gesloten"); return; }
+                if (run == kind || pend == kind) { Store.Log($"{kind}: is al bezig"); return; }
+                if (kind == "mode" && (run is "race" or "quali" || pend is "race" or "quali"))
+                { Store.Log($"F1 Mode: zit al in {pend ?? run}"); return; }
+                if (_busy)
+                {
+                    _pending = (c, kind, job);
+                    if (run is "race" or "quali") { _jobCts?.Cancel(); Store.Log($"{kind}: {run} stopt, {kind} komt ervoor in de plaats"); }
+                    else Store.Log($"{kind}: na {run}");
+                    return;
+                }
+                // Already done and still there: no second round of windows, just to F1's desktop.
+                if (kind is "race" or "quali" && _layoutOpen == kind && _f1ModeOn && _f1Running)
+                {
+                    Store.Log($"{kind}: staat al open");
+                    _ = Task.Run(async () =>
+                    {
+                        if (S.ModeDesktop != "current") await Desktops.GoToNamedAsync(S.DesktopName);
+                        await Ok(c);
+                    });
+                    return;
+                }
             }
             _busy = true;
-            _running = c.Action; _runningWhat = what;
+            _running = (c, kind, job);
         }
-        _ = Task.Run(() => RunJobsAsync(c, what, job));
+        _ = Task.Run(RunJobsAsync);
     }
 
-    private async Task RunJobsAsync(Ctx c, string what, Func<Task<bool>> job)
+    private async Task RunJobsAsync()
     {
         while (true)
         {
-            bool ok = false;
-            try { Store.Log($"{what}: start"); ok = await job(); Store.Log($"{what}: {(ok ? "klaar" : "mislukt")}"); }
-            catch (Exception e) { Store.Log($"{what}: {e}"); }
-            await (ok ? Ok(c) : Alert(c));
+            Ctx c; string kind; Func<Task<bool>> job; CancellationTokenSource cts;
             lock (_jobLock)
             {
-                if (_pending is not { } next) { _busy = false; _running = null; _runningWhat = null; return; }
+                (c, kind, job) = _running!.Value;
+                cts = _jobCts = new CancellationTokenSource();
+            }
+            // Close itself is never cancelled; it is what the others are cancelled for.
+            Job.Token = kind == "close" ? CancellationToken.None : cts.Token;
+            bool ok = false, cancelled = false;
+            try { Store.Log($"{kind}: start"); ok = await job(); Store.Log($"{kind}: {(ok ? "klaar" : "mislukt")}"); }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested) { cancelled = true; Store.Log($"{kind}: afgebroken"); }
+            catch (Exception e) { Store.Log($"{kind}: {e}"); }
+            Job.Token = CancellationToken.None;
+            if (!cancelled) await (ok ? Ok(c) : Alert(c));
+            lock (_jobLock)
+            {
+                _jobCts = null;
+                cts.Dispose();
+                if (_pending is not { } next) { _busy = false; _running = null; return; }
                 _pending = null;
-                (c, what, job) = next;
-                _running = c.Action; _runningWhat = what;
+                _running = next;
             }
         }
     }
 
     private readonly object _jobLock = new();
-    private (Ctx Ctx, string What, Func<Task<bool>> Job)? _pending;
-    private string? _running, _runningWhat;
+    private (Ctx Ctx, string Kind, Func<Task<bool>> Job)? _running, _pending;
+    private CancellationTokenSource? _jobCts;
+    /// <summary>Race or Quali whose layout opened completely (since the last Close F1).</summary>
+    private volatile string? _layoutOpen;
+
+    /// <summary>Race or Quali waits for the running F1 Mode: that then leaves the layout to it.</summary>
+    private bool LayoutWaiting
+    {
+        get { lock (_jobLock) return _pending?.Kind is "race" or "quali"; }
+    }
 
     /// <summary>The key's job is running or waiting: show "…" on it.</summary>
     private bool IsWorking(string action)
     {
-        lock (_jobLock) return _running == action || _pending?.Ctx.Action == action;
+        lock (_jobLock) return _running?.Ctx.Action == action || _pending?.Ctx.Action == action;
     }
 
     private async Task SendAsync(JsonObject msg)
@@ -169,6 +231,8 @@ internal sealed class Plugin
         while (_ws.State == WebSocketState.Open)
         {
             var state = await MultiViewer.StateAsync();
+            if (state.Online) await MainAudio.RefreshAsync(); // sound of the stream on the main monitor
+            else MainAudio.Reset();
             _ = Schedule.RefreshAsync(); // at most every 30 minutes
             await WithGate(async () =>
             {
@@ -188,6 +252,12 @@ internal sealed class Plugin
             if (++_ticks % 4 == 0 && _f1Running)
             {
                 try { Apps.KeepBattleModeOnTop(); } catch (Exception e) { Store.Log("battle mode voor: " + e.Message); }
+            }
+            // Windows' own edge and rounded corners off on every F1 window (new ones included), so the
+            // desktop never shows through as a thin line between them.
+            if (_ticks % 10 == 0 && _f1Running)
+            {
+                try { Seams.Flatten(); } catch (Exception e) { Store.Log("randen: " + e.Message); }
             }
             await Task.Delay(state.Online ? 500 : 2000);
         }
@@ -269,7 +339,7 @@ internal sealed class Plugin
                     if (cts.IsCancellationRequested) return;
                     c.HoldFired = true;
                     c.Click?.Cancel();
-                    Background(c, "Close F1", CloseF1Async);
+                    Request(c, "close");
                     await Task.CompletedTask;
                 });
             });
@@ -299,7 +369,7 @@ internal sealed class Plugin
         c.Hold?.Cancel();
         c.Hold = null;
         if (c.HoldFired) return;
-        if (c.Action != Mode) { Background(c, "layout openen", () => OpenLayoutAsync(LayoutKind(c), closeCurrent: true)); return; }
+        if (c.Action != Mode) { Request(c, LayoutKind(c)); return; }
 
         // F1 Mode: a second click within 350 ms makes a double click (hide/show); otherwise a single click.
         if (c.Click != null)
@@ -320,7 +390,7 @@ internal sealed class Plugin
                 c.Click = null;
                 if (_hidden) await ToggleHiddenAsync(c);           // hidden: bring it back
                 else if (_f1ModeOn && _f1Running) await Ok(c);     // already running: nothing to do
-                else Background(c, "F1 Mode", StartF1Async);       // start
+                else Request(c, "mode");                           // start (or nothing when it already is)
             });
         });
     }
@@ -367,13 +437,14 @@ internal sealed class Plugin
                 _flags.InvalidateLights();
                 break;
             case Volume:
-                if (_mv.Main is not { } p) return;
-                double scale = VolumeScale;
-                double v = Math.Clamp(p.Volume + ticks * S.VolumeStep / 100.0 * scale, 0, scale);
-                if (p.Muted && ticks > 0) await MultiViewer.SetMutedAsync(p.Id, false);
-                if (await MultiViewer.SetVolumeAsync(p.Id, v))
-                    _mv.Players[_mv.Players.IndexOf(p)] = p with { Volume = v, Muted = p.Muted && ticks <= 0 };
+            {
+                // The stream on the main monitor (see MainAudio); turning down while muted stays muted.
+                if (MainAudio.Current is not { } a) { await Alert(c); return; }
+                double v = Math.Clamp(a.Volume + ticks * S.VolumeStep / 100.0, 0, 1);
+                if (a.Muted && ticks <= 0) break;
+                if (!await MainAudio.SetVolumeAsync(v)) await Alert(c);
                 break;
+            }
             case Latency:
                 await ShiftLatency(c, ticks);
                 break;
@@ -386,8 +457,7 @@ internal sealed class Plugin
         {
             case Flags: await ToggleFlags(); break;
             case Volume:
-                if (_mv.Main is { } p && await MultiViewer.SetMutedAsync(p.Id, !p.Muted))
-                    _mv.Players[_mv.Players.IndexOf(p)] = p with { Muted = !p.Muted };
+                if (!await MainAudio.ToggleMuteAsync()) await Alert(c);
                 break;
             case Latency:
                 if (S.LatencyPush == "pause") await TogglePause(c); else await GoLive(c);
@@ -440,6 +510,7 @@ internal sealed class Plugin
     private async Task<bool> StartF1Async(bool openLayout)
     {
         if (!CheckApps()) return false;
+        Taskbar.MainOnlyForF1(); // straight away and silently: the other taskbars just disappear
         Guid? desk = S.ModeDesktop == "current" ? null : await Desktops.GoToNamedAsync(S.DesktopName);
         await WithGate(async () =>
         {
@@ -448,15 +519,17 @@ internal sealed class Plugin
             Store.Save();
             await Task.CompletedTask;
         });
-        await Task.Delay(300);
+        await Job.Delay(300);
         // MultiViewer and the viewer are started here (the viewer with its debug port) and put in place.
         if (!await Apps.LaunchF1AppsAsync()) return false;
         _f1ModeOn = true;
 
         // Wait for Ultimate F1 Viewer; one that was already running without the debug port is restarted.
         if (Uf1Available)
-            for (int i = 0; i < 30 && !await Uf1.ReadyAsync(); i++) await Task.Delay(1000);
-        if (!openLayout || S.ModeLayout == "none") return true;
+            for (int i = 0; i < 30 && !await Uf1.ReadyAsync(); i++) await Job.Delay(1000);
+        Job.Check();
+        // Race or Quali was pressed meanwhile: it opens its own layout right after this.
+        if (!openLayout || S.ModeLayout == "none" || LayoutWaiting) return true;
 
         string kind;
         if (S.ModeLayout is "race" or "quali") kind = S.ModeLayout;
@@ -471,6 +544,7 @@ internal sealed class Plugin
                    (type ?? "").Contains("shootout", StringComparison.OrdinalIgnoreCase) ? "quali" : "race";
             Store.Log($"F1 Mode: live {type} -> layout {kind}");
         }
+        if (LayoutWaiting) return true;
         return await OpenLayoutAsync(kind, closeCurrent: false);
     }
 
@@ -484,9 +558,10 @@ internal sealed class Plugin
             if (S.CloseUf1) closing.Add(Desktops.CloseAppAsync(Uf1.Process));
             if (S.CloseMultiViewer) closing.Add(Desktops.CloseAppAsync(MultiViewer.Process));
             await Task.WhenAll(closing);
-            await Task.Delay(500);
+            await Job.Delay(500);
             if (S.CloseDesktop && Guid.TryParse(S.F1DesktopId, out var desk)) await Desktops.CloseIfEmptyAsync(desk);
             else await Desktops.GoToAsync(0);
+            Taskbar.RestoreAfterF1();
         }
         finally
         {
@@ -499,6 +574,8 @@ internal sealed class Plugin
                 _hidden = false; _hiddenWindows = new(); _mutedBefore = new();
                 MvSetups.Active = false;
                 _f1ModeOn = false;
+                _layoutOpen = null;
+                MultiViewer.Expect(null, null);
                 _closing = false;
             });
         }
@@ -518,7 +595,9 @@ internal sealed class Plugin
     private async Task<bool> OpenLayoutAsync(string kind, bool closeCurrent)
     {
         bool any = false;
+        _layoutOpen = null;
         if (!CheckApps()) return false;
+        Taskbar.MainOnlyForF1();
 
         // Race/Quali include F1 Mode: run all its steps when it has not been started yet (even when an
         // app was already open by hand); otherwise just make sure we are on the F1 desktop.
@@ -530,9 +609,12 @@ internal sealed class Plugin
             }
             else if (S.ModeDesktop != "current") await Desktops.GoToNamedAsync(S.DesktopName);
         }
+        Job.Check();
         if (!await MvSetups.EnsureAsync()) { Store.Log($"layout {kind}: MultiViewer niet bereikbaar"); return false; }
         if (Uf1Available) await Uf1.EnsureAsync();
         await OpenSessionAsync(kind);
+        MultiViewer.Expect(_sessionMeeting, kind); // only this session's timing counts from here
+        Job.Check();
 
         if (MvSetups.Find(kind) is { } setup)
         {
@@ -562,19 +644,21 @@ internal sealed class Plugin
         for (int i = 0; i < 25 && !timing; i++)
         {
             timing = MultiViewer.ByPosition(await MultiViewer.TimingAsync()).Count >= 8;
-            if (!timing) await Task.Delay(1000);
+            if (!timing) await Job.Delay(1000);
         }
         Store.Log(timing ? "timing geladen" : "timing na 25 s nog niet geladen");
+        Job.Check();
 
         // Best of the rest right away (the setup may have opened before positions were known).
         if (timing && MvSetups.Active) await MvSetups.UpdateRestSlotsAsync(force: true);
 
         // Higher windows in front of lower ones, so overlapping edges hide the title bars below.
         Store.Log($"vensters op hoogte gestapeld: {await MvSetups.StackAsync()}");
+        Store.Log($"naden dicht: {Seams.Close()} vensters bijgezet");
 
         // Only now the viewer's layout: battle mode and crash detection read the driver list once,
         // when their window opens, so they must open after the timing is there.
-        if (!Uf1Available) return any; // optional app not installed: the MultiViewer part is all there is
+        if (!Uf1Available) { if (any) _layoutOpen = kind; return any; } // optional app not installed: the MultiViewer part is all there is
         var id = Uf1.FindLayout(kind);
         if (id == null) { Store.Log($"layout {kind}: geen layout gevonden in Ultimate F1 Viewer"); return any; }
         var replayContent = await MultiViewer.ContentIdAsync();
@@ -582,6 +666,7 @@ internal sealed class Plugin
         var (live, type) = await Uf1.LiveSessionAsync();
         var contentId = live ? null : replayContent;
         Store.Log($"layout {kind} (id {id}): live={live} {type} replay={(contentId ?? "-")}");
+        Job.Check();
         if (closeCurrent && S.LayoutCloseCurrent) await Uf1.CloseExtraWindowsAsync();
         var ok = await Uf1.RestoreLayoutAsync(id, contentId);
         if (!ok) Store.Log($"layout {kind}: openen in Ultimate F1 Viewer mislukt");
@@ -589,7 +674,7 @@ internal sealed class Plugin
         // Battle mode and crash detection open in move mode; switch that off (as pressing Escape does).
         for (int i = 0; i < 8; i++)
         {
-            await Task.Delay(1000);
+            await Job.Delay(1000);
             if (await Uf1.LockWindowsAsync() == 0) break;
         }
 
@@ -605,14 +690,17 @@ internal sealed class Plugin
                 {
                     // Still not ready after a few tries: the window gave up loading; reload it, lock it again.
                     await Uf1.ReloadBattleModeAsync();
-                    await Task.Delay(3000);
+                    await Job.Delay(3000);
                     await Uf1.LockWindowsAsync();
                 }
-                await Task.Delay(1500);
+                await Job.Delay(1500);
             }
             Store.Log(battleOk ? "battle mode: coureurs gezet" : "battle mode: lukte niet");
             Apps.KeepBattleModeOnTop(); // in front of the flag display behind it
         }
+        // Once more now that the viewer's windows are there too (its main window joins F1 Live and MultiViewer).
+        Store.Log($"naden dicht (na layout): {Seams.Close()} vensters bijgezet");
+        if (any | ok) _layoutOpen = kind;
         return any | ok;
     }
 
@@ -650,7 +738,7 @@ internal sealed class Plugin
         bool opened = false;
         for (int i = 0; i < 30 && !opened; i++)
         {
-            await Task.Delay(1000);
+            await Job.Delay(1000);
             opened = await MvSetups.OpenContentAsync() == contentId;
         }
         if (!opened) Store.Log("sessie: pagina niet op tijd geopend");
@@ -841,6 +929,10 @@ internal sealed class Plugin
                 case "CloseMultiViewer": S.CloseMultiViewer = B(v); break;
                 case "CloseUf1": S.CloseUf1 = B(v); break;
                 case "CloseDesktop": S.CloseDesktop = B(v); break;
+                case "TaskbarMainOnly":
+                    S.TaskbarMainOnly = B(v);
+                    if (!S.TaskbarMainOnly) Taskbar.RestoreAfterF1(); // switched off mid-session: show it again
+                    break;
                 case "ShowYellow": S.ShowYellow = B(v); break;
                 case "ShowSafetyCar": S.ShowSafetyCar = B(v); break;
                 case "ShowRed": S.ShowRed = B(v); break;
@@ -1021,8 +1113,11 @@ internal sealed class Plugin
     private string SessionKey()
     {
         var name = _mv.SessionShort ?? "Session";
-        // No session open: the next one on the calendar ("NEXT", "Quali", "Sat 16:00").
-        if (_mv.Timing == null && Schedule.Next() is { } next)
+        // Nothing playing (no stream open), or no session at all: the next one on the calendar
+        // ("NEXT", "Quali", "Sat 16:00"). MultiViewer keeps the last live session's timing around
+        // after it ended, which is not what you are watching.
+        bool watching = _mv.Players.Count > 0 || MainAudio.Current != null;
+        if ((_mv.Timing == null || !watching) && Schedule.Next() is { } next)
             return Art.NextKey(next.Location, Schedule.Short(next.Name), Schedule.When(next.Start),
                 Schedule.Countdown(next.Start), next.Start - DateTimeOffset.UtcNow < TimeSpan.FromHours(1));
         if (_mv.Timing == null) return Art.InfoKey("Session", "–", _mv.Online ? "No session" : "Offline", Art.Grey);
@@ -1090,12 +1185,13 @@ internal sealed class Plugin
             }
             case Volume:
             {
-                int pct = main == null ? 0 : (int)Math.Round(main.Volume / VolumeScale * 100);
-                icon = Art.Speaker(Art.White, main?.Muted == true);
+                var a = MainAudio.Current; // the stream on the main monitor
+                int pct = a == null ? 0 : (int)Math.Round(a.Volume * 100);
+                icon = Art.Speaker(Art.White, a?.Muted == true);
                 title = "Volume";
-                value = main == null ? noPlayer : main.Muted ? "Muted" : $"{pct}%";
-                detail = main == null ? noPlayerWhy : main.Title ?? "Main feed";
-                bar = main?.Muted == true ? 0 : pct;
+                value = a == null ? noPlayer : a.Muted ? "Muted" : $"{pct}%";
+                detail = a == null ? noPlayerWhy : a.Title;
+                bar = a?.Muted == true ? 0 : pct;
                 accent = "#2D9CDB";
                 break;
             }

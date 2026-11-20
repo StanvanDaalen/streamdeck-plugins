@@ -50,20 +50,20 @@ public static class MvSetups
         for (int i = 0; i < 3; i++)
         {
             if (await ReadyAsync()) return true;
-            await Task.Delay(500);
+            await Job.Delay(500);
         }
         if (Desktops.IsRunning(MultiViewer.Process))
         {
             Store.Log("MultiViewer draait zonder debugpoort: herstarten met poort");
             await Desktops.CloseAppAsync(MultiViewer.Process);
-            await Task.Delay(1000);
+            await Job.Delay(1000);
         }
         await Apps.LaunchAsync(MultiViewer.Process, Apps.MultiViewerExe, $"--remote-debugging-port={Store.Current.MvPort}",
             Store.Current.PlaceMultiViewer, t => t == "MultiViewer");
         for (int i = 0; i < 40; i++)
         {
-            if (await ReadyAsync()) { await Task.Delay(1000); return true; }
-            await Task.Delay(750);
+            if (await ReadyAsync()) { await Job.Delay(1000); return true; }
+            await Job.Delay(750);
         }
         Store.Log("MultiViewer gestart maar debugpoort niet bereikbaar");
         return false;
@@ -144,6 +144,7 @@ public static class MvSetups
             {
                 var r = (string?)await Cdp.EvalAsync(page, js, awaitPromise: true, timeoutSeconds: 60);
                 if (r is "ok" or "no-setup") return r;
+                if (r != null && r.StartsWith("error:")) { Store.Log("MultiViewer weigerde de setup: " + r); return r; }
             }
             catch (OperationCanceledException) { return "ok"; } // still opening windows; that carries on
             catch (Exception e) { Store.Log("mv restore: " + e.Message); }
@@ -176,9 +177,17 @@ public static class MvSetups
             if (props) break;
           }
           if (!props) return 'no-session';
-          const payload = { f1: { sessionInfo: props.sessionInfo }, f1tv: { contentId: props.contentId, streams: props.streams } };
+          // MultiViewer 2.17+ checks this payload and requires f1.isLive (a boolean, from the same session page).
+          const payload = { f1: { sessionInfo: props.sessionInfo, isLive: props.isLive === true }, f1tv: { contentId: props.contentId, streams: props.streams } };
 
           const copy = JSON.parse(JSON.stringify(setup));
+          // MultiViewer saves a player's video quality as { bitrate, width, height } but 2.17 refuses
+          // that when the player starts (it wants a string): the player then never registers, its sound
+          // cannot be set and the replay timing falls back to the last live session. Leave it out.
+          for (const w of copy.windows) {
+            const ps = w.state && w.state.playerState;
+            if (ps && ps.videoQuality !== undefined && typeof ps.videoQuality !== 'string') delete ps.videoQuality;
+          }
           if (rest.length) {
             const slots = copy.windows
               .filter(w => w.type === 'f1tv.player' && w.state && w.state.driverData &&
@@ -191,7 +200,8 @@ public static class MvSetups
               w.state.streamData = { ...(w.state.streamData || {}), title: s.title, channelId: s.channelId };
             });
           }
-          await window.f1mv.setupManager.restoreSetup(copy, payload);
+          try { await window.f1mv.setupManager.restoreSetup(copy, payload); }
+          catch (e) { return 'error: ' + ((e && e.message) || e); } // e.g. MultiViewer changed what it expects
           return 'ok';
         })()
         """;
@@ -211,9 +221,20 @@ public static class MvSetups
     public static async Task UpdateRestSlotsAsync(bool force = false)
     {
         if (!Active || !Store.Current.RestEnabled || (!force && !Store.Current.RestLive)) return;
+        // A swap opens a new player window, and Windows puts it on the desktop that is showing. So swap
+        // only while F1's own desktop shows; elsewhere the slot waits until you are back on it.
+        if (!OnF1Desktop()) return;
         if (!await Lock.WaitAsync(force ? 5000 : 0)) return; // a setup is being opened right now
         try { await UpdateRestSlotsCoreAsync(force); }
         finally { Lock.Release(); }
+    }
+
+    private static bool OnF1Desktop()
+    {
+        var s = Store.Current;
+        if (s.ModeDesktop == "current" || !Guid.TryParse(s.F1DesktopId, out var f1)) return true;
+        var (ids, current) = Desktops.Info();
+        return ids.Count == 0 || ids[current] == f1;
     }
 
     private static async Task UpdateRestSlotsCoreAsync(bool force)
@@ -239,7 +260,8 @@ public static class MvSetups
             swapped = true;
         }
         // A new player opens on top of everything; put the stacking right again.
-        if (swapped) { await Task.Delay(1000); await StackAsync(); }
+        // The new player lands a pixel or two off and with Windows' own edge: close the seams again.
+        if (swapped) { await Job.Delay(1000); await StackAsync(); Seams.Close(); }
     }
 
     /// <summary>Opening a setup and updating its slots never run at the same time.</summary>

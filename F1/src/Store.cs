@@ -43,6 +43,11 @@ public sealed class F1Settings
     public bool CloseUf1 { get; set; } = true;
     public bool CloseDesktop { get; set; } = false;
 
+    /// <summary>Taskbar on the main monitor only while F1 runs (back on all displays when F1 closes).</summary>
+    public bool TaskbarMainOnly { get; set; } = true;
+    /// <summary>F1 took the taskbar off the other displays, so closing F1 puts it back.</summary>
+    public bool TaskbarRestore { get; set; }
+
     // ---- Flags
     public bool ShowYellow { get; set; } = true;
     public bool ShowSafetyCar { get; set; } = true; // SC and VSC

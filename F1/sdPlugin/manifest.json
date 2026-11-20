@@ -3,7 +3,7 @@
     "Name":  "F1",
     "Author":  "Stan",
     "Description":  "F1 kijken met MultiViewer en Ultimate F1 Viewer: vlaggen op je Hue-lampen, latency, volume, race- en quali-layouts en een F1 Mode die alles op een eigen bureaublad klaarzet.",
-    "Version":  "1.13.0.0",
+    "Version": "1.13.9.0",
     "SDKVersion":  2,
     "Icon":  "images/plugin",
     "Category":  "F1",
@@ -23,7 +23,7 @@
                     {
                         "UUID":  "com.stan.f1.mode",
                         "Name":  "F1 Mode",
-                        "Tooltip":  "Drukken = F1 starten op het bureaublad F1 (MultiViewer en Ultimate F1 Viewer op hun plek, vlaggen, juiste layout). 1 seconde vasthouden = alles sluiten. Dubbelklikken = alles minimaliseren en dempen, nog eens = terug.",
+                        "Tooltip":  "Drukken = F1 starten op het bureaublad F1 (MultiViewer en Ultimate F1 Viewer op hun plek, vlaggen, juiste layout). 1 seconde vasthouden = stoppen met wat bezig is en alles sluiten. Dubbelklikken = alles minimaliseren en dempen, nog eens = terug.",
                         "Icon":  "images/action-mode",
                         "Controllers":  [
                                             "Keypad"
@@ -102,7 +102,7 @@
                     {
                         "UUID":  "com.stan.f1.volume",
                         "Name":  "Volume",
-                        "Tooltip":  "Volume van het hoofdscherm in MultiViewer. Draaien = harder/zachter, indrukken = dempen.",
+                        "Tooltip":  "Volume van alleen de F1 LIVE-hoofdstream in MultiViewer (nooit een onboard). Draaien = harder/zachter, indrukken = dempen.",
                         "Icon":  "images/action-volume",
                         "Controllers":  [
                                             "Encoder"
@@ -213,7 +213,7 @@
                     {
                         "UUID":  "com.stan.f1.race",
                         "Name":  "Race",
-                        "Tooltip":  "Opent je MultiViewer-setup Race en de Ultimate F1 Viewer-layout Race, met de twee beste coureurs van de rest in de vrije onboard-vakken. 1 seconde vasthouden = alles sluiten, net als F1 Mode.",
+                        "Tooltip":  "Opent je MultiViewer-setup Race en de Ultimate F1 Viewer-layout Race, met de twee beste coureurs van de rest in de vrije onboard-vakken. Nog eens drukken terwijl hij bezig is of al open staat doet niets. 1 seconde vasthouden = stoppen met wat bezig is en alles sluiten, net als F1 Mode.",
                         "Icon":  "images/action-race",
                         "Controllers":  [
                                             "Keypad"
@@ -228,7 +228,7 @@
                     {
                         "UUID":  "com.stan.f1.quali",
                         "Name":  "Quali",
-                        "Tooltip":  "Opent je MultiViewer-setup Qualifying en de Ultimate F1 Viewer-layout Qualifying, met de twee beste coureurs van de rest in de vrije onboard-vakken. 1 seconde vasthouden = alles sluiten, net als F1 Mode.",
+                        "Tooltip":  "Opent je MultiViewer-setup Qualifying en de Ultimate F1 Viewer-layout Qualifying, met de twee beste coureurs van de rest in de vrije onboard-vakken. Nog eens drukken terwijl hij bezig is of al open staat doet niets. 1 seconde vasthouden = stoppen met wat bezig is en alles sluiten, net als F1 Mode.",
                         "Icon":  "images/action-quali",
                         "Controllers":  [
                                             "Keypad"
