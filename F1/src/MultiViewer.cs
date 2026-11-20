@@ -140,6 +140,7 @@ public static class MultiViewer
             var d = await QueryAsync(StateQuery);
             s.Online = true;
             s.Timing = d?["f1LiveTimingState"] as JsonObject;
+            if (!Matches(s.Timing)) s.Timing = null; // another session's timing (see Expect)
             if (long.TryParse(d?["f1LiveTimingClock"]?["trackTime"]?.ToString(), out var tt)) s.TrackTimeMs = tt;
             if (d?["players"] is JsonArray players)
             {
@@ -178,9 +179,36 @@ public static class MultiViewer
     public static Task<bool> SetFullscreenAsync(string id, bool on) => MutateAsync($"playerSetFullscreen(id: {Id(id)}, fullscreen: {(on ? "true" : "false")})");
 
     /// <summary>Positions and teams: TimingData and DriverList from the live timing (null when not available).</summary>
+    private static int? _expectMeeting;
+    private static string? _expectKind;
+
+    /// <summary>
+    /// Race/Quali opened this session (meeting key, "race" or "quali"); null clears it. Until
+    /// MultiViewer's timing is of that session, its timing counts as none: right after it starts,
+    /// MultiViewer still shows the last live session (a finished practice of the next race weekend),
+    /// and that must not decide the tiles, the best of the rest or battle mode.
+    /// </summary>
+    public static void Expect(int? meeting, string? kind) { _expectMeeting = meeting; _expectKind = kind; }
+
+    private static bool Matches(JsonObject? timing)
+    {
+        if (timing == null || _expectMeeting is not { } meeting) return true;
+        var info = timing["SessionInfo"];
+        if (info == null) return true; // a query without SessionInfo cannot tell
+        if (!int.TryParse(info["Meeting"]?["Key"]?.ToString(), out var key) || key != meeting) return false;
+        var type = (string?)info["Type"] ?? "";
+        return _expectKind == "quali"
+            ? type.Contains("Qualifying", StringComparison.OrdinalIgnoreCase)
+            : string.Equals(type, "Race", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static async Task<JsonObject?> TimingAsync()
     {
-        try { return (await QueryAsync("{ f1LiveTimingState { TimingData DriverList ChampionshipPrediction } }"))?["f1LiveTimingState"] as JsonObject; }
+        try
+        {
+            var t = (await QueryAsync("{ f1LiveTimingState { SessionInfo TimingData DriverList ChampionshipPrediction } }"))?["f1LiveTimingState"] as JsonObject;
+            return Matches(t) ? t : null;
+        }
         catch { return null; }
     }
 

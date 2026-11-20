@@ -47,7 +47,8 @@ public static class MainAudio
         {
             (bool Primary, long Area, string Title, double Vol, bool Muted)? s;
             try { s = await ProbeAsync(page); } catch { continue; }
-            if (s is not { } st) continue;
+            // Only the main screen counts (or F1 Live wherever it is); never an onboard elsewhere.
+            if (s is not { } st || !(st.Primary || IsF1Live(st.Title))) continue;
             bool better = bestState is not { } b
                 || (st.Primary && !b.Primary)
                 || (st.Primary == b.Primary && st.Primary && st.Area > b.Area)
@@ -57,6 +58,9 @@ public static class MainAudio
         _page = best;
         Current = bestState is { } c ? new AudioState(c.Title, c.Vol, c.Muted) : null;
     }
+
+    /// <summary>MultiViewer closed: no stream any more (the dial must not keep the last one).</summary>
+    public static void Reset() { _page = null; Current = null; }
 
     private static bool IsF1Live(string title) => title.StartsWith("F1 Live", StringComparison.OrdinalIgnoreCase);
 

@@ -232,6 +232,7 @@ internal sealed class Plugin
         {
             var state = await MultiViewer.StateAsync();
             if (state.Online) await MainAudio.RefreshAsync(); // sound of the stream on the main monitor
+            else MainAudio.Reset();
             _ = Schedule.RefreshAsync(); // at most every 30 minutes
             await WithGate(async () =>
             {
@@ -574,6 +575,7 @@ internal sealed class Plugin
                 MvSetups.Active = false;
                 _f1ModeOn = false;
                 _layoutOpen = null;
+                MultiViewer.Expect(null, null);
                 _closing = false;
             });
         }
@@ -611,6 +613,7 @@ internal sealed class Plugin
         if (!await MvSetups.EnsureAsync()) { Store.Log($"layout {kind}: MultiViewer niet bereikbaar"); return false; }
         if (Uf1Available) await Uf1.EnsureAsync();
         await OpenSessionAsync(kind);
+        MultiViewer.Expect(_sessionMeeting, kind); // only this session's timing counts from here
         Job.Check();
 
         if (MvSetups.Find(kind) is { } setup)
