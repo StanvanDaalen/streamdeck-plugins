@@ -16,7 +16,7 @@
     {
       "UUID": "com.stan.launcher.game",
       "Name": "Game Key",
-      "Tooltip": "The game that is open right now, with playtime. Click: minimize or show. Hold: close.",
+      "Tooltip": "The game that is open right now, or one game you choose, with playtime. Click: start, minimize or show. Hold: close.",
       "Icon": "images/action-game",
       "Controllers": ["Keypad"],
       "DisableAutomaticStates": true,
@@ -28,6 +28,7 @@
       "Tooltip": "Key for one game. Click: start, minimize or show. Hold: close.",
       "Icon": "images/action-game",
       "Controllers": ["Keypad"],
+      "VisibleInActionsList": false,
       "DisableAutomaticStates": true,
       "States": [{ "Image": "images/key-game", "ShowTitle": false }]
     },

@@ -50,20 +50,14 @@ const send = payload => ws && ws.readyState === 1 &&
 function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
   uuid = inUuid;
   try { actionId = JSON.parse(actionInfo).action; } catch {}
-  const isApp = actionId.endsWith('.app'), isFixed = actionId.endsWith('.fixedgame'), isCurrent = !isApp && !isFixed;
-  $('target').classList.toggle('hide', isCurrent);
+  const isApp = actionId.endsWith('.app');
+  $('target').classList.remove('hide');
   $('targetTitle').textContent = isApp ? 'App' : 'Game';
   $('appRow').classList.toggle('hide', !isApp);
-  $('gameRow').classList.toggle('hide', !isFixed);
-  $('nameRow').classList.toggle('hide', isCurrent);
-  $('nameLabel').textContent = isFixed ? 'Show name when the game is closed' : 'Show name';
+  $('gameRow').classList.toggle('hide', isApp);
   $('namePlayingRow').classList.toggle('hide', isApp);
   $('timeRow').classList.toggle('hide', isApp);
-  $('help').textContent = isApp
-    ? 'Click: minimize, show or open. Hold: close.'
-    : isFixed
-      ? 'Click: start, minimize or show. Hold: close.'
-      : 'Click: minimize or show. Hold: close.';
+  layout('');
   ws = new WebSocket('ws://127.0.0.1:' + port);
   ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
   ws.onmessage = e => {
@@ -72,14 +66,27 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   };
 }
 
+// A game key either follows the game that is open or is set to one game.
+function layout(gameId) {
+  const isApp = actionId.endsWith('.app'), isFixed = !isApp && !!gameId;
+  $('nameRow').classList.toggle('hide', !isApp && !isFixed);
+  $('nameLabel').textContent = isFixed ? 'Show name when the game is closed' : 'Show name';
+  $('help').textContent = isApp
+    ? 'Click: minimize, show or open. Hold: close.'
+    : isFixed
+      ? 'Click: start, minimize or show. Hold: close.'
+      : 'Click: minimize or show. Hold: close.';
+}
+
 function apply(p) {
   const seen = {};
   p.games.forEach(g => { seen[g.original] = (seen[g.original] || 0) + 1; });
-  $('gameId').innerHTML = '<option value="">Choose a game…</option>' + p.games.map(g =>
+  $('gameId').innerHTML = '<option value="">Current game</option>' + p.games.map(g =>
     `<option value="${esc(g.id)}">${esc(g.name)}${seen[g.original] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}</option>`).join('');
-  $('gameId').value = p.gameId;
-  const isFixed = actionId.endsWith('.fixedgame'), isCurrent = !isFixed && !actionId.endsWith('.app');
-  $('logoRow').classList.toggle('hide', isFixed ? !p.gameId : !isCurrent);
+  $('gameId').value = p.gameId || '';
+  layout(p.gameId);
+  const isApp = actionId.endsWith('.app'), isFixed = !isApp && !!p.gameId, isCurrent = !isApp && !isFixed;
+  $('logoRow').classList.toggle('hide', isApp);
   $('logoFor').classList.toggle('hide', !isCurrent);
   $('logoFor').textContent = p.logoFor ? 'Logo for ' + p.logoFor + ' (the game that is open right now).' : 'Start a game to choose its logo.';
   $('logoBtns').classList.toggle('hide', isCurrent && !p.logoFor);
@@ -90,7 +97,7 @@ function apply(p) {
   for (const k of ['showName', 'showNamePlaying', 'showPlaytime']) $(k).checked = p[k];
 }
 
-$('gameId').addEventListener('change', () => send({ gameId: $('gameId').value }));
+$('gameId').addEventListener('change', () => { layout($('gameId').value); send({ gameId: $('gameId').value }); });
 $('app').addEventListener('change', () => send({ app: $('app').value }));
 $('logoClear').addEventListener('click', () => send({ customImage: '' }));
 $('logoFile').addEventListener('change', e => {

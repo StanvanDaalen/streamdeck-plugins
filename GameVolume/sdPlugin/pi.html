@@ -27,7 +27,7 @@
   .seg button { flex: 1; min-width: 0; border: 0; border-radius: 0; background: #3d3d3d; color: #b8b8b8; padding: 4px 6px; white-space: nowrap; }
   .seg button + button { border-left: 1px solid #4a4a4a; }
   .seg button.on { background: #e6e6e6; color: #1e1e1e; font-weight: 600; }
-  h4.first, body:not(.output) #appRow.hide + h4 { margin-top: 2px; border-top: 0; padding-top: 0; }
+  h4.first, body:not(.output) #gameRow.hide + #appRow.hide + h4 { margin-top: 2px; border-top: 0; padding-top: 0; }
   .hide { display: none !important; }
 </style>
 </head>
@@ -40,6 +40,10 @@
   </div>
 
   <div id="dialOnly">
+    <div id="gameRow" class="hide">
+      <h4 class="first">Game</h4>
+      <div class="row"><label>Game</label><select id="gameId"></select></div>
+    </div>
     <div id="appRow">
       <h4 class="first">App</h4>
       <div class="row"><label>App</label><select id="app"></select></div>
@@ -152,6 +156,7 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   $('iconSection').classList.toggle('hide', !actionId.endsWith('.output'));
   $('dialOnly').classList.toggle('hide', isOutput && controller !== 'Encoder');
   $('appRow').classList.toggle('hide', !isApp);
+  $('gameRow').classList.toggle('hide', !actionId.endsWith('.game'));
   fillGestures(isApp);
   $('gameSections').classList.toggle('hide', isApp || isOutput);
   $('outputOnly').classList.toggle('hide', !isOutput);
@@ -235,6 +240,15 @@ function apply(p) {
   $('app').innerHTML = '<option value="">Choose an app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
   $('app').value = p.app;
 
+  const games = (p.library || []).filter(g => !g.hidden || g.id === p.gameId);
+  const sameName = {};
+  games.forEach(g => { const n = g.customName || g.name; sameName[n] = (sameName[n] || 0) + 1; });
+  $('gameId').innerHTML = '<option value="">Current game</option>' + games.map(g => {
+    const n = g.customName || g.name;
+    return `<option value="${esc(g.id)}">${esc(n)}${sameName[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}</option>`;
+  }).join('');
+  $('gameId').value = p.gameId || '';
+
   lib = p.library || [];
   $('libCount').textContent = `${lib.length} games found automatically and manually.`;
   // The game that is running now comes first and is selected whenever a new game starts.
@@ -285,6 +299,7 @@ $('favoriteCurrent').addEventListener('click', () => send({ favoriteCurrent: tru
 $('startFavorite').addEventListener('change', () => send({ startFavorite: $('startFavorite').checked }));
 $('step').addEventListener('change', () => send({ step: $('step').value }));
 $('app').addEventListener('change', () => send({ app: $('app').value }));
+$('gameId').addEventListener('change', () => send({ gameId: $('gameId').value }));
 $('duckPercent').addEventListener('change', () => send({ duckPercent: Number($('duckPercent').value) }));
 
 for (const k of ['speakerMix', 'headphoneMix', 'volumeStep', 'focusriteMode'])

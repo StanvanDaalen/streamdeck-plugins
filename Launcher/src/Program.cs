@@ -153,7 +153,7 @@ internal static class Program
         _game = found;
         if (_game != null) Remember(_game);
         // The game button's panel follows the game that is running, so its logo can be set right away.
-        if (gameChanged) foreach (var x in Contexts.Values.Where(x => x.Action != App && x.Action != FixedGame).ToList()) await SendPi(x);
+        if (gameChanged) foreach (var x in Contexts.Values.Where(x => x.Action != App && !IsFixed(x)).ToList()) await SendPi(x);
 
         foreach (var c in Contexts.Values.ToList()) await Render(c);
         SaveExes();
@@ -221,13 +221,16 @@ internal static class Program
         c.HoldTimer?.Cancel();
         c.HoldTimer = null;
         if (c.HoldFired) return;
-        switch (c.Action)
-        {
-            case App: PressApp(c); break;
-            case FixedGame: PressFixed(c); break;
-            default: if (_game != null) ToggleGame(_game); break;
-        }
+        if (c.Action == App) PressApp(c);
+        else if (IsFixed(c)) PressFixed(c);
+        else if (_game != null) ToggleGame(_game);
     }
+
+    /// <summary>
+    /// A Game Key set to one game. The separate Fixed Game Key action of older versions is the same thing,
+    /// so buttons placed with it keep working.
+    /// </summary>
+    private static bool IsFixed(Ctx c) => c.Action == FixedGame || (c.Action == CurrentGame && Str(c, "gameId", "").Length > 0);
 
     private static void ToggleGame(RunningGame g)
     {
@@ -272,7 +275,7 @@ internal static class Program
 
     private static void Close(Ctx c)
     {
-        if (c.Action == FixedGame)
+        if (IsFixed(c))
         {
             if (FixedEntry(c) is { } entry && Running(entry) is { } running) WindowControl.CloseWindows(running.Pids);
             return;
@@ -343,8 +346,7 @@ internal static class Program
     private static Task Render(Ctx c) => c.Action switch
     {
         App => RenderApp(c),
-        FixedGame => RenderFixed(c),
-        _ => RenderCurrent(c),
+        _ => IsFixed(c) ? RenderFixed(c) : RenderCurrent(c),
     };
 
     private static async Task SetImage(Ctx c, string hash, Bitmap icon, string name, string time, bool active)
@@ -488,12 +490,8 @@ internal static class Program
     }
 
     /// <summary>The game whose logo this button's panel edits: the chosen game, or for the game button the one running now.</summary>
-    private static string? LogoTarget(Ctx c) => c.Action switch
-    {
-        FixedGame => Str(c, "gameId", "") is { Length: > 0 } id ? id : null,
-        App => null,
-        _ => _game?.Entry.Id,
-    };
+    private static string? LogoTarget(Ctx c) =>
+        c.Action == App ? null : IsFixed(c) ? (Str(c, "gameId", "") is { Length: > 0 } id ? id : null) : _game?.Entry.Id;
 
     private static async Task SendPi(Ctx c)
     {

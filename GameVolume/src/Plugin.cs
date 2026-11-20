@@ -368,9 +368,29 @@ internal sealed class Plugin
         _ => Task.CompletedTask,
     };
 
+    // ---------- the game a Game Volume dial controls: its chosen game, or the game in front ----------
+
+    private string FixedId(Ctx c) => c.Action == GameAction ? Str(c, "gameId", "") : "";
+
+    private GameEntry? FixedEntry(Ctx c) => FixedId(c) is { Length: > 0 } id ? _library.Entries.FirstOrDefault(e => e.Id == id) : null;
+
+    private RunningGame? DialGame(Ctx c)
+    {
+        var id = FixedId(c);
+        if (id.Length == 0) return _game;
+        return _game?.Entry.Id == id ? _game : _detector.FindById(id);
+    }
+
+    private void RememberVolume(Ctx c, float volume)
+    {
+        if (c.Action != GameAction || !G.RememberVolume || DialGame(c) is not { } g) return;
+        G.GameVolumes[g.Entry.Id] = volume;
+        SettingsStore.MarkDirty();
+    }
+
     private async Task RunMedia(Ctx c, string action)
     {
-        var process = c.Action == AppAction ? Str(c, "app", "") : _game?.ExePath is { } exe ? Path.GetFileNameWithoutExtension(exe) : "";
+        var process = c.Action == AppAction ? Str(c, "app", "") : DialGame(c)?.ExePath is { } exe ? Path.GetFileNameWithoutExtension(exe) : "";
         if (process.Length == 0) return;
         await ShowOverlay(c, await MediaControl.RunAsync(process, action) ?? "No media");
     }
@@ -394,13 +414,14 @@ internal sealed class Plugin
     private async Task ToggleWindow(Ctx c)
     {
         if (c.Action == AppAction) { ToggleApp(c); return; }
-        if (_game != null)
+        if (DialGame(c) is { } game)
         {
-            if (WindowControl.IsForeground(_game)) WindowControl.Minimize(_game.Window);
-            else WindowControl.Activate(_game.Window);
+            if (WindowControl.IsForeground(game)) WindowControl.Minimize(game.Window);
+            else WindowControl.Activate(game.Window);
             return;
         }
-        if (LastGameTarget() is { } target) Launch(target);
+        var target = FixedEntry(c) is { } fixedGame ? LaunchTarget(fixedGame.Id, fixedGame.ExactExe ?? GameLibrary.GuessExe(fixedGame)) : LastGameTarget();
+        if (target != null) Launch(target);
         else await ShowOverlay(c, "No game yet");
     }
 
@@ -408,7 +429,7 @@ internal sealed class Plugin
     {
         if (c.Action == GameAction)
         {
-            if (_game != null) WindowControl.CloseWindows(_game.Pids);
+            if (DialGame(c) is { } game) WindowControl.CloseWindows(game.Pids);
             return Task.CompletedTask;
         }
         var app = Str(c, "app", "");
@@ -428,7 +449,7 @@ internal sealed class Plugin
 
     private string? FavoriteKey(Ctx c)
     {
-        if (c.Action == GameAction) return _game?.Entry.Id;
+        if (c.Action == GameAction) return FixedId(c) is { Length: > 0 } id ? id : _game?.Entry.Id;
         var app = Str(c, "app", "");
         return app.Length > 0 ? "app:" + app.ToLowerInvariant() : null;
     }
@@ -440,11 +461,7 @@ internal sealed class Plugin
         var sessions = SessionsFor(c);
         if (sessions.Count == 0) return;
         AudioSessions.SetVolume(sessions, favorite);
-        if (c.Action == GameAction && _game != null && G.RememberVolume)
-        {
-            G.GameVolumes[_game.Entry.Id] = favorite;
-            SettingsStore.MarkDirty();
-        }
+        RememberVolume(c, favorite);
         await RenderDial(c);
     }
 
@@ -570,7 +587,7 @@ internal sealed class Plugin
 
     private List<Session> SessionsFor(Ctx c)
     {
-        if (c.Action == GameAction) return _game != null ? _audio.ForGame(_game).ToList() : new();
+        if (c.Action == GameAction) return DialGame(c) is { } game ? _audio.ForGame(game).ToList() : new();
         var app = Str(c, "app", "");
         return app.Length > 0 ? _audio.ForProcess(app).ToList() : new();
     }
@@ -597,11 +614,7 @@ internal sealed class Plugin
         v = MathF.Round(v * 100f) / 100f;
         AudioSessions.SetVolume(sessions, v);
         if (AudioSessions.Muted(sessions) && ticks > 0) AudioSessions.SetMute(sessions, false);
-        if (c.Action == GameAction && _game != null && G.RememberVolume)
-        {
-            G.GameVolumes[_game.Entry.Id] = v;
-            SettingsStore.MarkDirty();
-        }
+        RememberVolume(c, v);
         await RenderDial(c);
     }
 
@@ -617,7 +630,7 @@ internal sealed class Plugin
         var dv = Math.Clamp((AudioSessions.Volume(discord) ?? 1f) - delta, 0f, 1f);
         AudioSessions.SetVolume(game, gv);
         AudioSessions.SetVolume(discord, dv);
-        if (_game != null && G.RememberVolume) { G.GameVolumes[_game.Entry.Id] = gv; SettingsStore.MarkDirty(); }
+        RememberVolume(c, gv);
         await ShowOverlay(c, $"G{Math.Round(gv * 100)} · D{Math.Round(dv * 100)}");
     }
 
@@ -678,15 +691,26 @@ internal sealed class Plugin
         }
         else if (c.Action == GameAction)
         {
-            if (_game == null)
+            var game = DialGame(c);
+            var fixedGame = FixedEntry(c);
+            if (game != null)
             {
-                (title, value, bar, titleColor, art) = ("No game", "", 0, Dim, _art.NoGame);
+                art = _art.ForGame(game);
+                title = DisplayName(game);
+                (value, bar, barColor) = VolumeText(SessionsFor(c), themed ? art.Accent : Standard);
+            }
+            else if (fixedGame != null)
+            {
+                // The chosen game is closed: show it dimmed, so the dial still says which game it belongs to.
+                art = _art.ForGame(new RunningGame
+                {
+                    Entry = fixedGame, Window = IntPtr.Zero, ExePath = fixedGame.ExactExe ?? GameLibrary.GuessExe(fixedGame), Pids = new(), Started = DateTime.Now,
+                });
+                (title, value, bar, titleColor) = (DisplayName(fixedGame), "", 0, Dim);
             }
             else
             {
-                art = _art.ForGame(_game);
-                title = DisplayName(_game);
-                (value, bar, barColor) = VolumeText(SessionsFor(c), themed ? art.Accent : Standard);
+                (title, value, bar, titleColor, art) = ("No game", "", 0, Dim, _art.NoGame);
             }
         }
         else
@@ -706,7 +730,7 @@ internal sealed class Plugin
 
         // "No game" and "Choose an app" are status messages, so a custom title never hides them.
         bool hasTarget = output ? _outputs!.Status == LinkStatus.Ready
-            : c.Action == GameAction ? _game != null : Str(c, "app", "").Length > 0;
+            : c.Action == GameAction ? DialGame(c) != null || FixedEntry(c) != null : Str(c, "app", "").Length > 0;
         if (hasTarget && Str(c, "titleMode", "app") == "custom")
         {
             var custom = Str(c, "customTitle", "").Trim();
@@ -787,7 +811,7 @@ internal sealed class Plugin
             if (node is not JsonValue v) continue;
             switch (key)
             {
-                case "display" or "theme" or "step" or "app" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "holdAction":
+                case "display" or "theme" or "step" or "app" or "gameId" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "holdAction":
                     c.Settings[key] = node.DeepClone();
                     perAction = true;
                     break;
@@ -907,7 +931,8 @@ internal sealed class Plugin
                 ["holdAction"] = Str(c, "holdAction", "close"),
                 ["startFavorite"] = G.StartOnFavorite,
                 ["favorite"] = FavoriteKey(c) is { } fav && G.Favorites.TryGetValue(fav, out var favValue) ? (int)Math.Round(favValue * 100) : null,
-                ["favoriteFor"] = c.Action == GameAction ? (_game != null ? DisplayName(_game) : null) : (Str(c, "app", "") is { Length: > 0 } dialApp ? AppName(dialApp, _knownAppExe.GetValueOrDefault(dialApp) ?? G.AppExes.GetValueOrDefault(dialApp)) : null),
+                ["gameId"] = Str(c, "gameId", ""),
+                ["favoriteFor"] = c.Action == GameAction ? (FixedEntry(c) is { } fixedGame ? DisplayName(fixedGame) : _game != null ? DisplayName(_game) : null) : (Str(c, "app", "") is { Length: > 0 } dialApp ? AppName(dialApp, _knownAppExe.GetValueOrDefault(dialApp) ?? G.AppExes.GetValueOrDefault(dialApp)) : null),
                 ["iconSpeakers"] = Str(c, "iconSpeakers", ""),
                 ["iconHeadphones"] = Str(c, "iconHeadphones", ""),
                 ["titleMode"] = Str(c, "titleMode", "app"),
