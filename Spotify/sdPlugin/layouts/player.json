@@ -1,18 +1,224 @@
 {
   "id": "stan-spotify-player",
   "items": [
-    { "key": "artwork", "type": "pixmap", "rect": [12, 12, 40, 40], "value": "imgs/noartwork.svg", "zOrder": 10 },
-    { "key": "title", "type": "text", "rect": [60, 12, 134, 20], "font": { "size": 16, "weight": 400 }, "text-overflow": "fade", "alignment": "left", "value": "", "zOrder": 11 },
-    { "key": "artist", "type": "text", "rect": [60, 32, 134, 20], "font": { "size": 16, "weight": 400 }, "text-overflow": "fade", "alignment": "left", "value": "", "opacity": 0.7, "zOrder": 12 },
-    { "key": "time", "type": "text", "rect": [12, 57, 50, 20], "font": { "size": 16, "weight": 400 }, "alignment": "left", "value": "", "zOrder": 26 },
-    { "key": "duration", "type": "text", "rect": [134, 57, 50, 20], "font": { "size": 16, "weight": 400 }, "alignment": "right", "value": "", "zOrder": 26 },
-    { "key": "shuffleIcon", "type": "pixmap", "rect": [56, 60, 24, 24], "value": "imgs/shuffle-off.svg", "zOrder": 47 },
-    { "key": "playIcon", "type": "pixmap", "rect": [86, 60, 24, 24], "value": "imgs/play.svg", "zOrder": 48 },
-    { "key": "autoRepeatIcon", "type": "pixmap", "rect": [116, 60, 24, 24], "value": "imgs/repeat-off.svg", "zOrder": 49 },
-    { "key": "progress", "type": "bar", "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#4D4D4D", "bar_fill_c": "#FFFFFF", "rect": [12, 83, 176, 8], "value": 0, "range": { "min": 0, "max": 100 }, "opacity": 0.8, "zOrder": 30 },
-    { "key": "volumeIcon", "type": "pixmap", "rect": [12, 57, 20, 20], "value": "imgs/volume.svg", "opacity": 0, "zOrder": 61 },
-    { "key": "volumeLevel", "type": "text", "rect": [134, 57, 50, 20], "font": { "size": 16, "weight": 400 }, "alignment": "right", "value": "", "opacity": 0, "zOrder": 62 },
-    { "key": "volumeBar", "type": "bar", "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#4D4D4D", "bar_fill_c": "#1ED760", "rect": [12, 83, 176, 8], "value": 0, "range": { "min": 0, "max": 100 }, "opacity": 0, "zOrder": 63 },
-    { "key": "overlay", "type": "pixmap", "rect": [0, 0, 200, 100], "background": "black", "value": "imgs/notrunning.svg", "opacity": 1, "zOrder": 100 }
+    {
+      "key": "artwork",
+      "type": "pixmap",
+      "rect": [
+        12,
+        12,
+        40,
+        40
+      ],
+      "value": "imgs/noartwork.svg",
+      "zOrder": 10
+    },
+    {
+      "key": "title",
+      "type": "text",
+      "rect": [
+        60,
+        12,
+        134,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "text-overflow": "fade",
+      "alignment": "left",
+      "zOrder": 11
+    },
+    {
+      "key": "artist",
+      "type": "text",
+      "rect": [
+        60,
+        32,
+        134,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "text-overflow": "fade",
+      "alignment": "left",
+      "value": "",
+      "opacity": 0.7,
+      "zOrder": 12
+    },
+    {
+      "key": "time",
+      "type": "text",
+      "rect": [
+        12,
+        57,
+        50,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "left",
+      "value": "",
+      "zOrder": 26
+    },
+    {
+      "key": "duration",
+      "type": "text",
+      "rect": [
+        134,
+        57,
+        50,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "right",
+      "value": "",
+      "zOrder": 26
+    },
+    {
+      "key": "shuffleIcon",
+      "type": "pixmap",
+      "rect": [
+        56,
+        60,
+        24,
+        24
+      ],
+      "value": "imgs/shuffle-off.svg",
+      "zOrder": 47
+    },
+    {
+      "key": "playIcon",
+      "type": "pixmap",
+      "rect": [
+        86,
+        60,
+        24,
+        24
+      ],
+      "value": "imgs/play.svg",
+      "zOrder": 48
+    },
+    {
+      "key": "autoRepeatIcon",
+      "type": "pixmap",
+      "rect": [
+        116,
+        60,
+        24,
+        24
+      ],
+      "value": "imgs/repeat-off.svg",
+      "zOrder": 49
+    },
+    {
+      "key": "progress",
+      "type": "bar",
+      "subtype": 4,
+      "border_w": 0,
+      "bar_h": 8,
+      "bar_bg_c": "#4D4D4D",
+      "bar_fill_c": "#FFFFFF",
+      "rect": [
+        12,
+        83,
+        176,
+        8
+      ],
+      "value": 0,
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "opacity": 0.8,
+      "zOrder": 30
+    },
+    {
+      "key": "volumeIcon",
+      "type": "pixmap",
+      "rect": [
+        12,
+        57,
+        20,
+        20
+      ],
+      "value": "imgs/volume.svg",
+      "opacity": 0,
+      "zOrder": 61
+    },
+    {
+      "key": "volumeLevel",
+      "type": "text",
+      "rect": [
+        134,
+        57,
+        50,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "right",
+      "value": "",
+      "opacity": 0,
+      "zOrder": 62
+    },
+    {
+      "key": "volumeBar",
+      "type": "bar",
+      "subtype": 4,
+      "border_w": 0,
+      "bar_h": 8,
+      "bar_bg_c": "#4D4D4D",
+      "bar_fill_c": "#1ED760",
+      "rect": [
+        12,
+        83,
+        176,
+        8
+      ],
+      "value": 0,
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "opacity": 0,
+      "zOrder": 63
+    },
+    {
+      "key": "overlay",
+      "type": "pixmap",
+      "rect": [
+        0,
+        0,
+        200,
+        100
+      ],
+      "background": "black",
+      "value": "imgs/notrunning.svg",
+      "opacity": 1,
+      "zOrder": 100
+    },
+    {
+      "key": "badge",
+      "type": "pixmap",
+      "rect": [
+        38,
+        38,
+        18,
+        18
+      ],
+      "opacity": 0,
+      "zOrder": 15
+    }
   ]
 }

@@ -17,6 +17,12 @@ internal sealed class Ctx
     public DateTime LastUp = DateTime.MinValue;
 
     public DateTime VolumeUntil = DateTime.MinValue;
+
+    // Hold + turn = seek: the screen shows where the track will be right away.
+    public TimeSpan SeekTarget;
+    public DateTime SeekUntil = DateTime.MinValue;
+
+    public string? Layout;
 }
 
 internal sealed class Plugin
@@ -33,6 +39,7 @@ internal sealed class Plugin
         ["press3"] = "previous",
         ["pressHold"] = "window",
         ["touch"] = "playPause",
+        ["accent"] = "play",
     };
 
     private readonly int _port;
@@ -106,6 +113,18 @@ internal sealed class Plugin
 
     private static string Str(Ctx c, string key) =>
         c.Settings[key] is JsonValue v && v.TryGetValue(out string? s) && s != null ? s : Defaults.GetValueOrDefault(key, "");
+
+    /// <summary>Hold + turn: "seek" (default) or "other" (whatever plain turning does not do).</summary>
+    private static bool PressSeeks(Ctx c) =>
+        c.Settings["pressRotate"] is not JsonValue v || !v.TryGetValue(out string? s) || s != "other";
+
+    /// <summary>The screen while Spotify runs: player (like the official dial), picture or compact.</summary>
+    private const string SpotifyGreen = "#1ED760";
+
+    /// <summary>How the dial shows it is Spotify: "play" (green play button), "timeline", "logo" or "off".</summary>
+    private static string Accent(Ctx c) => Str(c, "accent") switch { "timeline" => "timeline", "logo" => "logo", "off" => "off", _ => "play" };
+
+    private static string Look(Ctx c) => Str(c, "look") switch { "picture" => "picture", "compact" => "compact", _ => "player" };
 
     private static bool PreferVolume(Ctx c) =>
         c.Settings["preferVolume"] is not JsonValue v || !v.TryGetValue(out bool b) || b; // default: rotate = volume
@@ -209,6 +228,20 @@ internal sealed class Plugin
     {
         if (ticks == 0) return;
         if (c.Pressed) c.Turned = true;
+        if (c.Pressed && PressSeeks(c))
+        {
+            var s = _media.State;
+            if (!SpotifyMedia.IsRunning || !s.HasSession || !s.CanSeek || s.Duration <= TimeSpan.Zero) return;
+            var from = DateTime.UtcNow < c.SeekUntil ? c.SeekTarget : s.Position;
+            var target = from + TimeSpan.FromSeconds(ticks * 5);
+            if (target < TimeSpan.Zero) target = TimeSpan.Zero;
+            if (target > s.Duration) target = s.Duration - TimeSpan.FromSeconds(1);
+            c.SeekTarget = target;
+            c.SeekUntil = DateTime.UtcNow + TimeSpan.FromSeconds(1.5);
+            try { await _media.Seek(target); } catch (Exception e) { Log.Write("seek: " + e.Message); }
+            await RenderAsync(c);
+            return;
+        }
         bool volume = PreferVolume(c) != c.Pressed;
         if (volume)
         {
@@ -287,20 +320,39 @@ internal sealed class Plugin
         bool muted = showVolume && SpotifyAudio.Muted();
         showVolume &= volume != null;
         bool hasTrack = running && s.HasSession && s.Title.Length > 0;
-        int progress = s.Duration.TotalSeconds > 0 ? (int)Math.Round(100 * s.Position.TotalSeconds / s.Duration.TotalSeconds) : 0;
+        bool seeking = DateTime.UtcNow < c.SeekUntil;
+        if (seeking) showVolume = false;
+        var position = seeking ? c.SeekTarget : s.Position;
+        int progress = s.Duration.TotalSeconds > 0 ? (int)Math.Round(100 * position.TotalSeconds / s.Duration.TotalSeconds) : 0;
+        string titleText = hasTrack ? s.Title : running ? "Nothing playing" : "";
+
+        var look = Look(c);
+        var accent = Accent(c);
+        var layout = look == "picture" && accent == "logo" ? "layouts/picture-logo.json" : $"layouts/{look}.json";
+        if (c.Layout != layout)
+        {
+            c.Layout = layout;
+            c.Sent.Clear();
+            await SendAsync(new JsonObject { ["event"] = "setFeedbackLayout", ["context"] = c.Id, ["payload"] = new JsonObject { ["layout"] = layout } });
+        }
 
         var items = new Dictionary<string, JsonObject>
         {
             ["overlay"] = new() { ["value"] = Icons.Get("notRunning"), ["opacity"] = running ? 0 : 1 },
-            ["artwork"] = new() { ["value"] = hasTrack && s.Artwork != null ? s.Artwork : Icons.Get("noArtwork") },
-            ["title"] = new() { ["value"] = hasTrack ? s.Title : running ? "Nothing playing" : "" },
-            ["artist"] = new() { ["value"] = hasTrack ? s.Artist : "" },
-            ["time"] = new() { ["value"] = hasTrack ? Clock(s.Position) : "", ["opacity"] = showVolume ? 0 : 1 },
+            ["time"] = new() { ["value"] = hasTrack ? Clock(position) : "", ["opacity"] = showVolume ? 0 : 1 },
             ["duration"] = new() { ["value"] = hasTrack ? Clock(s.Duration) : "", ["opacity"] = showVolume ? 0 : 1 },
-            ["progress"] = new() { ["value"] = Math.Clamp(progress, 0, 100), ["opacity"] = showVolume ? 0 : 0.8 },
-            ["playIcon"] = new() { ["value"] = Icons.Get(s.Playing ? "pause" : "play") },
-            ["shuffleIcon"] = new() { ["value"] = Icons.Get(s.Shuffle == true ? "shuffleOn" : "shuffleOff") },
-            ["autoRepeatIcon"] = new()
+            ["progress"] = new() { ["value"] = Math.Clamp(progress, 0, 100), ["bar_fill_c"] = accent == "timeline" ? SpotifyGreen : "#FFFFFF", ["opacity"] = showVolume ? 0 : (accent == "timeline" ? 1 : 0.8) },
+            ["playIcon"] = new() { ["value"] = Icons.Get(s.Playing ? "pause" : "play", accent == "play" ? SpotifyGreen : null) },
+            ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = showVolume ? 1 : 0 },
+            ["volumeLevel"] = new() { ["value"] = muted ? "Mute" : $"{volume ?? 0}%", ["opacity"] = showVolume ? 1 : 0 },
+            ["volumeBar"] = new() { ["value"] = volume ?? 0, ["opacity"] = showVolume ? 1 : 0 },
+        };
+        if (look is "player" or "picture")
+            items["badge"] = new() { ["value"] = "imgs/badge-spotify.svg", ["opacity"] = accent == "logo" && hasTrack ? 1 : 0 };
+        if (look is "player" or "picture")
+        {
+            items["shuffleIcon"] = new() { ["value"] = Icons.Get(s.Shuffle == true ? "shuffleOn" : "shuffleOff") };
+            items["autoRepeatIcon"] = new()
             {
                 ["value"] = Icons.Get(s.Repeat switch
                 {
@@ -308,11 +360,27 @@ internal sealed class Plugin
                     MediaPlaybackAutoRepeatMode.List => "repeatList",
                     _ => "repeatOff",
                 })
-            },
-            ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = showVolume ? 1 : 0 },
-            ["volumeLevel"] = new() { ["value"] = muted ? "Muted" : $"{volume ?? 0}%", ["opacity"] = showVolume ? 1 : 0 },
-            ["volumeBar"] = new() { ["value"] = volume ?? 0, ["opacity"] = showVolume ? 1 : 0 },
-        };
+            };
+        }
+        switch (look)
+        {
+            case "player":
+                items["artwork"] = new() { ["value"] = hasTrack && s.Artwork != null ? s.Artwork : Icons.Get("noArtwork") };
+                items["title"] = new() { ["value"] = titleText };
+                items["artist"] = new() { ["value"] = hasTrack ? s.Artist : "" };
+                break;
+            case "picture":
+                items["backdrop"] = new() { ["value"] = (hasTrack ? (showVolume ? s.BackdropDim : s.Backdrop) : null) ?? "imgs/black.svg" };
+                items["volumePanel"] = new() { ["opacity"] = showVolume ? 1 : 0 }; // calm, dark base under the volume
+                items["title"] = new() { ["value"] = titleText };
+                items["artist"] = new() { ["value"] = hasTrack ? s.Artist : "" };
+                break;
+            default:
+                items["icon"] = new() { ["value"] = "imgs/logo.svg" };
+                items["title"] = new() { ["value"] = "Spotify" };
+                items["track"] = new() { ["value"] = titleText };
+                break;
+        }
 
         var payload = new JsonObject();
         foreach (var (key, value) in items)

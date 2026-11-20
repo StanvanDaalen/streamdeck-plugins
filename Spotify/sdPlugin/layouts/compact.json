@@ -1,0 +1,183 @@
+{
+  "id": "stan-spotify-compact",
+  "items": [
+    {
+      "key": "icon",
+      "type": "pixmap",
+      "rect": [
+        12,
+        12,
+        40,
+        40
+      ],
+      "zOrder": 10
+    },
+    {
+      "key": "title",
+      "type": "text",
+      "rect": [
+        60,
+        12,
+        104,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 600
+      },
+      "text-overflow": "fade",
+      "alignment": "left",
+      "zOrder": 11
+    },
+    {
+      "key": "playIcon",
+      "type": "pixmap",
+      "rect": [
+        168,
+        14,
+        24,
+        24
+      ],
+      "zOrder": 48
+    },
+    {
+      "key": "time",
+      "type": "text",
+      "rect": [
+        12,
+        57,
+        70,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "left",
+      "opacity": 0.7,
+      "zOrder": 26
+    },
+    {
+      "key": "duration",
+      "type": "text",
+      "rect": [
+        118,
+        57,
+        70,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "right",
+      "opacity": 0.7,
+      "zOrder": 26
+    },
+    {
+      "key": "progress",
+      "type": "bar",
+      "subtype": 4,
+      "border_w": 0,
+      "bar_h": 8,
+      "bar_bg_c": "#4D4D4D",
+      "bar_fill_c": "#FFFFFF",
+      "rect": [
+        12,
+        83,
+        176,
+        8
+      ],
+      "value": 0,
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "opacity": 0.8,
+      "zOrder": 30
+    },
+    {
+      "key": "volumeIcon",
+      "type": "pixmap",
+      "rect": [
+        12,
+        57,
+        20,
+        20
+      ],
+      "opacity": 0,
+      "zOrder": 61
+    },
+    {
+      "key": "volumeLevel",
+      "type": "text",
+      "rect": [
+        118,
+        57,
+        70,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "right",
+      "opacity": 0,
+      "zOrder": 62
+    },
+    {
+      "key": "volumeBar",
+      "type": "bar",
+      "subtype": 4,
+      "border_w": 0,
+      "bar_h": 8,
+      "bar_bg_c": "#4D4D4D",
+      "bar_fill_c": "#FFFFFF",
+      "rect": [
+        12,
+        83,
+        176,
+        8
+      ],
+      "value": 0,
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "opacity": 0,
+      "zOrder": 63
+    },
+    {
+      "key": "track",
+      "type": "text",
+      "rect": [
+        60,
+        32,
+        134,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "text-overflow": "fade",
+      "alignment": "left",
+      "opacity": 0.7,
+      "zOrder": 12
+    },
+    {
+      "key": "overlay",
+      "type": "pixmap",
+      "rect": [
+        0,
+        0,
+        200,
+        100
+      ],
+      "background": "black",
+      "value": "imgs/notrunning.svg",
+      "opacity": 1,
+      "zOrder": 100
+    }
+  ]
+}

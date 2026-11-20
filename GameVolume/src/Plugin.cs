@@ -17,7 +17,11 @@ internal sealed class Ctx
     public bool RotatedWhilePressed, Encoder, HoldFired;
     public CancellationTokenSource? HoldTimer, ClickTimer;
     public string? Overlay;
-    public DateTime OverlayUntil;
+    public DateTime OverlayUntil, VolumeUntil, SeekUntil;
+    public readonly Dictionary<string, string> MediaSent = new();
+    public int Clicks;
+    public TimeSpan SeekTarget;
+    public bool SeekSending, SeekPending;
 }
 
 internal sealed class Plugin
@@ -45,6 +49,8 @@ internal sealed class Plugin
     private readonly HashSet<string> _appliedSessions = new();
     private DateTime _libraryLoaded = DateTime.MinValue;
     private readonly Dictionary<string, string> _knownAppExe = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, MediaInfo?> _media = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan VolumeShown = TimeSpan.FromMilliseconds(1500);
 
     // Scarlett is only started once one of its actions is placed.
     private Settings? _scarlett;
@@ -188,6 +194,7 @@ internal sealed class Plugin
         await _ws.ConnectAsync(new Uri($"ws://127.0.0.1:{_port}"), CancellationToken.None);
         await SendAsync(new JsonObject { ["event"] = _register, ["uuid"] = _uuid });
         _ = Task.Run(TickLoop);
+        _ = Task.Run(MediaLoop);
 
         var buffer = new byte[1 << 16];
         using var ms = new MemoryStream();
@@ -230,6 +237,184 @@ internal sealed class Plugin
             await WithGate(TickAsync);
             await Task.Delay(2000);
         }
+    }
+
+    /// <summary>Once a second: what each App Volume dial's app is playing, for its media screen.</summary>
+    private async Task MediaLoop()
+    {
+        while (_ws.State == WebSocketState.Open)
+        {
+            await Task.Delay(1000);
+            List<string> apps = new();
+            await WithGate(() =>
+            {
+                apps = _contexts.Values.Where(c => c.Action == AppAction && MediaStyle(c) != "off")
+                    .Select(c => Str(c, "app", "")).Where(a => a.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                return Task.CompletedTask;
+            });
+            foreach (var app in apps)
+            {
+                var info = await MediaControl.GetAsync(app); // outside the gate: never holds up dial presses
+                await WithGate(async () =>
+                {
+                    _media[app] = info;
+                    foreach (var c in _contexts.Values.Where(c => c.Action == AppAction && Str(c, "app", "").Equals(app, StringComparison.OrdinalIgnoreCase)).ToList())
+                        await RenderDial(c);
+                });
+            }
+        }
+    }
+
+    private const int SeekStep = 5; // seconds per tick while the dial is held and turned
+
+    private async Task Seek(Ctx c, MediaInfo m, int ticks)
+    {
+        var from = DateTime.UtcNow < c.SeekUntil ? c.SeekTarget : m.Position;
+        var target = from + TimeSpan.FromSeconds(ticks * SeekStep);
+        if (target < TimeSpan.Zero) target = TimeSpan.Zero;
+        if (target > m.Duration) target = m.Duration - TimeSpan.FromSeconds(1);
+        c.SeekTarget = target;
+        c.SeekUntil = DateTime.UtcNow + TimeSpan.FromSeconds(1.5);
+        // One request at a time per dial, always to the newest target: fast turning never lands on an older spot.
+        bool start;
+        lock (c) { c.SeekPending = true; start = !c.SeekSending; c.SeekSending = true; }
+        if (start)
+        {
+            var app = Str(c, "app", "");
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    TimeSpan next;
+                    lock (c)
+                    {
+                        if (!c.SeekPending) { c.SeekSending = false; return; }
+                        c.SeekPending = false;
+                        next = c.SeekTarget;
+                    }
+                    await MediaControl.SeekAsync(app, next); // outside the gate; never throws
+                }
+            });
+        }
+        await RenderDial(c);
+    }
+
+    /// <summary>How a media dial shows which app it is: "play" (coloured play button), "timeline", "logo" or "off".</summary>
+    private static string Accent(Ctx c) => Str(c, "accent", "play") switch { "timeline" => "timeline", "logo" => "logo", "off" => "off", _ => "play" };
+
+    private static readonly HashSet<string> Browsers = new(StringComparer.OrdinalIgnoreCase) { "chrome", "msedge", "firefox", "brave", "opera", "vivaldi" };
+
+    /// <summary>The app's own colour and black-and-white logo. Browsers mostly play YouTube, so they get its red.</summary>
+    private static (string? Color, string? Badge) AppIdentity(string app) =>
+        Browsers.Contains(app) ? ("#FF0033", "images/media/badge-youtube.svg")
+        : app.Equals("spotify", StringComparison.OrdinalIgnoreCase) ? ("#1ED760", "images/media/badge-spotify.svg")
+        : (null, null);
+
+    private static string MediaStyle(Ctx c) => Str(c, "mediaStyle", "player") switch
+    {
+        "background" => "background",
+        "compact" => "compact",
+        "off" => "off",
+        _ => "player",
+    };
+
+    private MediaInfo? MediaFor(Ctx c) =>
+        c.Action == AppAction && MediaStyle(c) != "off" && Str(c, "app", "") is { Length: > 0 } app ? _media.GetValueOrDefault(app) : null;
+
+    private void ShowVolumeBriefly(Ctx c)
+    {
+        if (MediaFor(c) == null) return;
+        c.VolumeUntil = DateTime.UtcNow + VolumeShown;
+        _ = Task.Delay(VolumeShown + TimeSpan.FromMilliseconds(60)).ContinueWith(_ => WithGate(() =>
+            _contexts.ContainsKey(c.Id) && DateTime.UtcNow >= c.VolumeUntil ? RenderDial(c) : Task.CompletedTask));
+    }
+
+    private static string Clock(TimeSpan t) =>
+        t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}" : $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+
+    private async Task RenderMedia(Ctx c, MediaInfo m)
+    {
+        var style = MediaStyle(c);
+        var accent = Accent(c);
+        var (appColor, appBadge) = AppIdentity(Str(c, "app", ""));
+        var layout = style == "background" && accent == "logo" && appBadge != null ? "layouts/media-background-logo.json" : $"layouts/media-{style}.json";
+        if (c.Layout != layout)
+        {
+            c.Layout = layout; c.ArtId = null; c.LastJson = null; c.MediaSent.Clear();
+            await SendAsync(new JsonObject { ["event"] = "setFeedbackLayout", ["context"] = c.Id, ["payload"] = new JsonObject { ["layout"] = layout } });
+        }
+
+        var app = Str(c, "app", "");
+        var exe = _knownAppExe.GetValueOrDefault(app) ?? G.AppExes.GetValueOrDefault(app);
+        var art = _art.ForExe("app:" + app.ToLowerInvariant(), exe) ?? _art.NoGame;
+        var sessions = SessionsFor(c);
+        int volume = (int)Math.Round((AudioSessions.Volume(sessions) ?? 0f) * 100f);
+        bool muted = sessions.Count > 0 && AudioSessions.Muted(sessions);
+        bool seeking = DateTime.UtcNow < c.SeekUntil;
+        bool showVolume = !seeking && (muted || DateTime.UtcNow < c.VolumeUntil);
+        bool timeline = m.HasTimeline && !showVolume;
+        var position = seeking ? c.SeekTarget : m.Position;
+        int progress = m.HasTimeline ? (int)Math.Round(100 * position.TotalSeconds / m.Duration.TotalSeconds) : 0;
+        double timeOpacity = timeline ? (style == "compact" ? 0.7 : 1) : 0;
+
+        string line = m.Title;
+        if (c.Overlay != null)
+        {
+            if (DateTime.UtcNow < c.OverlayUntil) line = c.Overlay; else c.Overlay = null;
+        }
+        var lineText = new JsonObject { ["value"] = line };
+
+        var items = new Dictionary<string, JsonObject>
+        {
+            ["playIcon"] = new() { ["value"] = Icons.Get(m.Playing ? "pause" : "play", accent == "play" ? appColor : null) },
+            ["time"] = new() { ["value"] = m.HasTimeline ? Clock(position) : "", ["opacity"] = timeOpacity },
+            ["duration"] = new() { ["value"] = m.HasTimeline ? Clock(m.Duration) : "", ["opacity"] = timeOpacity },
+            ["progress"] = new()
+            {
+                ["value"] = Math.Clamp(progress, 0, 100),
+                ["bar_fill_c"] = accent == "timeline" && appColor != null ? appColor : Standard,
+                ["opacity"] = timeline ? (style == "background" || (accent == "timeline" && appColor != null) ? 1 : 0.8) : 0,
+            },
+            ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = showVolume ? 1 : 0 },
+            ["volumeLevel"] = new() { ["value"] = muted ? "Mute" : $"{volume}%", ["opacity"] = showVolume ? 1 : 0 },
+            ["volumeBar"] = new() { ["value"] = volume, ["bar_fill_c"] = muted ? MutedBar : Standard, ["opacity"] = showVolume ? 1 : 0 },
+        };
+        if (style is "player" or "background")
+            items["badge"] = new() { ["value"] = appBadge ?? "images/media/panel.svg", ["opacity"] = accent == "logo" && appBadge != null ? 1 : 0 };
+        if (style is "player" or "background")
+        {
+            items["prevIcon"] = new() { ["value"] = Icons.Get("previous"), ["opacity"] = m.CanPrevious ? 1 : 0.35 };
+            items["nextIcon"] = new() { ["value"] = Icons.Get("next"), ["opacity"] = m.CanNext ? 1 : 0.35 };
+        }
+        switch (style)
+        {
+            case "player":
+                items["title"] = lineText;
+                items["artist"] = new() { ["value"] = m.Artist };
+                items["cover"] = new() { ["value"] = m.Cover ?? art.IconUrl };
+                break;
+            case "background":
+                items["title"] = lineText;
+                items["artist"] = new() { ["value"] = m.Artist };
+                items["backdrop"] = new() { ["value"] = (showVolume ? m.BackdropDim : m.Backdrop) ?? art.BackgroundUrl };
+                items["volumePanel"] = new() { ["opacity"] = showVolume ? 1 : 0 }; // calm, dark base under the volume
+                break;
+            default:
+                items["title"] = new() { ["value"] = AppName(app, exe) };
+                items["track"] = lineText;
+                items["icon"] = new() { ["value"] = art.IconUrl };
+                break;
+        }
+
+        var payload = new JsonObject();
+        foreach (var (key, value) in items)
+        {
+            var json = value.ToJsonString();
+            if (c.MediaSent.GetValueOrDefault(key) == json) continue;
+            c.MediaSent[key] = json;
+            payload[key] = value;
+        }
+        if (payload.Count > 0) await SendAsync(new JsonObject { ["event"] = "setFeedback", ["context"] = c.Id, ["payload"] = payload });
     }
 
     private async Task TickAsync()
@@ -339,24 +524,30 @@ internal sealed class Plugin
 
     private async Task OnClick(Ctx c)
     {
-        var single = Str(c, "singleAction", "mute");
-        var twice = Str(c, "doubleAction", "window");
-        if (twice == "none") { await Perform(c, single); return; }
-
-        if (c.ClickTimer != null)
+        var actions = new[] { Str(c, "singleAction", "mute"), Str(c, "doubleAction", "window"), Str(c, "tripleAction", TripleDefault(c)) };
+        int most = actions[2] != "none" ? 3 : actions[1] != "none" ? 2 : 1;
+        c.ClickTimer?.Cancel();
+        c.ClickTimer = null;
+        c.Clicks = Math.Min(c.Clicks + 1, most);
+        if (c.Clicks >= most)
         {
-            c.ClickTimer.Cancel();
-            c.ClickTimer = null;
-            await Perform(c, twice);
+            // Nothing more can follow: act now instead of waiting.
+            var n = c.Clicks;
+            c.Clicks = 0;
+            await Perform(c, actions[n - 1]);
             return;
         }
         var cts = c.ClickTimer = new CancellationTokenSource();
         Schedule(c, cts, 300, () =>
         {
             c.ClickTimer = null;
-            return Perform(c, single);
+            var n = c.Clicks;
+            c.Clicks = 0;
+            return Perform(c, actions[n - 1]);
         });
     }
+
+    private static string TripleDefault(Ctx c) => c.Action == AppAction ? "previous" : "none";
 
     private Task Perform(Ctx c, string action) => action switch
     {
@@ -392,7 +583,15 @@ internal sealed class Plugin
     {
         var process = c.Action == AppAction ? Str(c, "app", "") : DialGame(c)?.ExePath is { } exe ? Path.GetFileNameWithoutExtension(exe) : "";
         if (process.Length == 0) return;
-        await ShowOverlay(c, await MediaControl.RunAsync(process, action) ?? "No media");
+        var status = await MediaControl.RunAsync(process, action);
+        if (status != null && c.Action == AppAction && MediaStyle(c) != "off")
+        {
+            // The media screen shows the result itself (play/pause icon, new title): refresh it right away.
+            await Task.Delay(250);
+            _media[process] = await MediaControl.GetAsync(process);
+            if (_media[process] != null) { await RenderDial(c); return; }
+        }
+        await ShowOverlay(c, status ?? "No media");
     }
 
     private static void Launch(string target)
@@ -602,6 +801,12 @@ internal sealed class Plugin
             if (c.Overlay == Closing) c.Overlay = null;
         }
 
+        if (pressed && MediaFor(c) is { CanSeek: true, HasTimeline: true } playing)
+        {
+            await Seek(c, playing, ticks);
+            return;
+        }
+
         if (pressed && c.Action == GameAction && G.Balance)
         {
             await OnBalance(c, ticks);
@@ -615,6 +820,7 @@ internal sealed class Plugin
         AudioSessions.SetVolume(sessions, v);
         if (AudioSessions.Muted(sessions) && ticks > 0) AudioSessions.SetMute(sessions, false);
         RememberVolume(c, v);
+        ShowVolumeBriefly(c);
         await RenderDial(c);
     }
 
@@ -648,6 +854,7 @@ internal sealed class Plugin
         var sessions = SessionsFor(c);
         if (sessions.Count == 0) return;
         AudioSessions.SetMute(sessions, !AudioSessions.Muted(sessions));
+        ShowVolumeBriefly(c);
         await RenderDial(c);
     }
 
@@ -668,6 +875,8 @@ internal sealed class Plugin
 
     private async Task RenderDial(Ctx c)
     {
+        if (!_contexts.ContainsKey(c.Id)) return;
+        if (MediaFor(c) is { } media) { await RenderMedia(c, media); return; }
         string title, value;
         int bar;
         string titleColor = Standard, barColor = Standard;
@@ -811,7 +1020,7 @@ internal sealed class Plugin
             if (node is not JsonValue v) continue;
             switch (key)
             {
-                case "display" or "theme" or "step" or "app" or "gameId" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "holdAction":
+                case "display" or "theme" or "step" or "app" or "gameId" or "mediaStyle" or "accent" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
                     c.Settings[key] = node.DeepClone();
                     perAction = true;
                     break;
@@ -924,10 +1133,13 @@ internal sealed class Plugin
             ["payload"] = new JsonObject
             {
                 ["display"] = Str(c, "display", "icon"),
+                ["mediaStyle"] = MediaStyle(c),
+                ["accent"] = Accent(c),
                 ["theme"] = Str(c, "theme", "standard"),
                 ["step"] = Str(c, "step", "2"),
                 ["singleAction"] = Str(c, "singleAction", "mute"),
                 ["doubleAction"] = Str(c, "doubleAction", "window"),
+                ["tripleAction"] = Str(c, "tripleAction", TripleDefault(c)),
                 ["holdAction"] = Str(c, "holdAction", "close"),
                 ["startFavorite"] = G.StartOnFavorite,
                 ["favorite"] = FavoriteKey(c) is { } fav && G.Favorites.TryGetValue(fav, out var favValue) ? (int)Math.Round(favValue * 100) : null,

@@ -10,9 +10,10 @@ namespace StanSpotify;
 
 internal sealed record MediaState(
     bool HasSession, bool Playing, string Title, string Artist, string? Artwork,
-    TimeSpan Position, TimeSpan Duration, bool? Shuffle, MediaPlaybackAutoRepeatMode? Repeat)
+    TimeSpan Position, TimeSpan Duration, bool? Shuffle, MediaPlaybackAutoRepeatMode? Repeat, bool CanSeek,
+    string? Backdrop = null, string? BackdropDim = null)
 {
-    public static readonly MediaState Empty = new(false, false, "", "", null, TimeSpan.Zero, TimeSpan.Zero, null, null);
+    public static readonly MediaState Empty = new(false, false, "", "", null, TimeSpan.Zero, TimeSpan.Zero, null, null, false);
 }
 
 /// <summary>Spotify's now-playing info and transport controls through the Windows media controls.</summary>
@@ -21,7 +22,7 @@ internal sealed class SpotifyMedia : IDisposable
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
     private string _trackKey = "";
-    private string? _artwork;
+    private string? _artwork, _backdrop, _backdropDim;
     private string _title = "", _artist = "";
 
     public MediaState State { get; private set; } = MediaState.Empty;
@@ -58,7 +59,7 @@ internal sealed class SpotifyMedia : IDisposable
                 _trackKey = key;
                 _title = props.Title ?? "";
                 _artist = props.Artist ?? "";
-                _artwork = await LoadArtwork(props.Thumbnail);
+                (_artwork, _backdrop, _backdropDim) = await LoadArtwork(props.Thumbnail);
             }
 
             bool playing = playback.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
@@ -69,7 +70,8 @@ internal sealed class SpotifyMedia : IDisposable
             if (duration > TimeSpan.Zero) position = TimeSpan.FromTicks(Math.Clamp(position.Ticks, 0, duration.Ticks));
 
             State = new MediaState(true, playing, _title, _artist, _artwork, position, duration,
-                playback.IsShuffleActive, playback.AutoRepeatMode);
+                playback.IsShuffleActive, playback.AutoRepeatMode, playback.Controls.IsPlaybackPositionEnabled,
+                _backdrop, _backdropDim);
         }
         catch (Exception e)
         {
@@ -80,9 +82,9 @@ internal sealed class SpotifyMedia : IDisposable
         }
     }
 
-    private static async Task<string?> LoadArtwork(Windows.Storage.Streams.IRandomAccessStreamReference? thumb)
+    private static async Task<(string?, string?, string?)> LoadArtwork(Windows.Storage.Streams.IRandomAccessStreamReference? thumb)
     {
-        if (thumb == null) return null;
+        if (thumb == null) return (null, null, null);
         try
         {
             using var stream = await Wait(thumb.OpenReadAsync());
@@ -102,11 +104,34 @@ internal sealed class SpotifyMedia : IDisposable
                 g.SetClip(path);
                 g.DrawImage(src, new Rectangle(0, 0, 80, 80), crop, GraphicsUnit.Pixel);
             }
-            using var ms = new MemoryStream();
-            bmp.Save(ms, ImageFormat.Png);
-            return "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+            // The Picture style: the cover over the whole screen, darkened so white text stays readable,
+            // and an even darker version while the volume shows.
+            return (DataUrl(bmp), Backdrop(src, crop, 150), Backdrop(src, crop, 215));
         }
-        catch (Exception e) { Log.Write("artwork: " + e.Message); return null; }
+        catch (Exception e) { Log.Write("artwork: " + e.Message); return (null, null, null); }
+    }
+
+    private static string DataUrl(Bitmap bmp)
+    {
+        using var ms = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+        return "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+    }
+
+    private static string Backdrop(Bitmap src, Rectangle square, int shadeAlpha)
+    {
+        // A square cover on a wide screen: use its middle band, scaled to fill 200x100.
+        var band = new Rectangle(square.X, square.Y + square.Height / 4, square.Width, square.Height / 2);
+        using var bmp = new Bitmap(200, 100, PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            g.DrawImage(src, new Rectangle(0, 0, 200, 100), band, GraphicsUnit.Pixel);
+            using var shade = new SolidBrush(Color.FromArgb(shadeAlpha, 0, 0, 0));
+            g.FillRectangle(shade, 0, 0, 200, 100);
+        }
+        return DataUrl(bmp);
     }
 
     private static GraphicsPath Rounded(Rectangle r, int radius)
@@ -137,6 +162,14 @@ internal sealed class SpotifyMedia : IDisposable
     public async Task Play() { if (_session != null) await Wait(_session.TryPlayAsync()); }
     public async Task Next() { if (_session != null) await Wait(_session.TrySkipNextAsync()); }
     public async Task Previous() { if (_session != null) await Wait(_session.TrySkipPreviousAsync()); }
+
+    /// <summary>Jumps to a position in the current track (the timeline starts at zero).</summary>
+    public async Task Seek(TimeSpan position)
+    {
+        if (_session == null) return;
+        var start = _session.GetTimelineProperties().StartTime;
+        await Wait(_session.TryChangePlaybackPositionAsync((start + position).Ticks));
+    }
 
     public async Task ToggleShuffle()
     {

@@ -31,21 +31,30 @@ internal static class Icons
     private static readonly Dictionary<string, string> Cache = new();
     private static DateTime _loaded = DateTime.MinValue;
 
-    public static string Get(string name)
+    /// <summary>The icon as an image; with a colour, the exact same shape painted in that colour instead of white.</summary>
+    public static string Get(string name, string? color = null)
     {
         // Re-read now and then so an update of the official plugin is picked up.
         if (DateTime.UtcNow - _loaded > TimeSpan.FromMinutes(10)) { Cache.Clear(); _loaded = DateTime.UtcNow; }
-        if (Cache.TryGetValue(name, out var v)) return v;
+        var cacheKey = color == null ? name : name + "|" + color;
+        if (Cache.TryGetValue(cacheKey, out var v)) return v;
         var (official, own) = Map[name];
         v = own;
         try
         {
             var path = Path.Combine(Official, official);
+            if (!File.Exists(path)) path = Path.Combine(AppContext.BaseDirectory, "..", own); // our own drawing
             if (File.Exists(path))
-                v = "data:image/svg+xml;base64," + Convert.ToBase64String(File.ReadAllBytes(path));
+            {
+                var svg = File.ReadAllText(path);
+                if (color != null)
+                    foreach (var white in new[] { "#fff\"", "#FFF\"", "#ffffff\"", "#FFFFFF\"" })
+                        svg = svg.Replace("fill=\"" + white, "fill=\"" + color + "\"");
+                v = "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(svg));
+            }
         }
         catch (Exception e) { Log.Write("icon " + name + ": " + e.Message); }
-        return Cache[name] = v;
+        return Cache[cacheKey] = v;
     }
 
     public static string Volume(int? level, bool muted) =>

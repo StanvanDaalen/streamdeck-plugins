@@ -57,13 +57,27 @@
     <div class="row" id="themeRow"><span class="lbl">Slider</span><div class="seg" data-group="theme">
       <button value="standard">White</button><button value="game">Game color</button></div></div>
 
+    <div id="mediaSection" class="hide">
+      <h4>While playing</h4>
+      <div class="row"><span class="lbl">Style</span><div class="seg" data-group="mediaStyle">
+        <button value="player">Player</button><button value="background">Picture</button><button value="compact">Compact</button><button value="off">Off</button></div></div>
+      <p class="muted">When the app plays something, the dial shows the title, picture, play/pause and a timeline. Turning briefly shows the volume. Off keeps the normal display.</p>
+
+      <h4>App indicator</h4>
+      <div class="row"><span class="lbl">Show with</span><div class="seg" data-group="accent">
+        <button value="play">Play</button><button value="timeline">Timeline</button><button value="logo">Logo</button><button value="off">Off</button></div></div>
+      <p class="muted">So you can tell this dial apart from Spotify: browsers show YouTube red, Spotify green. Logo adds a small black-and-white logo (Player and Picture). Other apps stay white.</p>
+    </div>
+
     <div id="gestureSection">
       <h4>Controls</h4>
       <div class="row" id="stepRow"><label>Volume step</label>
         <select id="step"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
       <div class="row"><label>Click</label><select id="singleAction" class="gesture"></select></div>
       <div class="row"><label>Double-click</label><select id="doubleAction" class="gesture"></select></div>
+      <div class="row"><label>Triple-click</label><select id="tripleAction" class="gesture"></select></div>
       <div class="row"><label>Hold</label><select id="holdAction" class="gesture"></select></div>
+      <p class="muted hide" id="seekHint">Hold and turn: rewind or fast-forward 5 seconds per step while the app plays something.</p>
       <h4>Favorite volume</h4>
       <div class="row"><span class="lbl" id="favoriteFor">—</span><input type="number" id="favorite" min="0" max="100" placeholder="Not set"></div>
       <div class="row"><span class="lbl"></span><button id="favoriteCurrent">Use current volume</button></div>
@@ -156,6 +170,8 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   $('iconSection').classList.toggle('hide', !actionId.endsWith('.output'));
   $('dialOnly').classList.toggle('hide', isOutput && controller !== 'Encoder');
   $('appRow').classList.toggle('hide', !isApp);
+  $('mediaSection').classList.toggle('hide', !isApp);
+  $('seekHint').classList.toggle('hide', !isApp);
   $('gameRow').classList.toggle('hide', !actionId.endsWith('.game'));
   fillGestures(isApp);
   $('gameSections').classList.toggle('hide', isApp || isOutput);
@@ -228,7 +244,7 @@ function apply(p) {
   $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
   $('duckRow').classList.toggle('hide', !p.duck);
   if (document.activeElement !== $('customTitle')) $('customTitle').value = p.customTitle;
-  for (const k of ['singleAction', 'doubleAction', 'holdAction']) $(k).value = p[k];
+  for (const k of ['singleAction', 'doubleAction', 'tripleAction', 'holdAction']) $(k).value = p[k];
   $('startFavorite').checked = !!p.startFavorite;
   $('favoriteFor').textContent = p.favoriteFor || 'No game open';
   $('favorite').disabled = $('favoriteCurrent').disabled = !p.favoriteFor;

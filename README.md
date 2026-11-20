@@ -15,7 +15,7 @@ Op Linux (alleen F1): installeer [OpenDeck](https://github.com/nekename/OpenDeck
 ## Audio
 
 - **Game Volume**: dial die de open game herkent en het volume regelt, met naam en logo.
-- **App Volume**: dial voor een vaste app, zoals Discord of Spotify.
+- **App Volume**: dial voor een vaste app, zoals Discord of Chrome. Speelt de app iets af, bijvoorbeeld een YouTube-video, dan toont de dial titel, kanaal, plaatje, afspelen/pauze en een tijdlijn, in de stijl Player, Picture of Compact. Klik, dubbel- en driemaal klikken: afspelen/pauze, volgend en vorig nummer. Ingedrukt draaien spoelt 5 seconden per stap. Een browser is te herkennen aan YouTube-rood, als play-knop, tijdlijn of klein logo.
 - **Scarlett Switch**, **Scarlett Speakers**, **Scarlett Headphones**: wisselen tussen speakers en koptelefoon. Dit vereist een Focusrite Scarlett, Focusrite Control 2 en een MIDI-loopbackpoort.
 
 Games worden automatisch gevonden via Steam, Epic, Xbox en Lunar Client. Andere games voeg je toe in de Gamebibliotheek.
@@ -47,7 +47,8 @@ Per input kun je een eigen icoon kiezen. De plugin levert een PC- en een PS5-ico
 Spotify op een dial van de Stream Deck +, met hetzelfde scherm als de officiële Spotify-plugin: hoes, titel, artiest, tijd, voortgang, shuffle, afspelen en herhalen. Het verschil: je kiest zelf wat de dial doet.
 
 - **1x, 2x en 3x klikken, vasthouden en tikken op het scherm**: kies per gebaar afspelen/pauze, volgend of vorig nummer, volume, dempen, shuffle, herhalen, het Spotify-venster tonen of een playlist openen. Standaard: klik = afspelen/pauze, dubbelklik = volgend nummer, 3x klikken = vorig nummer, vasthouden = Spotify tonen of verbergen.
-- **Draaien**: volume van Spotify of vorige/volgende. Ingedrukt draaien doet het andere.
+- **Draaien**: volume van Spotify of vorige/volgende. Ingedrukt draaien spoelt 5 seconden per stap, of doet het andere.
+- **Stijlen**: Player (zoals de officiële dial), Picture (de hoes over het hele scherm) of Compact. Spotify-groen op de play-knop, de tijdlijn of als klein logo maakt de dial herkenbaar naast andere mediadials.
 - **Lang tikken op het scherm**: links vorig nummer, rechts volgend nummer.
 - Staat Spotify uit, dan start elke actie Spotify.
 

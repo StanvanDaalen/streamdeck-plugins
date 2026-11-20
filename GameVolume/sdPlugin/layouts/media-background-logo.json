@@ -1,0 +1,213 @@
+{
+  "id": "gv-media-background-logo",
+  "items": [
+    {
+      "key": "backdrop",
+      "type": "pixmap",
+      "rect": [
+        0,
+        0,
+        200,
+        100
+      ],
+      "zOrder": 0
+    },
+    {
+      "key": "title",
+      "type": "text",
+      "rect": [
+        12,
+        10,
+        154,
+        22
+      ],
+      "font": {
+        "size": 16,
+        "weight": 600
+      },
+      "text-overflow": "fade",
+      "alignment": "left",
+      "zOrder": 11
+    },
+    {
+      "key": "artist",
+      "type": "text",
+      "rect": [
+        12,
+        32,
+        154,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "text-overflow": "fade",
+      "alignment": "left",
+      "opacity": 0.75,
+      "zOrder": 12
+    },
+    {
+      "key": "playIcon",
+      "type": "pixmap",
+      "rect": [
+        86,
+        60,
+        24,
+        24
+      ],
+      "zOrder": 48
+    },
+    {
+      "key": "time",
+      "type": "text",
+      "rect": [
+        12,
+        57,
+        50,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "left",
+      "zOrder": 26
+    },
+    {
+      "key": "duration",
+      "type": "text",
+      "rect": [
+        134,
+        57,
+        50,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "right",
+      "zOrder": 26
+    },
+    {
+      "key": "progress",
+      "type": "bar",
+      "subtype": 4,
+      "border_w": 0,
+      "bar_h": 8,
+      "bar_bg_c": "#5A5A5A",
+      "bar_fill_c": "#FFFFFF",
+      "rect": [
+        12,
+        83,
+        176,
+        8
+      ],
+      "value": 0,
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "zOrder": 30
+    },
+    {
+      "key": "volumeIcon",
+      "type": "pixmap",
+      "rect": [
+        12,
+        57,
+        20,
+        20
+      ],
+      "opacity": 0,
+      "zOrder": 61
+    },
+    {
+      "key": "volumeLevel",
+      "type": "text",
+      "rect": [
+        134,
+        57,
+        50,
+        20
+      ],
+      "font": {
+        "size": 16,
+        "weight": 400
+      },
+      "alignment": "right",
+      "opacity": 0,
+      "zOrder": 62
+    },
+    {
+      "key": "volumeBar",
+      "type": "bar",
+      "subtype": 4,
+      "border_w": 0,
+      "bar_h": 8,
+      "bar_bg_c": "#4D4D4D",
+      "bar_fill_c": "#FFFFFF",
+      "rect": [
+        12,
+        83,
+        176,
+        8
+      ],
+      "value": 0,
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "opacity": 0,
+      "zOrder": 63
+    },
+    {
+      "key": "volumePanel",
+      "type": "pixmap",
+      "rect": [
+        0,
+        52,
+        200,
+        48
+      ],
+      "value": "images/media/panel.svg",
+      "opacity": 0,
+      "zOrder": 60
+    },
+    {
+      "key": "prevIcon",
+      "type": "pixmap",
+      "rect": [
+        56,
+        56,
+        24,
+        24
+      ],
+      "zOrder": 47
+    },
+    {
+      "key": "nextIcon",
+      "type": "pixmap",
+      "rect": [
+        116,
+        56,
+        24,
+        24
+      ],
+      "zOrder": 49
+    },
+    {
+      "key": "badge",
+      "type": "pixmap",
+      "rect": [
+        170,
+        12,
+        18,
+        18
+      ],
+      "opacity": 0,
+      "zOrder": 15
+    }
+  ]
+}

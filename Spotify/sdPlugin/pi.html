@@ -9,51 +9,66 @@
   .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
   .row > label:first-child, .lbl { flex: 0 0 96px; color: #9a9a9a; }
   .row select, .row input[type=text] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
-  .row input[type=range] { flex: 1; min-width: 0; }
-  .val { flex: 0 0 34px; text-align: right; color: #9a9a9a; }
+  button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  button:hover { background: #474747; }
   .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .seg { flex: 1; min-width: 0; display: flex; border: 1px solid #4a4a4a; border-radius: 4px; overflow: hidden; }
+  .seg button { flex: 1; min-width: 0; border: 0; border-radius: 0; background: #3d3d3d; color: #b8b8b8; padding: 4px 6px; white-space: nowrap; }
+  .seg button + button { border-left: 1px solid #4a4a4a; }
+  .seg button.on { background: #e6e6e6; color: #1e1e1e; font-weight: 600; }
   .hide { display: none !important; }
 </style>
 </head>
 <body>
-  <h4 class="first">Draaien</h4>
-  <div class="row"><label for="preferVolume">Draaien</label>
-    <select id="preferVolume"><option value="1">Volume</option><option value="0">Vorige / volgende</option></select></div>
-  <div class="row"><label for="volumeStep">Volumestap</label>
-    <input type="range" id="volumeStep" min="1" max="10" step="1"><span class="val" id="stepVal"></span></div>
-  <p class="muted">Ingedrukt draaien doet het andere: bij Volume sla je dan nummers over, en andersom.</p>
+  <h4 class="first">Display</h4>
+  <div class="row"><span class="lbl">Style</span><div class="seg" id="look">
+    <button value="player">Player</button><button value="picture">Picture</button><button value="compact">Compact</button></div></div>
+  <p class="muted">Player looks like the official Spotify dial. Picture shows the cover across the whole screen. Compact shows the Spotify logo with the title.</p>
 
-  <h4>Klikken</h4>
-  <div class="row"><label for="press1">1x klikken</label><select id="press1" class="action"></select></div>
-  <div class="row"><label for="press2">2x klikken</label><select id="press2" class="action"></select></div>
-  <div class="row"><label for="press3">3x klikken</label><select id="press3" class="action"></select></div>
-  <div class="row"><label for="pressHold">Vasthouden</label><select id="pressHold" class="action hold"></select></div>
-  <div class="row"><label for="touch">Tik op scherm</label><select id="touch" class="action"></select></div>
+  <h4>App indicator</h4>
+  <div class="row"><span class="lbl">Show with</span><div class="seg" id="accent">
+    <button value="play">Play</button><button value="timeline">Timeline</button><button value="logo">Logo</button><button value="off">Off</button></div></div>
+  <p class="muted">So you can tell this dial apart from your other media dials: the play button or the timeline in Spotify green, or a small black-and-white logo (Player and Picture).</p>
+
+  <h4>Turning</h4>
+  <div class="row"><label for="preferVolume">Turn</label>
+    <select id="preferVolume"><option value="1">Volume</option><option value="0">Previous / next</option></select></div>
+  <div class="row"><label for="pressRotate">Hold and turn</label>
+    <select id="pressRotate"><option value="seek">Seek (5 s per step)</option><option value="other">The other one (skip or volume)</option></select></div>
+  <div class="row"><label for="volumeStep">Volume step</label>
+    <select id="volumeStep"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
+
+  <h4>Controls</h4>
+  <div class="row"><label for="press1">Click</label><select id="press1" class="action"></select></div>
+  <div class="row"><label for="press2">Double-click</label><select id="press2" class="action"></select></div>
+  <div class="row"><label for="press3">Triple-click</label><select id="press3" class="action"></select></div>
+  <div class="row"><label for="pressHold">Hold</label><select id="pressHold" class="action hold"></select></div>
+  <div class="row"><label for="touch">Tap screen</label><select id="touch" class="action"></select></div>
   <div class="row hide" id="playlistRow"><label for="playlistUri">Playlist</label>
-    <input type="text" id="playlistUri" placeholder="Plak een Spotify-link"></div>
-  <p class="muted">Staat 2x of 3x klikken op Niets, dan reageert de knop sneller. Lang tikken op het scherm: links = vorige, rechts = volgende. Staat Spotify uit, dan start elke actie Spotify.</p>
+    <input type="text" id="playlistUri" placeholder="https://open.spotify.com/playlist/…"></div>
+  <p class="muted">Set double- or triple-click to Nothing and the dial reacts faster. Long-press the screen: left = previous, right = next. If Spotify is closed, any action starts it.</p>
 
 <script>
 const $ = id => document.getElementById(id);
 const ACTIONS = [
-  ['none', 'Niets'],
-  ['playPause', 'Afspelen / pauze'],
-  ['next', 'Volgend nummer'],
-  ['previous', 'Vorig nummer'],
-  ['volumeUp', 'Volume omhoog'],
-  ['volumeDown', 'Volume omlaag'],
-  ['mute', 'Dempen aan/uit'],
-  ['shuffle', 'Shuffle aan/uit'],
-  ['repeat', 'Herhalen wisselen'],
-  ['window', 'Spotify tonen / verbergen'],
-  ['playlist', 'Playlist openen'],
+  ['none', 'Nothing'],
+  ['playPause', 'Play / pause'],
+  ['next', 'Next track'],
+  ['previous', 'Previous track'],
+  ['volumeUp', 'Volume up'],
+  ['volumeDown', 'Volume down'],
+  ['mute', 'Mute'],
+  ['shuffle', 'Shuffle on/off'],
+  ['repeat', 'Repeat mode'],
+  ['window', 'Show / hide Spotify'],
+  ['playlist', 'Open playlist'],
 ];
 const DEFAULTS = { press1: 'playPause', press2: 'next', press3: 'previous', pressHold: 'window', touch: 'playPause',
-                   preferVolume: true, volumeStep: 5, playlistUri: '' };
+                   preferVolume: true, volumeStep: 5, playlistUri: '', pressRotate: 'seek', look: 'player', accent: 'play' };
 let ws, uuid, settings = {};
 
 for (const sel of document.querySelectorAll('select.action')) {
-  const list = sel.classList.contains('hold') ? [...ACTIONS, ['showVolume', 'Volume tonen']] : ACTIONS;
+  const list = sel.classList.contains('hold') ? [...ACTIONS, ['showVolume', 'Show volume']] : ACTIONS;
   for (const [v, t] of list) sel.add(new Option(t, v));
 }
 
@@ -62,8 +77,10 @@ function value(key) { return settings[key] ?? DEFAULTS[key]; }
 function render() {
   for (const k of ['press1', 'press2', 'press3', 'pressHold', 'touch']) $(k).value = value(k);
   $('preferVolume').value = value('preferVolume') ? '1' : '0';
-  $('volumeStep').value = value('volumeStep');
-  $('stepVal').textContent = value('volumeStep') + '%';
+  $('pressRotate').value = value('pressRotate');
+  $('volumeStep').value = String(value('volumeStep'));
+  for (const id of ['look', 'accent'])
+    $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === value(id)));
   $('playlistUri').value = value('playlistUri');
   const usesPlaylist = ['press1', 'press2', 'press3', 'pressHold', 'touch'].some(k => value(k) === 'playlist');
   $('playlistRow').classList.toggle('hide', !usesPlaylist);
@@ -77,7 +94,10 @@ function save() {
 for (const k of ['press1', 'press2', 'press3', 'pressHold', 'touch'])
   $(k).addEventListener('change', e => { settings[k] = e.target.value; save(); });
 $('preferVolume').addEventListener('change', e => { settings.preferVolume = e.target.value === '1'; save(); });
-$('volumeStep').addEventListener('input', e => { settings.volumeStep = Number(e.target.value); save(); });
+$('pressRotate').addEventListener('change', e => { settings.pressRotate = e.target.value; save(); });
+$('volumeStep').addEventListener('change', e => { settings.volumeStep = Number(e.target.value); save(); });
+for (const id of ['look', 'accent'])
+  $(id).querySelectorAll('button').forEach(b => b.addEventListener('click', () => { settings[id] = b.value; save(); }));
 $('playlistUri').addEventListener('change', e => { settings.playlistUri = e.target.value.trim(); save(); });
 
 function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
