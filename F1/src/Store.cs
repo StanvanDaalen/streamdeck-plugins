@@ -43,6 +43,11 @@ public sealed class F1Settings
     public bool CloseUf1 { get; set; } = true;
     public bool CloseDesktop { get; set; } = false;
 
+    /// <summary>Hide the Windows taskbar automatically while F1 runs (put back when F1 closes).</summary>
+    public bool HideTaskbar { get; set; } = true;
+    /// <summary>F1 switched auto-hide on, so closing F1 switches it off again.</summary>
+    public bool TaskbarRestore { get; set; }
+
     // ---- Flags
     public bool ShowYellow { get; set; } = true;
     public bool ShowSafetyCar { get; set; } = true; // SC and VSC

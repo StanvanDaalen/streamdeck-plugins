@@ -440,6 +440,7 @@ internal sealed class Plugin
     private async Task<bool> StartF1Async(bool openLayout)
     {
         if (!CheckApps()) return false;
+        Taskbar.HideForF1(); // straight away and silently: the taskbar slides away, no settings window
         Guid? desk = S.ModeDesktop == "current" ? null : await Desktops.GoToNamedAsync(S.DesktopName);
         await WithGate(async () =>
         {
@@ -487,6 +488,7 @@ internal sealed class Plugin
             await Task.Delay(500);
             if (S.CloseDesktop && Guid.TryParse(S.F1DesktopId, out var desk)) await Desktops.CloseIfEmptyAsync(desk);
             else await Desktops.GoToAsync(0);
+            Taskbar.RestoreAfterF1();
         }
         finally
         {
@@ -519,6 +521,7 @@ internal sealed class Plugin
     {
         bool any = false;
         if (!CheckApps()) return false;
+        Taskbar.HideForF1();
 
         // Race/Quali include F1 Mode: run all its steps when it has not been started yet (even when an
         // app was already open by hand); otherwise just make sure we are on the F1 desktop.
@@ -841,6 +844,10 @@ internal sealed class Plugin
                 case "CloseMultiViewer": S.CloseMultiViewer = B(v); break;
                 case "CloseUf1": S.CloseUf1 = B(v); break;
                 case "CloseDesktop": S.CloseDesktop = B(v); break;
+                case "HideTaskbar":
+                    S.HideTaskbar = B(v);
+                    if (!S.HideTaskbar) Taskbar.RestoreAfterF1(); // switched off mid-session: show it again
+                    break;
                 case "ShowYellow": S.ShowYellow = B(v); break;
                 case "ShowSafetyCar": S.ShowSafetyCar = B(v); break;
                 case "ShowRed": S.ShowRed = B(v); break;
