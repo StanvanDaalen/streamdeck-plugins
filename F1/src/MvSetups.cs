@@ -181,6 +181,13 @@ public static class MvSetups
           const payload = { f1: { sessionInfo: props.sessionInfo, isLive: props.isLive === true }, f1tv: { contentId: props.contentId, streams: props.streams } };
 
           const copy = JSON.parse(JSON.stringify(setup));
+          // MultiViewer saves a player's video quality as { bitrate, width, height } but 2.17 refuses
+          // that when the player starts (it wants a string): the player then never registers, its sound
+          // cannot be set and the replay timing falls back to the last live session. Leave it out.
+          for (const w of copy.windows) {
+            const ps = w.state && w.state.playerState;
+            if (ps && ps.videoQuality !== undefined && typeof ps.videoQuality !== 'string') delete ps.videoQuality;
+          }
           if (rest.length) {
             const slots = copy.windows
               .filter(w => w.type === 'f1tv.player' && w.state && w.state.driverData &&

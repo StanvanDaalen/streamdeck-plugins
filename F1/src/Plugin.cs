@@ -1110,8 +1110,11 @@ internal sealed class Plugin
     private string SessionKey()
     {
         var name = _mv.SessionShort ?? "Session";
-        // No session open: the next one on the calendar ("NEXT", "Quali", "Sat 16:00").
-        if (_mv.Timing == null && Schedule.Next() is { } next)
+        // Nothing playing (no stream open), or no session at all: the next one on the calendar
+        // ("NEXT", "Quali", "Sat 16:00"). MultiViewer keeps the last live session's timing around
+        // after it ended, which is not what you are watching.
+        bool watching = _mv.Players.Count > 0 || MainAudio.Current != null;
+        if ((_mv.Timing == null || !watching) && Schedule.Next() is { } next)
             return Art.NextKey(next.Location, Schedule.Short(next.Name), Schedule.When(next.Start),
                 Schedule.Countdown(next.Start), next.Start - DateTimeOffset.UtcNow < TimeSpan.FromHours(1));
         if (_mv.Timing == null) return Art.InfoKey("Session", "–", _mv.Online ? "No session" : "Offline", Art.Grey);
