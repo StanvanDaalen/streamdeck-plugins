@@ -2,7 +2,7 @@
   "UUID": "com.stan.monitor",
   "Name": "Monitor",
   "Author": "Stan",
-  "Description": "Wissel met een knop tussen de inputs van een monitor.",
+  "Description": "Switch between the inputs of a monitor with one key.",
   "Version": "1.0.0.0",
   "SDKVersion": 2,
   "Icon": "images/plugin",
@@ -16,7 +16,7 @@
     {
       "UUID": "com.stan.monitor.input",
       "Name": "Monitor Input",
-      "Tooltip": "Klik: volgende input. Dubbelklik: vorige input.",
+      "Tooltip": "Click: next input. Double-click: previous input.",
       "Icon": "images/action",
       "Controllers": ["Keypad"],
       "DisableAutomaticStates": true,

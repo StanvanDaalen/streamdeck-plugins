@@ -1,5 +1,5 @@
-# Builds the Launcher plugin, installs it into Stream Deck and publishes the update to GitHub.
-param([string]$Message = 'Launcher bijgewerkt')
+﻿# Builds the Launcher plugin, installs it into Stream Deck and publishes the update to GitHub.
+param([string]$Message = 'Launcher bijgewerkt', [switch]$NoPublish)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.launcher.sdPlugin"
@@ -22,4 +22,4 @@ Copy-Item "$root\out\*" "$target\bin" -Recurse -Force
 # Deck would then read settings that the normal Stream Deck (started at sign-in) never sees.
 Start-Process explorer.exe -ArgumentList "`"$exe`""
 Write-Output 'Stream Deck restarted.'
-& "$root\..\publish.ps1" -Message $Message
+if (-not $NoPublish) { & "$root\..\publish.ps1" -Message $Message }

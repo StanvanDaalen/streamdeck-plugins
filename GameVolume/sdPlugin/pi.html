@@ -23,6 +23,10 @@
   .status { padding: 6px 8px; border-radius: 4px; background: #3a2626; color: #ff9a9a; margin: 2px 0 8px; }
   .status.ok { background: #333; color: #fff; }
   #libPanel iframe { width: 100%; height: 440px; border: 1px solid #4a4a4a; border-radius: 3px; margin-top: 6px; }
+  .seg { flex: 1; min-width: 0; display: flex; border: 1px solid #4a4a4a; border-radius: 4px; overflow: hidden; }
+  .seg button { flex: 1; min-width: 0; border: 0; border-radius: 0; background: #3d3d3d; color: #b8b8b8; padding: 4px 6px; white-space: nowrap; }
+  .seg button + button { border-left: 1px solid #4a4a4a; }
+  .seg button.on { background: #e6e6e6; color: #1e1e1e; font-weight: 600; }
   h4.first, body:not(.output) #appRow.hide + h4 { margin-top: 2px; border-top: 0; padding-top: 0; }
   .hide { display: none !important; }
 </style>
@@ -30,9 +34,9 @@
 <body>
   <div id="outputStatus" class="hide">
     <h4 class="first">Status</h4>
-    <div id="status" class="status">Verbinden…</div>
-    <div class="row"><span class="lbl">Apparaat</span><span id="device">—</span></div>
-    <div class="row"><span class="lbl">MIDI-poort</span><span id="port">—</span></div>
+    <div id="status" class="status">Connecting…</div>
+    <div class="row"><span class="lbl">Device</span><span id="device">—</span></div>
+    <div class="row"><span class="lbl">MIDI port</span><span id="port">—</span></div>
   </div>
 
   <div id="dialOnly">
@@ -40,91 +44,88 @@
       <h4 class="first">App</h4>
       <div class="row"><label>App</label><select id="app"></select></div>
     </div>
-    <h4 id="viewTitle">Weergave</h4>
-    <div class="row" id="titleRow"><span class="lbl">Titel</span><div class="opts">
-      <label><input type="checkbox" data-group="titleMode" value="app">Applicatie</label>
-      <label><input type="checkbox" data-group="titleMode" value="custom">Eigen tekst</label></div></div>
-    <div class="row hide" id="customTitleRow"><label>Eigen titel</label><input type="text" id="customTitle" placeholder="Bijv. Game"></div>
-    <div class="row" id="displayRow"><span class="lbl">Weergave</span><div class="opts">
-      <label><input type="checkbox" data-group="display" value="icon">Icoon</label>
-      <label><input type="checkbox" data-group="display" value="background">Achtergrond</label></div></div>
-    <div class="row" id="themeRow"><span class="lbl">Slider</span><div class="opts">
-      <label><input type="checkbox" data-group="theme" value="standard">Standaard</label>
-      <label><input type="checkbox" data-group="theme" value="game">Game-thema</label></div></div>
+    <h4 id="viewTitle">Display</h4>
+    <div class="row" id="titleRow"><span class="lbl">Title</span><div class="seg" data-group="titleMode">
+      <button value="app">App name</button><button value="custom">Custom text</button></div></div>
+    <div class="row hide" id="customTitleRow"><label>Custom title</label><input type="text" id="customTitle" placeholder="e.g. Game"></div>
+    <div class="row" id="displayRow"><span class="lbl">Logo</span><div class="seg" data-group="display">
+      <button value="icon">Icon</button><button value="background">Background</button></div></div>
+    <div class="row" id="themeRow"><span class="lbl">Slider</span><div class="seg" data-group="theme">
+      <button value="standard">White</button><button value="game">Game color</button></div></div>
 
     <div id="gestureSection">
-      <h4>Bediening</h4>
-      <div class="row" id="stepRow"><label>Volumestap</label>
+      <h4>Controls</h4>
+      <div class="row" id="stepRow"><label>Volume step</label>
         <select id="step"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
-      <div class="row"><label>Eén klik</label><select id="singleAction" class="gesture"></select></div>
-      <div class="row"><label>Dubbelklik</label><select id="doubleAction" class="gesture"></select></div>
-      <div class="row"><label>Vasthouden</label><select id="holdAction" class="gesture"></select></div>
-      <h4>Favoriet volume</h4>
-      <div class="row"><span class="lbl" id="favoriteFor">—</span><input type="number" id="favorite" min="0" max="100" placeholder="Niet ingesteld"></div>
-      <div class="row"><span class="lbl"></span><button id="favoriteCurrent">Huidig volume gebruiken</button></div>
-      <div class="row" id="startFavRow"><label class="check"><input type="checkbox" id="startFavorite">Games starten op favoriet volume</label></div>
+      <div class="row"><label>Click</label><select id="singleAction" class="gesture"></select></div>
+      <div class="row"><label>Double-click</label><select id="doubleAction" class="gesture"></select></div>
+      <div class="row"><label>Hold</label><select id="holdAction" class="gesture"></select></div>
+      <h4>Favorite volume</h4>
+      <div class="row"><span class="lbl" id="favoriteFor">—</span><input type="number" id="favorite" min="0" max="100" placeholder="Not set"></div>
+      <div class="row"><span class="lbl"></span><button id="favoriteCurrent">Use current volume</button></div>
+      <div class="row" id="startFavRow"><label class="check"><input type="checkbox" id="startFavorite">Start games at favorite volume</label></div>
     </div>
   </div>
 
   <div id="outputOnly" class="hide">
     <div id="iconSection" class="hide">
-      <h4>Eigen icons</h4>
+      <h4>Custom icons</h4>
       <div class="row"><span class="lbl">Speakers</span><div class="file">
-        <span id="iconSpeakersName">Standaard</span>
-        <button data-lib="iconSpeakers">Bibliotheek</button><label class="btn" for="iconSpeakersFile">Bestand</label><button data-clear="iconSpeakers">Wis</button>
+        <span id="iconSpeakersName">Default</span>
+        <button data-lib="iconSpeakers">Library</button><label class="btn" for="iconSpeakersFile">File</label><button data-clear="iconSpeakers">Clear</button>
         <input type="file" id="iconSpeakersFile" accept="image/png,image/jpeg"></div></div>
-      <div class="row"><span class="lbl">Koptelefoon</span><div class="file">
-        <span id="iconHeadphonesName">Standaard</span>
-        <button data-lib="iconHeadphones">Bibliotheek</button><label class="btn" for="iconHeadphonesFile">Bestand</label><button data-clear="iconHeadphones">Wis</button>
+      <div class="row"><span class="lbl">Headphones</span><div class="file">
+        <span id="iconHeadphonesName">Default</span>
+        <button data-lib="iconHeadphones">Library</button><label class="btn" for="iconHeadphonesFile">File</label><button data-clear="iconHeadphones">Clear</button>
         <input type="file" id="iconHeadphonesFile" accept="image/png,image/jpeg"></div></div>
       <div id="libPanel" class="hide"></div>
     </div>
-    <h4>Schakelen</h4>
-    <div class="row"><label>Speakers-mix</label>
+    <h4>Switching</h4>
+    <div class="row"><label>Speaker mix</label>
       <select id="speakerMix"><option value="0">Mix A</option><option value="1">Mix B</option><option value="2">Mix C</option></select></div>
-    <div class="row"><label>Koptelefoon-mix</label>
+    <div class="row"><label>Headphone mix</label>
       <select id="headphoneMix"><option value="0">Mix A</option><option value="1">Mix B</option><option value="2">Mix C</option></select></div>
     <div class="row"><label>Focusrite</label>
       <select id="focusriteMode">
-        <option value="0">Onzichtbaar starten, daarna sluiten</option>
-        <option value="1">Onzichtbaar starten, open laten</option>
-        <option value="2">Nooit automatisch starten</option>
+        <option value="0">Start hidden, close afterwards</option>
+        <option value="1">Start hidden, keep running</option>
+        <option value="2">Never start automatically</option>
       </select></div>
 
-    <h4>Bediening</h4>
-    <div class="row"><label>Volumestap</label>
+    <h4>Controls</h4>
+    <div class="row"><label>Volume step</label>
       <select id="volumeStep"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
 
     <h4>MIDI</h4>
-    <div class="row"><label>Poortnaam</label><input type="text" id="midiPort" list="ports"><datalist id="ports"></datalist></div>
-    <div class="row"><span class="lbl"></span><button id="reapply">Opnieuw toepassen</button></div>
+    <div class="row"><label>Port name</label><input type="text" id="midiPort" list="ports"><datalist id="ports"></datalist></div>
+    <div class="row"><span class="lbl"></span><button id="reapply">Apply again</button></div>
   </div>
 
   <div id="gameSections">
-    <h4>Game-opties</h4>
-    <div class="row"><label class="check"><input type="checkbox" id="rememberVolume">Volume per game onthouden</label></div>
-    <div class="row"><label class="check"><input type="checkbox" id="balance">Game/Discord-balans<span class="hint">indrukken + draaien</span></label></div>
-    <div class="row"><label class="check"><input type="checkbox" id="duck">Spotify zachter tijdens gamen</label></div>
-    <div class="row hide" id="duckRow"><label>Spotify-volume</label>
+    <h4>Game options</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="rememberVolume">Remember volume per game</label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="balance">Game/Discord balance<span class="hint">press + rotate</span></label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="duck">Lower Spotify while gaming</label></div>
+    <div class="row hide" id="duckRow"><label>Spotify volume</label>
       <select id="duckPercent"><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option></select></div>
 
-    <h4>Gamebibliotheek</h4>
+    <h4>Game library</h4>
     <p class="muted" id="libCount"></p>
     <div class="row"><label>Game</label><select id="editId"></select></div>
-    <div class="row"><label>Eigen naam</label><input type="text" id="customName" placeholder="Naam uit de launcher"></div>
-    <div class="row"><span class="lbl">Afbeelding</span><div class="file">
-      <span id="imageName">Automatisch</span>
-      <label class="btn" for="imageFile">Kies</label><button id="imageClear">Wis</button>
+    <div class="row"><label>Custom name</label><input type="text" id="customName" placeholder="Name from the launcher"></div>
+    <div class="row"><span class="lbl">Image</span><div class="file">
+      <span id="imageName">Automatic</span>
+      <label class="btn" for="imageFile">Choose</label><button id="imageClear">Clear</button>
       <input type="file" id="imageFile" accept="image/png,image/jpeg"></div></div>
-    <div class="row"><label class="check"><input type="checkbox" id="hidden">Niet als game herkennen</label></div>
-    <div class="row hide" id="removeRow"><button id="remove">Verwijder uit bibliotheek</button></div>
+    <div class="row"><label class="check"><input type="checkbox" id="hidden">Not a game</label></div>
+    <div class="row hide" id="removeRow"><button id="remove">Remove from library</button></div>
 
-    <h4>Game toevoegen</h4>
-    <div class="row"><label>Naam</label><input type="text" id="addName" placeholder="Bijv. Overwatch"></div>
-    <div class="row"><span class="lbl">Programma</span><div class="file">
-      <span id="exeName">Kies een .exe</span><label class="btn" for="exeFile">Kies</label>
+    <h4>Add game</h4>
+    <div class="row"><label>Name</label><input type="text" id="addName" placeholder="e.g. Overwatch"></div>
+    <div class="row"><span class="lbl">Program</span><div class="file">
+      <span id="exeName">Choose an .exe</span><label class="btn" for="exeFile">Choose</label>
       <input type="file" id="exeFile" accept=".exe"></div></div>
-    <div class="row"><span class="lbl"></span><button id="add">Toevoegen</button></div>
+    <div class="row"><span class="lbl"></span><button id="add">Add</button></div>
   </div>
 
 <script>
@@ -151,6 +152,7 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   $('iconSection').classList.toggle('hide', !actionId.endsWith('.output'));
   $('dialOnly').classList.toggle('hide', isOutput && controller !== 'Encoder');
   $('appRow').classList.toggle('hide', !isApp);
+  fillGestures(isApp);
   $('gameSections').classList.toggle('hide', isApp || isOutput);
   $('outputOnly').classList.toggle('hide', !isOutput);
   $('outputStatus').classList.toggle('hide', !isOutput);
@@ -170,7 +172,7 @@ let packs = null, libTarget = '', libWindow = null, libSource = null, libTimer =
 
 function deliverLibrary() {
   if (libSource && packs)
-    libSource.postMessage({ type: 'packs', packs, label: libTarget === 'iconSpeakers' ? 'Speakers' : 'Koptelefoon' }, '*');
+    libSource.postMessage({ type: 'packs', packs, label: libTarget === 'iconSpeakers' ? 'Speakers' : 'Headphones' }, '*');
 }
 
 function closeLibrary() {
@@ -214,26 +216,27 @@ function applyScarlett(s) {
 
 function apply(p) {
   if (p.scarlett) applyScarlett(p.scarlett);
-  for (const k of ['iconSpeakers', 'iconHeadphones']) $(k + 'Name').textContent = p[k] ? baseName(p[k]) : 'Standaard';
-  document.querySelectorAll('[data-group]').forEach(c => c.checked = p[c.dataset.group] === c.value);
+  for (const k of ['iconSpeakers', 'iconHeadphones']) $(k + 'Name').textContent = p[k] ? baseName(p[k]) : 'Default';
+  document.querySelectorAll('.seg').forEach(s =>
+    s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === p[s.dataset.group])));
   for (const k of ['rememberVolume', 'balance', 'duck']) $(k).checked = !!p[k];
   $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
   $('duckRow').classList.toggle('hide', !p.duck);
   if (document.activeElement !== $('customTitle')) $('customTitle').value = p.customTitle;
   for (const k of ['singleAction', 'doubleAction', 'holdAction']) $(k).value = p[k];
   $('startFavorite').checked = !!p.startFavorite;
-  $('favoriteFor').textContent = p.favoriteFor || 'Geen game open';
+  $('favoriteFor').textContent = p.favoriteFor || 'No game open';
   $('favorite').disabled = $('favoriteCurrent').disabled = !p.favoriteFor;
   if (document.activeElement !== $('favorite')) $('favorite').value = p.favorite == null ? '' : p.favorite;
   $('step').value = p.step;
   $('duckPercent').value = String(p.duckPercent);
 
   const apps = [...new Set([...(p.apps || []), ...(p.app ? [p.app] : [])])];
-  $('app').innerHTML = '<option value="">Kies een app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
+  $('app').innerHTML = '<option value="">Choose an app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
   $('app').value = p.app;
 
   lib = p.library || [];
-  $('libCount').textContent = `${lib.length} games automatisch en handmatig gevonden.`;
+  $('libCount').textContent = `${lib.length} games found automatically and manually.`;
   // The game that is running now comes first and is selected whenever a new game starts.
   if (p.currentId && p.currentId !== lastCurrent) selected = p.currentId;
   lastCurrent = p.currentId || null;
@@ -243,7 +246,7 @@ function apply(p) {
   const ordered = [...lib.filter(g => g.id === p.currentId), ...lib.filter(g => g.id !== p.currentId)];
   $('editId').innerHTML = ordered.map(g => {
     const n = g.customName || g.name;
-    return `<option value="${esc(g.id)}">${esc(n)}${count[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}${g.id === p.currentId ? ' (nu bezig)' : ''}${g.hidden ? ' (verborgen)' : ''}</option>`;
+    return `<option value="${esc(g.id)}">${esc(n)}${count[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}${g.id === p.currentId ? ' (playing now)' : ''}${g.hidden ? ' (hidden)' : ''}</option>`;
   }).join('');
   if (selected) $('editId').value = selected;
   showGame();
@@ -254,23 +257,29 @@ function showGame() {
   if (!g) return;
   if (document.activeElement !== $('customName')) $('customName').value = g.customName;
   $('customName').placeholder = g.name;
-  $('imageName').textContent = g.customImage ? baseName(g.customImage) : 'Automatisch';
+  $('imageName').textContent = g.customImage ? baseName(g.customImage) : 'Automatic';
   $('hidden').checked = g.hidden;
   $('removeRow').classList.toggle('hide', !g.exe);
 }
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-document.querySelectorAll('[data-group]').forEach(c => c.addEventListener('change', () =>
-  send({ [c.dataset.group]: c.value })));
+document.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  send({ [s.dataset.group]: b.value });
+})));
 for (const k of ['rememberVolume', 'balance', 'duck'])
   $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 $('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
-document.querySelectorAll('.gesture').forEach(s => {
-  s.innerHTML = [['mute', 'Mute'], ['window', 'Minimaliseren / openen'], ['close', 'Afsluiten'], ['favorite', 'Favoriet volume'], ['none', 'Niets']]
-    .map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
-  s.addEventListener('change', () => send({ [s.id]: s.value }));
-});
+const GESTURES = [['mute', 'Mute'], ['window', 'Minimize / open'], ['close', 'Close'], ['favorite', 'Favorite volume'], ['none', 'Nothing']];
+const MEDIA = [['playpause', 'Play / pause'], ['next', 'Next track'], ['previous', 'Previous track']];
+function fillGestures(withMedia) {
+  document.querySelectorAll('.gesture').forEach(s => {
+    s.innerHTML = (withMedia ? MEDIA.concat(GESTURES) : GESTURES).map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  });
+}
+fillGestures(false);
+document.querySelectorAll('.gesture').forEach(s => s.addEventListener('change', () => send({ [s.id]: s.value })));
 $('favorite').addEventListener('change', () => send({ favorite: $('favorite').value }));
 $('favoriteCurrent').addEventListener('click', () => send({ favoriteCurrent: true }));
 $('startFavorite').addEventListener('change', () => send({ startFavorite: $('startFavorite').checked }));
@@ -303,7 +312,7 @@ $('exeFile').addEventListener('change', () => {
 $('add').addEventListener('click', () => {
   if (!addExe || !$('addName').value.trim()) return;
   send({ addExe, addName: $('addName').value.trim() });
-  addExe = ''; $('addName').value = ''; $('exeName').textContent = 'Kies een .exe';
+  addExe = ''; $('addName').value = ''; $('exeName').textContent = 'Choose an .exe';
 });
 </script>
 </body>

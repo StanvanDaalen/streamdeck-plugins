@@ -209,7 +209,7 @@ internal static class Program
         if (c == null) return key;
         if (c.Name.Length > 0) return $"{c.Name} ({c.Model})";
         bool duplicate = Ddc.Known.Values.Count(x => x.Model == c.Model) > 1;
-        return duplicate ? $"{c.Model} (scherm {c.Display})" : c.Model;
+        return duplicate ? $"{c.Model} (display {c.Display})" : c.Model;
     }
 
     // The per-button name is what earlier versions stored; the monitor's own name replaces it.
@@ -400,8 +400,8 @@ internal static class Program
         string device = cur > 0 ? InputDevice(c, cur) : "none";
         string inputName = cur > 0 ? InputName(c, cur) : "Monitor";
         var ownName = MonitorName(c, key);
-        string line1 = !chosen ? "Kies monitor" : ownName.Length > 0 ? ownName : Ddc.Known.GetValueOrDefault(key)?.Model ?? "Monitor";
-        string line2 = !chosen ? "" : !online ? "Niet verbonden" : cur > 0 ? InputName(c, cur) : "";
+        string line1 = !chosen ? "Choose monitor" : ownName.Length > 0 ? ownName : Ddc.Known.GetValueOrDefault(key)?.Model ?? "Monitor";
+        string line2 = !chosen ? "" : !online ? "Not connected" : cur > 0 ? InputName(c, cur) : "";
         if (!showText && online) (line1, line2) = ("", "");
 
         var hash = $"{icon}|{device}|{style}|{line1}|{line2}|{inputName}|{online}";
@@ -468,7 +468,7 @@ internal static class Program
         var connected = Ddc.WithMonitors(l => l.Select(m => m.Key).ToHashSet());
         var monitors = new JsonArray();
         foreach (var (k, _) in Ddc.Known.OrderBy(x => x.Value.Display))
-            monitors.Add(new JsonObject { ["key"] = k, ["label"] = Label(k) + (connected.Contains(k) ? "" : " (niet verbonden)") });
+            monitors.Add(new JsonObject { ["key"] = k, ["label"] = Label(k) + (connected.Contains(k) ? "" : " (not connected)") });
 
         var inputs = new JsonArray();
         if (Ddc.Known.TryGetValue(key, out var caps))

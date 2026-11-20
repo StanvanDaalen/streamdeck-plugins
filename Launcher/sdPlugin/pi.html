@@ -27,17 +27,17 @@
   <div id="logoRow" class="hide">
     <h4>Logo</h4>
     <p class="muted hide" id="logoFor"></p>
-    <div class="row" id="logoBtns"><span class="lbl">Logo</span><span class="val" id="logoName">Automatisch</span>
-      <label class="btn" for="logoFile">Bestand</label><button id="logoClear">Wis</button>
+    <div class="row" id="logoBtns"><span class="lbl">Logo</span><span class="val" id="logoName">Automatic</span>
+      <label class="btn" for="logoFile">File</label><button id="logoClear">Clear</button>
       <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml"></div>
   </div>
 
-  <h4>Weergave</h4>
-  <div class="row hide" id="nameRow"><label class="check"><input type="checkbox" id="showName"><span id="nameLabel">Naam tonen</span></label></div>
-  <div class="row hide" id="namePlayingRow"><label class="check"><input type="checkbox" id="showNamePlaying">Naam tonen tijdens spelen</label></div>
-  <div class="row hide" id="timeRow"><label class="check"><input type="checkbox" id="showPlaytime">Speeltijd tonen tijdens spelen</label></div>
+  <h4>Display</h4>
+  <div class="row hide" id="nameRow"><label class="check"><input type="checkbox" id="showName"><span id="nameLabel">Show name</span></label></div>
+  <div class="row hide" id="namePlayingRow"><label class="check"><input type="checkbox" id="showNamePlaying">Show name while playing</label></div>
+  <div class="row hide" id="timeRow"><label class="check"><input type="checkbox" id="showPlaytime">Show playtime while playing</label></div>
 
-  <h4>Bediening</h4>
+  <h4>Controls</h4>
   <p class="muted" id="help"></p>
 
 <script>
@@ -56,14 +56,14 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   $('appRow').classList.toggle('hide', !isApp);
   $('gameRow').classList.toggle('hide', !isFixed);
   $('nameRow').classList.toggle('hide', isCurrent);
-  $('nameLabel').textContent = isFixed ? 'Naam tonen als de game dicht is' : 'Naam tonen';
+  $('nameLabel').textContent = isFixed ? 'Show name when the game is closed' : 'Show name';
   $('namePlayingRow').classList.toggle('hide', isApp);
   $('timeRow').classList.toggle('hide', isApp);
   $('help').textContent = isApp
-    ? 'Klik: minimaliseren, weergeven of openen. Vasthouden: afsluiten.'
+    ? 'Click: minimize, show or open. Hold: close.'
     : isFixed
-      ? 'Klik: starten, minimaliseren of weergeven. Vasthouden: afsluiten.'
-      : 'Klik: minimaliseren of weergeven. Vasthouden: afsluiten.';
+      ? 'Click: start, minimize or show. Hold: close.'
+      : 'Click: minimize or show. Hold: close.';
   ws = new WebSocket('ws://127.0.0.1:' + port);
   ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
   ws.onmessage = e => {
@@ -75,17 +75,17 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
 function apply(p) {
   const seen = {};
   p.games.forEach(g => { seen[g.original] = (seen[g.original] || 0) + 1; });
-  $('gameId').innerHTML = '<option value="">Kies een game…</option>' + p.games.map(g =>
+  $('gameId').innerHTML = '<option value="">Choose a game…</option>' + p.games.map(g =>
     `<option value="${esc(g.id)}">${esc(g.name)}${seen[g.original] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}</option>`).join('');
   $('gameId').value = p.gameId;
   const isFixed = actionId.endsWith('.fixedgame'), isCurrent = !isFixed && !actionId.endsWith('.app');
   $('logoRow').classList.toggle('hide', isFixed ? !p.gameId : !isCurrent);
   $('logoFor').classList.toggle('hide', !isCurrent);
-  $('logoFor').textContent = p.logoFor ? 'Logo van ' + p.logoFor + ' (de game die nu open staat).' : 'Start een game om het logo ervan te kiezen.';
+  $('logoFor').textContent = p.logoFor ? 'Logo for ' + p.logoFor + ' (the game that is open right now).' : 'Start a game to choose its logo.';
   $('logoBtns').classList.toggle('hide', isCurrent && !p.logoFor);
-  $('logoName').textContent = p.customImage ? p.customImage.split(/[\\/]/).pop() : 'Automatisch';
+  $('logoName').textContent = p.customImage ? p.customImage.split(/[\\/]/).pop() : 'Automatic';
   const apps = [...new Set([...p.apps, ...(p.app ? [p.app] : [])])];
-  $('app').innerHTML = '<option value="">Kies een app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
+  $('app').innerHTML = '<option value="">Choose an app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
   $('app').value = p.app;
   for (const k of ['showName', 'showNamePlaying', 'showPlaytime']) $(k).checked = p[k];
 }

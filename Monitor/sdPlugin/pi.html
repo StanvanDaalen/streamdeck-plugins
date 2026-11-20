@@ -27,46 +27,46 @@
   <div class="row"><span class="lbl">Monitor</span><select id="monitor"></select></div>
 
   <div id="details" class="hide">
-    <div class="row"><span class="lbl">Monitornaam</span><input type="text" id="monitorName" list="monitorNames" maxlength="16"></div>
+    <div class="row"><span class="lbl">Monitor name</span><input type="text" id="monitorName" list="monitorNames" maxlength="16"></div>
     <datalist id="monitorNames"><option value="Main"><option value="Top"><option value="Left"><option value="Right"><option value="Bottom"></datalist>
 
-    <h4>Inputs in gebruik</h4>
+    <h4>Inputs in use</h4>
     <div id="inputs"></div>
     <p class="muted" id="hint"></p>
 
-    <h4>Input aanpassen</h4>
+    <h4>Edit input</h4>
     <div class="row"><span class="lbl">Input</span><select id="editInput"></select></div>
-    <div class="row"><span class="lbl">Naam</span><input type="text" id="inputName"></div>
-    <div class="row"><span class="lbl">Apparaat</span><select id="inputDevice">
-      <option value="auto">Automatisch</option><option value="pc">PC</option><option value="ps5">PlayStation 5 Pro</option><option value="none">Geen</option>
+    <div class="row"><span class="lbl">Name</span><input type="text" id="inputName"></div>
+    <div class="row"><span class="lbl">Device</span><select id="inputDevice">
+      <option value="auto">Automatic</option><option value="pc">PC</option><option value="ps5">PlayStation 5 Pro</option><option value="none">None</option>
     </select></div>
-    <div class="row"><span class="lbl">Icoon</span><div class="file">
-      <span id="iconName">Standaard</span>
-      <button id="libBtn">Bibliotheek</button><label class="btn" for="iconFile">Bestand</label><button id="iconClear">Wis</button>
+    <div class="row"><span class="lbl">Icon</span><div class="file">
+      <span id="iconName">Default</span>
+      <button id="libBtn">Library</button><label class="btn" for="iconFile">File</label><button id="iconClear">Clear</button>
       <input type="file" id="iconFile" accept="image/png,image/jpeg"></div></div>
     <div id="libPanel" class="hide"></div>
 
-    <h4>Weergave</h4>
-    <div class="row"><span class="lbl">Stijl</span><select id="style">
-      <option value="basic">Basis</option><option value="tile">Tegel</option><option value="icon">Alleen icoon</option>
+    <h4>Display</h4>
+    <div class="row"><span class="lbl">Style</span><select id="style">
+      <option value="basic">Basic</option><option value="tile">Tile</option><option value="icon">Icon only</option>
     </select></div>
-    <div class="row" id="showTextRow"><label class="check"><input type="checkbox" id="showText">Tekst tonen op de knop</label></div>
+    <div class="row" id="showTextRow"><label class="check"><input type="checkbox" id="showText">Show text on the key</label></div>
 
     <h4>PlayStation</h4>
-    <div class="row"><label class="check"><input type="checkbox" id="keepAwake">Schermen wakker houden als de PS5 in beeld is</label></div>
-    <p class="muted">De pc en de andere schermen gaan dan niet in slaap, zodat OBS en Discord blijven doorlopen.</p>
+    <div class="row"><label class="check"><input type="checkbox" id="keepAwake">Keep displays awake while the PS5 is on screen</label></div>
+    <p class="muted">The PC and the other displays then stay awake, so OBS and Discord keep running.</p>
 
-    <h4>Bediening</h4>
-    <div class="row"><span class="lbl">Volgende input</span><span>Klik</span></div>
-    <div class="row"><span class="lbl">Vorige input</span>
-      <select id="previous"><option value="double">Dubbelklik</option><option value="long">Lang indrukken</option><option value="none">Uit</option></select></div>
+    <h4>Controls</h4>
+    <div class="row"><span class="lbl">Next input</span><span>Click</span></div>
+    <div class="row"><span class="lbl">Previous input</span>
+      <select id="previous"><option value="double">Double-click</option><option value="long">Long press</option><option value="none">Off</option></select></div>
 
     <h4>Windows</h4>
-    <div class="row"><label class="check"><input type="checkbox" id="detach">Loskoppelen als het niet op deze pc staat</label></div>
-    <div class="row" id="pcRow"><span class="lbl">Input van deze pc</span><select id="pcInput"></select></div>
-    <p class="muted" id="detachHint">Staat de monitor op een andere input, zoals een console, dan haalt Windows hem uit de schermindeling. De muis gaat dan direct naar het volgende scherm. Terug naar deze pc zet alles terug. Deze instelling geldt alleen voor deze knop op deze pc.</p>
+    <div class="row"><label class="check"><input type="checkbox" id="detach">Disconnect while not on this PC</label></div>
+    <div class="row" id="pcRow"><span class="lbl">This PC's input</span><select id="pcInput"></select></div>
+    <p class="muted" id="detachHint">When the monitor is on another input, such as a console, Windows removes it from the display layout, so the mouse goes straight to the next display. Switching back to this PC restores everything. This setting only applies to this key on this PC.</p>
   </div>
-  <p class="muted" id="empty">Kies hierboven een monitor.</p>
+  <p class="muted" id="empty">Choose a monitor above.</p>
 
 <script>
 let ws, uuid, actionId = '', state = null, selected = null;
@@ -92,7 +92,7 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
 
 function apply(p) {
   state = p;
-  $('monitor').innerHTML = '<option value="">Kies een monitor…</option>' +
+  $('monitor').innerHTML = '<option value="">Choose a monitor…</option>' +
     p.monitors.map(m => `<option value="${esc(m.key)}">${esc(m.label)}</option>`).join('');
   $('monitor').value = p.monitor;
   const has = p.inputs.length > 0;
@@ -106,7 +106,7 @@ function apply(p) {
   $('style').value = p.style;
   $('showText').checked = p.showText;
   $('detach').checked = p.detach;
-  $('pcInput').innerHTML = '<option value="-1">Kies…</option>' + p.inputs.filter(i => i.enabled)
+  $('pcInput').innerHTML = '<option value="-1">Choose…</option>' + p.inputs.filter(i => i.enabled)
     .map(i => `<option value="${i.code}">${esc(display(i))}</option>`).join('');
   $('pcInput').value = String(p.inputs.some(i => i.enabled && i.code === p.pcInput) ? p.pcInput : -1);
   $('pcRow').classList.toggle('hide', !p.detach);
@@ -115,11 +115,11 @@ function apply(p) {
   $('showTextRow').classList.toggle('hide', p.style !== 'basic');
 
   $('inputs').innerHTML = p.inputs.map(i => `<div class="row"><label class="check">
-    <input type="checkbox" data-code="${i.code}" ${i.enabled ? 'checked' : ''}>${esc(display(i))}${i.code === p.current ? '<span class="now">actief</span>' : ''}</label></div>`).join('');
+    <input type="checkbox" data-code="${i.code}" ${i.enabled ? 'checked' : ''}>${esc(display(i))}${i.code === p.current ? '<span class="now">active</span>' : ''}</label></div>`).join('');
   const count = p.inputs.filter(i => i.enabled).length;
   $('hint').textContent = count < 2
-    ? 'Vink minstens twee inputs aan om te kunnen wisselen. Vink alleen inputs aan waar iets op is aangesloten.'
-    : 'De knop wisselt alleen tussen deze inputs.';
+    ? 'Tick at least two inputs to switch. Only tick inputs that have something connected.'
+    : 'The key only switches between these inputs.';
 
   if (!p.inputs.some(i => i.code === selected)) selected = p.current > 0 && p.inputs.some(i => i.code === p.current) ? p.current : p.inputs[0].code;
   $('editInput').innerHTML = p.inputs.map(i => `<option value="${i.code}">${esc(display(i))}</option>`).join('');
@@ -133,7 +133,7 @@ function showInput() {
   if (document.activeElement !== $('inputName')) $('inputName').value = i.name;
   $('inputName').placeholder = i.default;
   $('inputDevice').value = i.device;
-  $('iconName').textContent = i.icon ? baseName(i.icon) : 'Standaard';
+  $('iconName').textContent = i.icon ? baseName(i.icon) : 'Default';
 }
 
 function deliverLibrary() {

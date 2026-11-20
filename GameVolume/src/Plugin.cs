@@ -111,14 +111,14 @@ internal sealed class Plugin
 
     private static string StatusText(LinkStatus s) => s switch
     {
-        LinkStatus.Ready => "Verbonden",
-        LinkStatus.NoDevice => "Geen Scarlett gevonden",
-        LinkStatus.UnsupportedDevice => "Deze Scarlett-generatie wordt niet door Focusrite Control 2 ondersteund",
+        LinkStatus.Ready => "Connected",
+        LinkStatus.NoDevice => "No Scarlett found",
+        LinkStatus.UnsupportedDevice => "This Scarlett generation is not supported by Focusrite Control 2",
         LinkStatus.NoFocusriteControl => FocusriteLauncher.Installed
-            ? "Focusrite Control 2 draait niet (automatisch starten staat uit)"
-            : "Focusrite Control 2 is niet geïnstalleerd",
-        LinkStatus.NoMidiPort => "MIDI-loopbackpoort niet gevonden",
-        _ => "MIDI-fout",
+            ? "Focusrite Control 2 is not running (auto start is off)"
+            : "Focusrite Control 2 is not installed",
+        LinkStatus.NoMidiPort => "MIDI loopback port not found",
+        _ => "MIDI error",
     };
 
     private Art OutputArt(bool headphones, bool on)
@@ -295,7 +295,7 @@ internal sealed class Plugin
 
     // ---------- gestures: the physical press and the touch strip behave identically ----------
 
-    private const string Closing = "Afsluiten…";
+    private const string Closing = "Closing…";
 
     private void Schedule(Ctx c, CancellationTokenSource cts, int ms, Func<Task> action) =>
         _ = Task.Run(async () =>
@@ -364,8 +364,16 @@ internal sealed class Plugin
         "window" => ToggleWindow(c),
         "close" => CloseTarget(c),
         "favorite" => GoToFavorite(c),
+        "playpause" or "next" or "previous" => RunMedia(c, action),
         _ => Task.CompletedTask,
     };
+
+    private async Task RunMedia(Ctx c, string action)
+    {
+        var process = c.Action == AppAction ? Str(c, "app", "") : _game?.ExePath is { } exe ? Path.GetFileNameWithoutExtension(exe) : "";
+        if (process.Length == 0) return;
+        await ShowOverlay(c, await MediaControl.RunAsync(process, action) ?? "No media");
+    }
 
     private static void Launch(string target)
     {
@@ -393,7 +401,7 @@ internal sealed class Plugin
             return;
         }
         if (LastGameTarget() is { } target) Launch(target);
-        else await ShowOverlay(c, "Nog geen game");
+        else await ShowOverlay(c, "No game yet");
     }
 
     private Task CloseTarget(Ctx c)
@@ -428,7 +436,7 @@ internal sealed class Plugin
     private async Task GoToFavorite(Ctx c)
     {
         var key = FavoriteKey(c);
-        if (key == null || !G.Favorites.TryGetValue(key, out var favorite)) { await ShowOverlay(c, "Geen favoriet"); return; }
+        if (key == null || !G.Favorites.TryGetValue(key, out var favorite)) { await ShowOverlay(c, "No favorite"); return; }
         var sessions = SessionsFor(c);
         if (sessions.Count == 0) return;
         AudioSessions.SetVolume(sessions, favorite);
@@ -602,7 +610,7 @@ internal sealed class Plugin
         var game = SessionsFor(c);
         var discord = _audio.ForProcess("discord").ToList();
         if (game.Count == 0) return;
-        if (discord.Count == 0) { await ShowOverlay(c, "Geen Discord"); return; }
+        if (discord.Count == 0) { await ShowOverlay(c, "No Discord"); return; }
 
         float delta = ticks * Step(c) / 100f;
         var gv = Math.Clamp((AudioSessions.Volume(game) ?? 1f) + delta, 0f, 1f);
@@ -672,7 +680,7 @@ internal sealed class Plugin
         {
             if (_game == null)
             {
-                (title, value, bar, titleColor, art) = ("Geen game", "", 0, Dim, _art.NoGame);
+                (title, value, bar, titleColor, art) = ("No game", "", 0, Dim, _art.NoGame);
             }
             else
             {
@@ -687,7 +695,7 @@ internal sealed class Plugin
             var sessions = SessionsFor(c);
             var exe = _knownAppExe.GetValueOrDefault(app) ?? G.AppExes.GetValueOrDefault(app);
             art = (app.Length > 0 ? _art.ForExe("app:" + app.ToLowerInvariant(), exe) : null) ?? _art.NoGame;
-            if (app.Length == 0) (title, value, bar, titleColor) = ("Kies een app", "", 0, Dim);
+            if (app.Length == 0) (title, value, bar, titleColor) = ("Choose an app", "", 0, Dim);
             else
             {
                 title = AppName(app, exe);
@@ -696,7 +704,7 @@ internal sealed class Plugin
             }
         }
 
-        // "Geen game" and "Kies een app" are status messages, so a custom title never hides them.
+        // "No game" and "Choose an app" are status messages, so a custom title never hides them.
         bool hasTarget = output ? _outputs!.Status == LinkStatus.Ready
             : c.Action == GameAction ? _game != null : Str(c, "app", "").Length > 0;
         if (hasTarget && Str(c, "titleMode", "app") == "custom")
@@ -850,7 +858,7 @@ internal sealed class Plugin
         {
             ["status"] = StatusText(_outputs.Status),
             ["ready"] = _outputs.Status == LinkStatus.Ready,
-            ["device"] = d == null ? "—" : $"{d.Name} (generatie {d.Generation})",
+            ["device"] = d == null ? "—" : $"{d.Name} (gen {d.Generation})",
             ["port"] = _outputs.PortName ?? "—",
             ["ports"] = ports,
             ["speakerMix"] = _scarlett!.SpeakerMix,

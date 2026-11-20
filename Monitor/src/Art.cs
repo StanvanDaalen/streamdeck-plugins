@@ -254,7 +254,7 @@ public static class Art
         foreach (bool online in new[] { true, false })
         {
             string name = device switch { "pc" => "PC", "ps5" => "PS5 Pro", _ => "HDMI 1" };
-            string url = Key(null, device, style, "Monitor", online ? name : "Niet verbonden", name, online);
+            string url = Key(null, device, style, "Monitor", online ? name : "Not connected", name, online);
             byte[] png = Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]);
             string file = Path.Combine(dir, $"{style}-{device}-{(online ? "online" : "offline")}.png");
             File.WriteAllBytes(file, png);

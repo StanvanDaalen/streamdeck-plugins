@@ -335,7 +335,7 @@ internal static class Program
     private static string Playtime(RunningGame g)
     {
         var t = DateTime.Now - g.Started;
-        return t.TotalHours >= 1 ? $"{(int)t.TotalHours}u {t.Minutes:00}m" : $"{(int)t.TotalMinutes}m";
+        return t.TotalHours >= 1 ? $"{(int)t.TotalHours}h {t.Minutes:00}m" : $"{(int)t.TotalMinutes}m";
     }
 
     // ---------- rendering ----------
@@ -359,7 +359,7 @@ internal static class Program
     }
     private static Task RenderCurrent(Ctx c)
     {
-        var name = _game == null ? "Geen game" : Bool(c, "showNamePlaying", true) ? DisplayName(_game.Entry) : "";
+        var name = _game == null ? "No game" : Bool(c, "showNamePlaying", true) ? DisplayName(_game.Entry) : "";
         var time = _game != null && Bool(c, "showPlaytime", true) ? Playtime(_game) : "";
         var art = _game != null ? _art.ForGame(_game) : _art.NoGame;
         return SetImage(c, $"{art.Id}|{name}|{time}", art.KeyIcon, name, time, _game != null);
@@ -379,7 +379,7 @@ internal static class Program
             });
 
         bool showName = Bool(c, running != null ? "showNamePlaying" : "showName", true);
-        var name = entry == null ? "Kies een game" : showName ? DisplayName(entry) : "";
+        var name = entry == null ? "Choose a game" : showName ? DisplayName(entry) : "";
         var time = running != null && Bool(c, "showPlaytime", true) ? Playtime(running) : "";
         return SetImage(c, $"{art.Id}|{name}|{time}|{running != null}", art.KeyIcon, name, time, running != null);
     }
@@ -395,7 +395,7 @@ internal static class Program
         }
         var exe = AppExe(c, window);
         var art = (app.Length > 0 && exe != null ? _art.ForExe("app:" + app.ToLowerInvariant(), exe) : null) ?? _art.NoGame;
-        var name = app.Length == 0 ? "Kies een app" : Bool(c, "showName", true) ? AppName(app, exe) : "";
+        var name = app.Length == 0 ? "Choose an app" : Bool(c, "showName", true) ? AppName(app, exe) : "";
         await SetImage(c, $"{art.Id}|{name}|{window != null}", art.KeyIcon, name, "", window != null);
     }
 

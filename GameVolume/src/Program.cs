@@ -15,6 +15,12 @@ internal static class Program
         if (Arg("--assets") is { } dir) { Glyphs.WriteAssets(dir); return 0; }
         SettingsStore.Load();
         if (Arg("--dump") is { } file) { Dump(file); return 0; }
+        if (Arg("--media-list") is { } mediaOut)
+        {
+            var manager = await Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            File.WriteAllLines(mediaOut, manager.GetSessions().Select(s => $"{s.SourceAppUserModelId} | {s.GetPlaybackInfo().PlaybackStatus}"));
+            return 0;
+        }
         if (Arg("--close-test") is { } closeName)
         {
             var found = WindowControl.FindApp(closeName);

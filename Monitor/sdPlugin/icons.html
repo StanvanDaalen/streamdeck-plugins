@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Icoon kiezen</title>
+<title>Choose icon</title>
 <style>
   html, body { height: 100%; margin: 0; }
   body { display: flex; flex-direction: column; font: 13px "Segoe UI", sans-serif; color: #d8d8d8; background: #232323; }
@@ -21,14 +21,14 @@
 </head>
 <body>
   <header>
-    <h1 id="title">Icoon kiezen</h1>
+    <h1 id="title">Choose icon</h1>
     <div class="tools">
-      <input type="text" id="search" placeholder="Zoek in alle iconen, bijv. speaker" autofocus>
+      <input type="text" id="search" placeholder="Search all icons, e.g. speaker" autofocus>
       <select id="pack"></select>
     </div>
   </header>
   <div id="grid"></div>
-  <footer id="info">Bibliotheek laden…</footer>
+  <footer id="info">Loading library…</footer>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -54,7 +54,7 @@ function render() {
   $('grid').scrollTop = 0;
   shown = 0;
   append();
-  $('info').textContent = hits.length ? `${hits.length} iconen` : 'Geen iconen gevonden.';
+  $('info').textContent = hits.length ? `${hits.length} icons` : 'No icons found.';
 }
 
 function append() {
@@ -86,8 +86,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') host.postMes
 window.addEventListener('message', e => {
   if (!e.data || e.data.type !== 'packs') return;
   packs = e.data.packs;
-  $('title').textContent = 'Icoon voor ' + e.data.label;
-  $('pack').innerHTML = '<option value="-1">Alle packs</option>' + packs.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('');
+  $('title').textContent = 'Icon for ' + e.data.label;
+  $('pack').innerHTML = '<option value="-1">All packs</option>' + packs.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('');
   render();
 });
 
