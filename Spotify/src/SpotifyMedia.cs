@@ -26,6 +26,10 @@ internal sealed class SpotifyMedia : IDisposable
 
     public MediaState State { get; private set; } = MediaState.Empty;
 
+    /// <summary>Windows media calls can hang (e.g. while Spotify restarts); never let one block the plugin.</summary>
+    private static Task<T> Wait<T>(Windows.Foundation.IAsyncOperation<T> op) =>
+        op.AsTask().WaitAsync(TimeSpan.FromSeconds(3));
+
     public static bool IsRunning => Process.GetProcessesByName("Spotify").Length > 0;
 
     public static void Launch()
@@ -41,13 +45,13 @@ internal sealed class SpotifyMedia : IDisposable
     {
         try
         {
-            _manager ??= await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            _manager ??= await Wait(GlobalSystemMediaTransportControlsSessionManager.RequestAsync());
             _session = _manager.GetSessions().FirstOrDefault(IsSpotify);
             if (_session == null || !IsRunning) { State = MediaState.Empty; return; }
 
             var playback = _session.GetPlaybackInfo();
             var timeline = _session.GetTimelineProperties();
-            var props = await _session.TryGetMediaPropertiesAsync();
+            var props = await Wait(_session.TryGetMediaPropertiesAsync());
             var key = $"{props.Title}\u0001{props.Artist}";
             if (key != _trackKey)
             {
@@ -70,6 +74,7 @@ internal sealed class SpotifyMedia : IDisposable
         catch (Exception e)
         {
             Log.Write("media: " + e.Message);
+            if (e is TimeoutException) _manager = null; // start over with a fresh connection
             _session = null;
             State = MediaState.Empty;
         }
@@ -80,7 +85,7 @@ internal sealed class SpotifyMedia : IDisposable
         if (thumb == null) return null;
         try
         {
-            using var stream = await thumb.OpenReadAsync();
+            using var stream = await Wait(thumb.OpenReadAsync());
             using var net = stream.AsStreamForRead();
             using var src = new Bitmap(net);
             // Spotify's Windows thumbnail carries a branded strip; crop to the square cover in the middle.
@@ -128,16 +133,16 @@ internal sealed class SpotifyMedia : IDisposable
         return false;
     }
 
-    public async Task PlayPause() { if (_session != null) await _session.TryTogglePlayPauseAsync(); }
-    public async Task Play() { if (_session != null) await _session.TryPlayAsync(); }
-    public async Task Next() { if (_session != null) await _session.TrySkipNextAsync(); }
-    public async Task Previous() { if (_session != null) await _session.TrySkipPreviousAsync(); }
+    public async Task PlayPause() { if (_session != null) await Wait(_session.TryTogglePlayPauseAsync()); }
+    public async Task Play() { if (_session != null) await Wait(_session.TryPlayAsync()); }
+    public async Task Next() { if (_session != null) await Wait(_session.TrySkipNextAsync()); }
+    public async Task Previous() { if (_session != null) await Wait(_session.TrySkipPreviousAsync()); }
 
     public async Task ToggleShuffle()
     {
         if (_session == null) return;
         var on = _session.GetPlaybackInfo().IsShuffleActive ?? false;
-        await _session.TryChangeShuffleActiveAsync(!on);
+        await Wait(_session.TryChangeShuffleActiveAsync(!on));
     }
 
     public async Task CycleRepeat()
@@ -149,7 +154,7 @@ internal sealed class SpotifyMedia : IDisposable
             MediaPlaybackAutoRepeatMode.List => MediaPlaybackAutoRepeatMode.Track,
             _ => MediaPlaybackAutoRepeatMode.None,
         };
-        await _session.TryChangeAutoRepeatModeAsync(next);
+        await Wait(_session.TryChangeAutoRepeatModeAsync(next));
     }
 
     public void Dispose() { }

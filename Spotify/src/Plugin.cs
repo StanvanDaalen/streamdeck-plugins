@@ -70,7 +70,11 @@ internal sealed class Plugin
 
     private async Task WithGate(Func<Task> f)
     {
-        await _gate.WaitAsync();
+        if (!await _gate.WaitAsync(TimeSpan.FromSeconds(10)))
+        {
+            Log.Write("gate busy for 10 s, skipped one event");
+            return;
+        }
         try { await f(); }
         catch (Exception e) { Log.Write("error: " + e); }
         finally { _gate.Release(); }
