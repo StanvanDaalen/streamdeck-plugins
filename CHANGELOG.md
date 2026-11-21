@@ -10,9 +10,13 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Improved
 
-- **F1 Race Control**: the Live Timing window fills its whole screen: after opening a layout its replay bar (which only shows on mouse-over) is hidden and the rows are zoomed to reach the bottom, instead of leaving an empty strip below the last driver.
-
 ### Fixed
+
+## 1.1.27 (2026-11-21)
+
+### Improved
+
+- **F1 Race Control**: the Live Timing window fills its whole screen: after opening a layout its replay bar (which only shows on mouse-over) is hidden and the rows are zoomed to reach the bottom, instead of leaving an empty strip below the last driver.
 
 ## 1.1.26 (2026-11-21)
 
