@@ -406,6 +406,72 @@ internal sealed class Plugin
         _ = Task.Delay(1500).ContinueWith(_ => WithGate(() => _contexts.ContainsKey(c.Id) ? RenderDial(c) : Task.CompletedTask));
     }
 
+    // ---------- Scarlett dial in the same look as the media players ----------
+
+    private readonly Dictionary<string, string> _outputCovers = new();
+
+    /// <summary>The "cover": the active device's icon on a dark rounded tile, like album art.</summary>
+    private string OutputCover(bool headphones, bool ready, string? iconFile)
+    {
+        var key = $"{headphones}|{ready}|{iconFile}";
+        if (_outputCovers.TryGetValue(key, out var url)) return url;
+        using var bmp = new Bitmap(96, 96, PixelFormat.Format32bppArgb);
+        using (var g = ArtworkService.HighQuality(bmp))
+        {
+            using var tile = new System.Drawing.Drawing2D.GraphicsPath();
+            tile.AddArc(0, 0, 24, 24, 180, 90); tile.AddArc(72, 0, 24, 24, 270, 90);
+            tile.AddArc(72, 72, 24, 24, 0, 90); tile.AddArc(0, 72, 24, 24, 90, 90); tile.CloseFigure();
+            using var fill = new SolidBrush(Color.FromArgb(0x2E, 0x2E, 0x2E));
+            g.FillPath(fill, tile);
+            var icon = (iconFile != null ? _art.ForFile(iconFile)?.KeyIcon : null) ?? OutputArt(headphones, ready).KeyIcon;
+            g.DrawImage(icon, 18, 18, 60, 60);
+        }
+        return _outputCovers[key] = ArtworkService.DataUrl(bmp);
+    }
+
+    private async Task RenderOutputPlayer(Ctx c)
+    {
+        const string layout = "layouts/output-player.json";
+        if (c.Layout != layout)
+        {
+            c.Layout = layout; c.ArtId = null; c.LastJson = null; c.MediaSent.Clear();
+            await SendAsync(new JsonObject { ["event"] = "setFeedbackLayout", ["context"] = c.Id, ["payload"] = new JsonObject { ["layout"] = layout } });
+        }
+
+        bool ready = _outputs!.Status == LinkStatus.Ready;
+        bool hp = _outputs.Output == Output.Headphones;
+        int vol = _masterVolume!.Percent;
+        bool muted = _masterVolume.Muted;
+        string kind = hp ? "Headphones" : "Speakers";
+        string name = Str(c, hp ? "headphonesName" : "speakersName", "");
+
+        string title = !ready ? "Scarlett offline" : name.Length > 0 ? name : kind;
+        // With a device name the second line says what it is; without one it names the interface.
+        string artist = !ready ? StatusText(_outputs.Status) : name.Length > 0 ? kind : _outputs.Device?.Name ?? "Scarlett";
+
+        var items = new Dictionary<string, JsonObject>
+        {
+            ["cover"] = new() { ["value"] = OutputCover(hp, ready, ready ? OutputIconFile(c, hp) : null) },
+            ["title"] = new() { ["value"] = title, ["color"] = ready ? Standard : Dim },
+            ["artist"] = new() { ["value"] = artist },
+            ["speakersIcon"] = new() { ["value"] = Icons.Get("speakers"), ["opacity"] = ready && !hp ? 1 : 0.35 },
+            ["headphonesIcon"] = new() { ["value"] = Icons.Get("headphones"), ["opacity"] = ready && hp ? 1 : 0.35 },
+            ["volumeIcon"] = new() { ["value"] = Icons.Volume(vol < 0 ? null : vol, muted), ["opacity"] = vol < 0 ? 0 : 1 },
+            ["volumeLevel"] = new() { ["value"] = vol < 0 ? "" : muted ? "Mute" : $"{vol}%" },
+            ["volumeBar"] = new() { ["value"] = Math.Max(vol, 0), ["bar_fill_c"] = muted ? MutedBar : Standard },
+        };
+
+        var payload = new JsonObject();
+        foreach (var (key, value) in items)
+        {
+            var json = value.ToJsonString();
+            if (c.MediaSent.GetValueOrDefault(key) == json) continue;
+            c.MediaSent[key] = json;
+            payload[key] = value;
+        }
+        if (payload.Count > 0) await SendAsync(new JsonObject { ["event"] = "setFeedback", ["context"] = c.Id, ["payload"] = payload });
+    }
+
     private static string MediaStyle(Ctx c) => Str(c, "mediaStyle", "player") switch
     {
         "background" => "background",
@@ -983,6 +1049,7 @@ internal sealed class Plugin
         if (AppClosed(c)) { await RenderClosed(c); return; }
         if (MediaFor(c) is { } media) { await RenderMedia(c, media); return; }
         if (c.Action == AppAction && Str(c, "idleStyle", "player") == "player" && Str(c, "app", "").Length > 0) { await RenderIdle(c); return; }
+        if (IsOutput(c.Action) && Str(c, "look", "player") == "player") { await RenderOutputPlayer(c); return; }
         string title, value;
         int bar;
         string titleColor = Standard, barColor = Standard;
@@ -1126,7 +1193,7 @@ internal sealed class Plugin
             if (node is not JsonValue v) continue;
             switch (key)
             {
-                case "display" or "theme" or "step" or "app" or "gameId" or "mediaStyle" or "idleStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
+                case "display" or "theme" or "step" or "app" or "gameId" or "look" or "speakersName" or "headphonesName" or "mediaStyle" or "idleStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
                     c.Settings[key] = node.DeepClone();
                     perAction = true;
                     break;
@@ -1254,6 +1321,9 @@ internal sealed class Plugin
                 ["favorite"] = FavoriteKey(c) is { } fav && G.Favorites.TryGetValue(fav, out var favValue) ? (int)Math.Round(favValue * 100) : null,
                 ["gameId"] = Str(c, "gameId", ""),
                 ["favoriteFor"] = c.Action == GameAction ? (FixedEntry(c) is { } fixedGame ? DisplayName(fixedGame) : _game != null ? DisplayName(_game) : null) : (Str(c, "app", "") is { Length: > 0 } dialApp ? AppName(dialApp, _knownAppExe.GetValueOrDefault(dialApp) ?? G.AppExes.GetValueOrDefault(dialApp)) : null),
+                ["look"] = Str(c, "look", "player"),
+                ["speakersName"] = Str(c, "speakersName", ""),
+                ["headphonesName"] = Str(c, "headphonesName", ""),
                 ["iconSpeakers"] = Str(c, "iconSpeakers", ""),
                 ["iconHeadphones"] = Str(c, "iconHeadphones", ""),
                 ["titleMode"] = Str(c, "titleMode", "app"),

@@ -90,6 +90,13 @@
   </div>
 
   <div id="outputOnly" class="hide">
+    <div id="deviceSection">
+      <h4>Devices</h4>
+      <div class="row"><span class="lbl">Look</span><div class="seg" data-group="look">
+        <button value="player">Player</button><button value="classic">Classic</button></div></div>
+      <div class="row"><label>Speakers</label><input type="text" id="speakersName" placeholder="e.g. Yamaha HS5"></div>
+      <div class="row"><label>Headphones</label><input type="text" id="headphonesName" placeholder="e.g. DT 1990 Pro"></div>
+    </div>
     <div id="iconSection" class="hide">
       <h4>Custom icons</h4>
       <div class="row"><span class="lbl">Speakers</span><div class="file">
@@ -185,6 +192,8 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   $('outputOnly').classList.toggle('hide', !isOutput);
   $('outputStatus').classList.toggle('hide', !isOutput);
   document.body.classList.toggle('output', isOutput);
+  // Device names and the look only show on the dial; keys show icons only.
+  $('deviceSection').classList.toggle('hide', controller !== 'Encoder');
   for (const r of ['displayRow', 'themeRow', 'stepRow', 'gestureSection']) $(r).classList.toggle('hide', isOutput);
   $('startFavRow').classList.toggle('hide', actionId.endsWith('.app'));
   ws = new WebSocket('ws://127.0.0.1:' + port);
@@ -250,7 +259,13 @@ function apply(p) {
   for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo']) $(k).checked = !!p[k];
   // Logo and slider colour only apply to the Classic look.
   if (window.isAppDial) for (const r of ['displayRow', 'themeRow']) $(r).classList.toggle('hide', p.idleStyle !== 'classic');
-  $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
+  // In the Player look the device name is the title, so the title choice is not needed there.
+  const playerOutput = document.body.classList.contains('output') && p.look === 'player';
+  $('viewTitle').classList.toggle('hide', playerOutput);
+  $('titleRow').classList.toggle('hide', playerOutput);
+  $('customTitleRow').classList.toggle('hide', playerOutput || p.titleMode !== 'custom');
+  for (const k of ['speakersName', 'headphonesName'])
+    if (document.activeElement !== $(k)) $(k).value = p[k] || '';
   $('duckRow').classList.toggle('hide', !p.duck);
   if (document.activeElement !== $('customTitle')) $('customTitle').value = p.customTitle;
   for (const k of ['singleAction', 'doubleAction', 'tripleAction', 'holdAction']) $(k).value = p[k];
@@ -310,6 +325,8 @@ document.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forE
 for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo'])
   $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 $('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
+for (const k of ['speakersName', 'headphonesName'])
+  $(k).addEventListener('change', () => send({ [k]: $(k).value.trim() }));
 const GESTURES = [['mute', 'Mute'], ['window', 'Minimize / open'], ['close', 'Close'], ['favorite', 'Favorite volume'], ['none', 'Nothing']];
 const MEDIA = [['playpause', 'Play / pause'], ['next', 'Next track'], ['previous', 'Previous track']];
 function fillGestures(withMedia) {
