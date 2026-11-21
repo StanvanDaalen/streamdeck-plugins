@@ -123,7 +123,7 @@ public static class LinuxApps
     /// </summary>
     public static void OfferDownload(string app, string why, string url)
     {
-        const string title = "F1 for Stream Deck";
+        const string title = "F1 Race Control";
         var text = $"{app} is not installed.\n\n{why}\n\nOpen the download page?";
         bool yes;
         if (Run("zenity", "--question", "--title", title, "--text", text) is { } z) yes = z == 0;

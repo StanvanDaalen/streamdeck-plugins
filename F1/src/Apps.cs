@@ -101,7 +101,7 @@ public static class Apps
         }
         var answer = MessageBox(IntPtr.Zero,
             $"{app} is not installed.\n\n{why}\n\nOpen the download page?",
-            "F1 for Stream Deck", MB_YESNO | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST);
+            "F1 Race Control", MB_YESNO | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST);
         if (answer == IDYES)
         {
             try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }

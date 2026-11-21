@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.23 (2026-11-21)
+
+### Improved
+
+- **F1 Race Control**: the F1 plugin is now called F1 Race Control in Stream Deck. Your keys and settings stay as they are.
+
 ## 1.1.22 (2026-11-21)
 
 ### New

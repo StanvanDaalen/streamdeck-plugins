@@ -11,7 +11,7 @@ Plugins for the Elgato Stream Deck on Windows. The F1 plugin also runs on Linux 
 | [Monitor](#monitor) | `Monitor.streamDeckPlugin` | Switch between the inputs of a monitor |
 | [Better Spotify Dial](#better-spotify-dial) | `BetterSpotifyDial.streamDeckPlugin` | Spotify on a dial, with your own action for every click |
 | [PlayStation 5 for OBS](#playstation-5-for-obs) | `PlayStation5-OBS.streamDeckPlugin` | Volume of a PS5 you hear through OBS and a capture card |
-| [F1](#f1) | `F1.streamDeckPlugin` | Watching F1 with MultiViewer, also on Linux |
+| [F1 Race Control](#f1-race-control) | `F1.streamDeckPlugin` | Watching F1 with MultiViewer, also on Linux |
 
 What is new or improved in each version is listed in [CHANGELOG.md](CHANGELOG.md) and with every [release](https://github.com/StanvanDaalen/streamdeck-plugins/releases).
 
@@ -140,7 +140,7 @@ For anyone who hears a PlayStation 5 in OBS through a capture card with pass-thr
 
 The volume is OBS in the Windows volume mixer: it only changes what you hear, not your stream or recording. The sources are called "PS5 beeld" and "PS5 geluid" by default; choose other names in the dial's settings. The audio source is also found when it is not in the active OBS scene collection.
 
-## F1
+## F1 Race Control
 
 For watching F1 with [MultiViewer](https://multiviewer.app/download) (required) and [Ultimate F1 Viewer](https://github.com/MRAJEKO/UF1-Viewer-with-F1MV/releases/latest) (optional). If either is missing, the plugin says so and offers the download page.
 
