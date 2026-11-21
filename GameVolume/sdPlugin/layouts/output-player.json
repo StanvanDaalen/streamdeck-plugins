@@ -5,8 +5,8 @@
     { "key": "title", "type": "text", "rect": [60, 12, 134, 20], "font": { "size": 16, "weight": 400 }, "text-overflow": "fade", "alignment": "left", "zOrder": 11 },
     { "key": "artist", "type": "text", "rect": [60, 32, 134, 20], "font": { "size": 16, "weight": 400 }, "text-overflow": "fade", "alignment": "left", "opacity": 0.7, "zOrder": 12 },
     { "key": "volumeIcon", "type": "pixmap", "rect": [12, 57, 20, 20], "zOrder": 20 },
-    { "key": "speakersIcon", "type": "pixmap", "rect": [70, 56, 24, 24], "zOrder": 21 },
-    { "key": "headphonesIcon", "type": "pixmap", "rect": [106, 56, 24, 24], "zOrder": 22 },
+    { "key": "headphonesIcon", "type": "pixmap", "rect": [70, 56, 24, 24], "zOrder": 21 },
+    { "key": "speakersIcon", "type": "pixmap", "rect": [106, 56, 24, 24], "zOrder": 22 },
     { "key": "volumeLevel", "type": "text", "rect": [134, 57, 50, 20], "font": { "size": 16, "weight": 400 }, "alignment": "right", "zOrder": 23 },
     { "key": "volumeBar", "type": "bar", "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#4D4D4D", "bar_fill_c": "#FFFFFF", "rect": [12, 83, 176, 8], "value": 0, "range": { "min": 0, "max": 100 }, "zOrder": 30 }
   ]
