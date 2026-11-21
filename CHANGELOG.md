@@ -10,15 +10,14 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Improved
 
-- **GitHub**: README, changelog and release notes are in English.
-
 ### Fixed
 
 ## 1.1.18 (2026-11-21)
 
-### Verbeterd
+### Improved
 
-- **PlayStation 5 for OBS**: het kleine logo op de hoek van het vakje is nu het PlayStation-logo (een eigen getekende versie) in plaats van de vorm van de console.
+- **PlayStation 5 for OBS**: the small logo in the corner of the tile is now the PlayStation logo (our own drawing) instead of the shape of the console.
+- **GitHub**: README, changelog and release notes are in English.
 
 ## 1.1.17 (2026-11-21)
 
