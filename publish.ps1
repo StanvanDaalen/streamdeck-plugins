@@ -27,7 +27,8 @@ function Move-Changelog([string]$path, [string]$version) {
     if ($body -notmatch '(?m)^- ') { return $null }
 
     # Groups without lines are left out of the release.
-    $body = [regex]::Replace($body, '(?m)^### [^\n]+\n+(?=### |\z)', '').Trim()
+    # The last group has no line break after it (the body is trimmed), so the break is optional.
+    $body = [regex]::Replace($body, '(?m)^### [^\n]+\n*(?=### |\z)', '').Trim()
     $date = Get-Date -Format 'yyyy-MM-dd'
     $released = "$emptyUnreleased`n## $version ($date)`n`n$body`n"
     $text = $text.Substring(0, $start) + $released + $text.Substring($next).TrimStart("`n").Insert(0, "`n")

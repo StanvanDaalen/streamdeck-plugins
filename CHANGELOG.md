@@ -18,8 +18,6 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 - **Volume & Launcher**: App Volume dials have a **Seek step** setting: hold and turn rewinds or fast-forwards 5, 10, 15, 30 or 60 seconds per step.
 
-### Fixed
-
 ## 1.1.18 (2026-11-21)
 
 ### Improved
