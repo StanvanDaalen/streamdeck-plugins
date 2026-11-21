@@ -305,4 +305,41 @@ public static class MvSetups
 
     /// <summary>Opening a setup and updating its slots never run at the same time.</summary>
     public static readonly SemaphoreSlim Lock = new(1, 1);
+
+    /// <summary>
+    /// The Live Timing window draws its rows at a fixed height, so on a wide, low screen it leaves an
+    /// empty strip below the last driver. This zooms its page until the rows reach the bottom of the
+    /// window (at most 40% larger, never smaller). Returns what it did per Live Timing window.
+    /// </summary>
+    public static async Task<string> FitLiveTimingAsync()
+    {
+        var done = new List<string>();
+        foreach (var page in await Cdp.PagesAsync(Store.Current.MvPort))
+        {
+            var title = (string?)page["title"] ?? "";
+            if (!title.StartsWith("Live Timing", StringComparison.Ordinal) && !title.StartsWith("Replay Live Timing", StringComparison.Ordinal)) continue;
+            try { done.Add((string?)await Cdp.EvalAsync(page, FitScript, awaitPromise: false, timeoutSeconds: 5) ?? "?"); }
+            catch (Exception e) { done.Add("fout: " + e.Message); }
+        }
+        return done.Count == 0 ? "geen Live Timing" : string.Join(", ", done);
+    }
+
+    private const string FitScript = """
+        (() => {
+          const root = document.documentElement;
+          root.style.zoom = '1';
+          const h = innerHeight;
+          let bottom = 0;
+          // Lowest piece of text on the page (the last driver row), ignoring anything as tall as half the window.
+          for (const el of document.body.querySelectorAll('*')) {
+            if (el.children.length) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0 && r.height < h / 2 && (el.textContent || '').trim()) bottom = Math.max(bottom, r.bottom);
+          }
+          if (bottom < h / 2) return 'leeg';
+          const z = Math.min(1.4, Math.max(1, (h - 4) / bottom));
+          root.style.zoom = String(z);
+          return 'zoom ' + z.toFixed(3);
+        })()
+        """;
 }

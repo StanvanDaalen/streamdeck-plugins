@@ -662,6 +662,8 @@ internal sealed class Plugin
         // Higher windows in front of lower ones, so overlapping edges hide the title bars below.
         Store.Log($"vensters op hoogte gestapeld: {await MvSetups.StackAsync()}");
         Store.Log($"naden dicht: {Seams.Close()} vensters bijgezet");
+        // The rows are there now (timing loaded): let the Live Timing fill its window to the bottom.
+        Store.Log($"live timing passend: {await MvSetups.FitLiveTimingAsync()}");
 
         // Only now the viewer's layout: battle mode and crash detection read the driver list once,
         // when their window opens, so they must open after the timing is there.
