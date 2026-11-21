@@ -166,7 +166,7 @@
                     {
                         "UUID":  "com.stan.f1.sync",
                         "Name":  "Sync",
-                        "Tooltip":  "Syncs all players (onboards, extra feeds) with the main screen.",
+                        "Tooltip":  "Press: syncs all players with the main screen (as an F1 Party guest: to the host first). Hold: hosts an F1 Party and posts the Discord invite.",
                         "Icon":  "images/action-sync",
                         "Controllers":  [
                                             "Keypad"

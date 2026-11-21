@@ -349,9 +349,10 @@ internal sealed class Plugin
 
     private async Task KeyDown(Ctx c)
     {
-        if (c.Action is Race or Quali or Mode)
+        if (c.Action is Race or Quali or Mode or Sync)
         {
-            // Hold 1 s = close F1 (F1 Mode, Race and Quali alike); a short press is handled on key up.
+            // Hold 1 s = close F1 (F1 Mode, Race and Quali alike), or for Sync: host an F1 Party and send
+            // the Discord invite. A short press is handled on key up.
             c.HoldFired = false;
             c.Hold?.Cancel();
             var cts = c.Hold = new CancellationTokenSource();
@@ -366,7 +367,8 @@ internal sealed class Plugin
                     if (cts.IsCancellationRequested) return;
                     c.HoldFired = true;
                     c.Click?.Cancel();
-                    Request(c, "close");
+                    if (c.Action == Sync) _ = Task.Run(async () => await (await F1Party.HostAsync() ? Ok(c) : Alert(c)));
+                    else Request(c, "close");
                     await Task.CompletedTask;
                 });
             });
@@ -383,9 +385,6 @@ internal sealed class Plugin
                 break;
             case Flags: await ToggleFlags(); break;
             case Live: await GoLive(c); break;
-            case Sync:
-                if (_mv.Main is { } main && await MultiViewer.SyncAsync(main.Id)) await Ok(c); else await Alert(c);
-                break;
             case Pause: await TogglePause(c); break;
             case Fullscreen:
                 if (_mv.Main is { } fs && await MultiViewer.SetFullscreenAsync(fs.Id, !fs.Fullscreen))
@@ -397,10 +396,11 @@ internal sealed class Plugin
 
     private async Task KeyUp(Ctx c)
     {
-        if (c.Action is not (Race or Quali or Mode)) return;
+        if (c.Action is not (Race or Quali or Mode or Sync)) return;
         c.Hold?.Cancel();
         c.Hold = null;
         if (c.HoldFired) return;
+        if (c.Action == Sync) { await SyncKeyAsync(c); return; }
         if (c.Action != Mode) { Request(c, LayoutKind(c)); return; }
 
         // F1 Mode: a second click within 350 ms makes a double click (hide/show); otherwise a single click.
@@ -425,6 +425,21 @@ internal sealed class Plugin
                 else Request(c, "mode");                           // start (or nothing when it already is)
             });
         });
+    }
+
+    /// <summary>
+    /// Sync, one press: as a guest in an F1 Party, first to the host (F1 Party jumps and takes the onboards
+    /// along); otherwise every stream to the main stream on the main monitor.
+    /// </summary>
+    private async Task SyncKeyAsync(Ctx c)
+    {
+        if (await F1Party.ModeAsync() == "guest")
+        {
+            Store.Log("sync: via F1 Party naar de host");
+            await (await F1Party.SyncAsync() ? Ok(c) : Alert(c));
+            return;
+        }
+        if (_mv.Main is { } main && await MultiViewer.SyncAsync(main.Id)) await Ok(c); else await Alert(c);
     }
 
     /// <summary>Double click on F1 Mode: minimise F1's windows and mute everything, or bring it all back.</summary>
