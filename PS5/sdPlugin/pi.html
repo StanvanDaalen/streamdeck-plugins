@@ -17,6 +17,8 @@
   .status { flex: 1; padding: 3px 8px; border-radius: 4px; background: #3a3a3a; color: #bbb; }
   .status.ok { background: #1f3a2a; color: #7fe3a8; }
   .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .check { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .check input { margin: 0; }
 </style>
 </head>
 <body>
@@ -30,6 +32,8 @@
     <span id="iconName">Default</span>
     <label class="btn" for="iconFile">File</label><button id="iconClear">Clear</button>
     <input type="file" id="iconFile" accept="image/png,image/jpeg"></div></div>
+  <div class="row"><label class="check"><input type="checkbox" id="accentBar">Bar in PlayStation blue</label></div>
+  <div class="row"><label class="check"><input type="checkbox" id="accentLogo">Small PlayStation logo</label></div>
 
   <h4>Controls</h4>
   <div class="row"><label for="step">Volume step</label>
@@ -72,6 +76,8 @@ function apply(p) {
   $('ps5Status').textContent = p.ps5Status; $('ps5Status').classList.toggle('ok', !!p.ps5On);
   if (!focused($('title'))) $('title').value = p.title;
   if (!focused($('defaultVolume'))) $('defaultVolume').value = p.defaultVolume;
+  $('accentBar').checked = !!p.accentBar;
+  $('accentLogo').checked = !!p.accentLogo;
   if (!focused($('step'))) $('step').value = p.step;
   $('iconName').textContent = p.icon ? p.icon.split('\\').pop() : 'Default';
   $('iconName').title = p.icon || '';
@@ -81,6 +87,8 @@ function apply(p) {
 
 $('title').addEventListener('change', e => send({ title: e.target.value }));
 $('step').addEventListener('change', e => send({ step: e.target.value }));
+$('accentBar').addEventListener('change', e => send({ accentBar: e.target.checked }));
+$('accentLogo').addEventListener('change', e => send({ accentLogo: e.target.checked }));
 $('defaultVolume').addEventListener('change', e => send({ defaultVolume: Math.max(0, Math.min(100, parseInt(e.target.value || '70', 10))) }));
 $('videoSource').addEventListener('change', e => send({ videoSource: e.target.value }));
 $('audioSource').addEventListener('change', e => send({ audioSource: e.target.value }));

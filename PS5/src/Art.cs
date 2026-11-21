@@ -236,6 +236,24 @@ public static class Art
         else { g.DrawArc(pen, 18, 12, 10, 16, -60, 120); g.DrawArc(pen, 18, 6, 18, 28, -60, 120); }
     }
 
+    /// <summary>
+    /// The small round logo on the cover corner, built like the YouTube badge of the media dials (18 px,
+    /// black circle, white mark): here the PlayStation console itself.
+    /// </summary>
+    public static string Badge(string? path)
+    {
+        var stamp = path != null && File.Exists(path) ? File.GetLastWriteTimeUtc(path).Ticks : 0;
+        return Cached($"badge|{path}|{stamp}", () => Canvas(36, 36, g =>
+        {
+            using var ring = new SolidBrush(Color.Black);
+            g.FillEllipse(ring, 0, 0, 36, 36);
+            var icon = LoadIcon(path);
+            var r = new RectangleF(8, 8, 20, 20);
+            if (icon != null) g.DrawImage(icon, r);
+            else Controller(g, r, Color.White);
+        }));
+    }
+
     private static void FillRound(Graphics g, Brush br, RectangleF r, float rad)
     {
         using var p = new GraphicsPath();
@@ -284,6 +302,7 @@ public static class Art
             void Img(string url, float x, float y, float w, float h) { using var b = FromUrl(url); g.DrawImage(b, x, y, w, h); }
             if (r.closed) { Img(ObsClosed(icon), 0, 0, 200, 100); g.Restore(st); continue; }
             Img(Tile(icon, r.on), 12, 12, 40, 40);
+            Img(Badge(icon), 38, 38, 18, 18);
             Text(g, "PlayStation 5", 16, FontStyle.Bold, r.on ? Color.White : grey, new RectangleF(60, 12, 128, 20));
             Text(g, r.on ? "On" : "Off", 16, FontStyle.Regular, Color.FromArgb(178, 255, 255, 255), new RectangleF(60, 32, 128, 20));
             using (var tmp = new Bitmap(40, 40, PixelFormat.Format32bppArgb)) { using (var tg = Quality(tmp)) DrawLoudspeaker(tg, r.muted, Color.White); DrawFaded(g, tmp, new RectangleF(12, 57, 20, 20), r.on ? 1f : 0.5f, true); }

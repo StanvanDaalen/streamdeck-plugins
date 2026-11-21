@@ -102,6 +102,9 @@ internal static class Program
     private static string Str(Ctx c, string key, string fallback) =>
         c.Settings[key] is JsonValue v && v.TryGetValue<string>(out var s) && s.Trim().Length > 0 ? s.Trim() : fallback;
 
+    private static bool Bool(Ctx c, string key, bool fallback) =>
+        c.Settings[key] is JsonValue v && v.TryGetValue<bool>(out var b) ? b : fallback;
+
     private static int Int(Ctx c, string key, int fallback) =>
         c.Settings[key] is JsonValue v && (v.TryGetValue<int>(out var i) || (v.TryGetValue<string>(out var s) && int.TryParse(s, out i))) ? i : fallback;
 
@@ -319,10 +322,12 @@ internal static class Program
             ["name"] = new JsonObject { ["value"] = name, ["color"] = on ? "#FFFFFF" : "#8C8C8C" },
             ["status"] = new JsonObject { ["value"] = status },
             // Loudspeaker, with a cross when muted.
+            // Small console badge on the cover corner, like the YouTube and Spotify logos on the media dials.
+            ["badge"] = new JsonObject { ["value"] = Art.Badge(icon), ["opacity"] = Bool(c, "accentLogo", true) ? (on ? 1 : 0.5) : 0 },
             ["speaker"] = new JsonObject { ["value"] = Art.Loudspeaker(muted), ["opacity"] = on ? 1 : 0.5 },
             ["percent"] = new JsonObject { ["value"] = volume == null ? "—" : $"{volume}%", ["color"] = on && !muted ? "#FFFFFF" : "#8C8C8C" },
             // PlayStation blue, like Spotify green / YouTube red on the media dials; grey when off or muted.
-            ["progress"] = new JsonObject { ["value"] = volume ?? 0, ["bar_fill_c"] = on && !muted ? "#0070D1" : "#FFFFFF", ["opacity"] = muted ? 0.3 : on ? 1 : 0.4 },
+            ["progress"] = new JsonObject { ["value"] = volume ?? 0, ["bar_fill_c"] = on && !muted && Bool(c, "accentBar", true) ? "#0070D1" : "#FFFFFF", ["opacity"] = muted ? 0.3 : on ? 1 : 0.4 },
             ["overlay"] = new JsonObject { ["value"] = Art.ObsClosed(icon), ["opacity"] = closed && c.Overlay == null ? 1 : 0 },
         };
         var json = payload.ToJsonString();
@@ -334,7 +339,7 @@ internal static class Program
     private static async Task OnPi(Ctx c, JsonObject p)
     {
         bool changed = false;
-        foreach (var field in new[] { "title", "icon", "step", "defaultVolume", "videoSource", "audioSource" })
+        foreach (var field in new[] { "title", "icon", "step", "defaultVolume", "videoSource", "audioSource", "accentBar", "accentLogo" })
             if (p[field] is { } value) { c.Settings[field] = value.DeepClone(); changed = true; }
         if (changed)
         {
@@ -371,6 +376,8 @@ internal static class Program
                 ["icon"] = Str(c, "icon", File.Exists(DefaultIcon) ? DefaultIcon : ""),
                 ["step"] = Int(c, "step", 5).ToString(),
                 ["defaultVolume"] = Int(c, "defaultVolume", 70),
+                ["accentBar"] = Bool(c, "accentBar", true),
+                ["accentLogo"] = Bool(c, "accentLogo", true),
                 ["videoSource"] = Str(c, "videoSource", "PS5 beeld"),
                 ["audioSource"] = Str(c, "audioSource", "PS5 geluid"),
                 ["sources"] = sources,

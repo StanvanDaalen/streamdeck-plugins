@@ -7,6 +7,7 @@
     { "key": "speaker", "type": "pixmap", "rect": [12, 57, 20, 20], "zOrder": 26 },
     { "key": "percent", "type": "text", "rect": [138, 57, 50, 20], "font": { "size": 16, "weight": 400 }, "alignment": "right", "value": "", "zOrder": 26 },
     { "key": "progress", "type": "bar", "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#4D4D4D", "bar_fill_c": "#FFFFFF", "rect": [12, 83, 176, 8], "value": 0, "range": { "min": 0, "max": 100 }, "opacity": 0.8, "zOrder": 30 },
+    { "key": "badge", "type": "pixmap", "rect": [38, 38, 18, 18], "opacity": 0, "zOrder": 15 },
     { "key": "overlay", "type": "pixmap", "rect": [0, 0, 200, 100], "background": "black", "opacity": 0, "zOrder": 100 }
   ]
 }

@@ -12,6 +12,12 @@ Zet een wijziging onder **Nog niet uitgebracht**, met de naam van de plugin voor
 
 ### Opgelost
 
+## 1.1.17 (2026-11-21)
+
+### Nieuw
+
+- **PlayStation 5 for OBS**: een klein PlayStation-logo (de console) op de hoek van het vakje, zoals het YouTube- en Spotify-logo op de mediadials. In de instellingen zet je dat logo en de PlayStation-blauwe balk elk aan of uit; staat de balk uit, dan blijft hij wit.
+
 ## 1.1.16 (2026-11-21)
 
 **Overstappen**: installeer Volume & Launcher over Audio heen; je dials blijven werken. Verwijder de oude Launcher-plugin en zet je Game- en App-knoppen opnieuw neer. Gebruik je de Scarlett-knoppen, installeer dan ook Scarlett Switch en zet die opnieuw neer.
