@@ -16,6 +16,8 @@
   .seg button { flex: 1; min-width: 0; border: 0; border-radius: 0; background: #3d3d3d; color: #b8b8b8; padding: 4px 6px; white-space: nowrap; }
   .seg button + button { border-left: 1px solid #4a4a4a; }
   .seg button.on { background: #e6e6e6; color: #1e1e1e; font-weight: 600; }
+  .check { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+  .check input { margin: 0; flex: none; }
   .hide { display: none !important; }
 </style>
 </head>
@@ -26,8 +28,9 @@
   <p class="muted">Player looks like the official Spotify dial. Picture shows the cover across the whole screen. Compact shows the Spotify logo with the title.</p>
 
   <h4>App indicator</h4>
-  <div class="row"><span class="lbl">Show with</span><div class="seg" id="accent">
-    <button value="play">Play</button><button value="timeline">Timeline</button><button value="logo">Logo</button><button value="off">Off</button></div></div>
+  <div class="row"><label class="check"><input type="checkbox" id="accentPlay">Play button in Spotify green</label></div>
+  <div class="row"><label class="check"><input type="checkbox" id="accentTimeline">Timeline in Spotify green</label></div>
+  <div class="row"><label class="check"><input type="checkbox" id="accentLogo">Small black-and-white logo</label></div>
   <p class="muted">So you can tell this dial apart from your other media dials: the play button or the timeline in Spotify green, or a small black-and-white logo (Player and Picture).</p>
 
   <h4>Turning</h4>
@@ -64,7 +67,13 @@ const ACTIONS = [
   ['playlist', 'Open playlist'],
 ];
 const DEFAULTS = { press1: 'playPause', press2: 'next', press3: 'previous', pressHold: 'window', touch: 'playPause',
-                   preferVolume: true, volumeStep: 5, playlistUri: '', pressRotate: 'seek', look: 'player', accent: 'play' };
+                   preferVolume: true, volumeStep: 5, playlistUri: '', pressRotate: 'seek', look: 'player' };
+// Older versions stored one choice in "accent"; it is the starting point until a box is ticked.
+function indicator(key) {
+  if (typeof settings[key] === 'boolean') return settings[key];
+  const old = settings.accent ?? 'play';
+  return { accentPlay: 'play', accentTimeline: 'timeline', accentLogo: 'logo' }[key] === old;
+}
 let ws, uuid, settings = {};
 
 for (const sel of document.querySelectorAll('select.action')) {
@@ -79,8 +88,8 @@ function render() {
   $('preferVolume').value = value('preferVolume') ? '1' : '0';
   $('pressRotate').value = value('pressRotate');
   $('volumeStep').value = String(value('volumeStep'));
-  for (const id of ['look', 'accent'])
-    $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === value(id)));
+  $('look').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === value('look')));
+  for (const k of ['accentPlay', 'accentTimeline', 'accentLogo']) $(k).checked = indicator(k);
   $('playlistUri').value = value('playlistUri');
   const usesPlaylist = ['press1', 'press2', 'press3', 'pressHold', 'touch'].some(k => value(k) === 'playlist');
   $('playlistRow').classList.toggle('hide', !usesPlaylist);
@@ -96,8 +105,9 @@ for (const k of ['press1', 'press2', 'press3', 'pressHold', 'touch'])
 $('preferVolume').addEventListener('change', e => { settings.preferVolume = e.target.value === '1'; save(); });
 $('pressRotate').addEventListener('change', e => { settings.pressRotate = e.target.value; save(); });
 $('volumeStep').addEventListener('change', e => { settings.volumeStep = Number(e.target.value); save(); });
-for (const id of ['look', 'accent'])
-  $(id).querySelectorAll('button').forEach(b => b.addEventListener('click', () => { settings[id] = b.value; save(); }));
+$('look').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { settings.look = b.value; save(); }));
+for (const k of ['accentPlay', 'accentTimeline', 'accentLogo'])
+  $(k).addEventListener('change', () => { settings[k] = $(k).checked; save(); });
 $('playlistUri').addEventListener('change', e => { settings.playlistUri = e.target.value.trim(); save(); });
 
 function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {

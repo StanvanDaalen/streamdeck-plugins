@@ -39,7 +39,6 @@ internal sealed class Plugin
         ["press3"] = "previous",
         ["pressHold"] = "window",
         ["touch"] = "playPause",
-        ["accent"] = "play",
     };
 
     private readonly int _port;
@@ -122,7 +121,16 @@ internal sealed class Plugin
     private const string SpotifyGreen = "#1ED760";
 
     /// <summary>How the dial shows it is Spotify: "play" (green play button), "timeline", "logo" or "off".</summary>
-    private static string Accent(Ctx c) => Str(c, "accent") switch { "timeline" => "timeline", "logo" => "logo", "off" => "off", _ => "play" };
+    /// <summary>
+    /// How the dial shows which app it is; any combination can be on. Older settings stored one choice in
+    /// "accent" (play / timeline / logo / off): that choice is the starting point until a box is ticked.
+    /// </summary>
+    private static (bool Play, bool Timeline, bool Logo) Indicators(Ctx c)
+    {
+        var old = c.Settings["accent"] is JsonValue a && a.TryGetValue(out string? s) && s != null ? s : "play";
+        bool Flag(string key, bool fallback) => c.Settings[key] is JsonValue v && v.TryGetValue(out bool b) ? b : fallback;
+        return (Flag("accentPlay", old == "play"), Flag("accentTimeline", old == "timeline"), Flag("accentLogo", old == "logo"));
+    }
 
     private static string Look(Ctx c) => Str(c, "look") switch { "picture" => "picture", "compact" => "compact", _ => "player" };
 
@@ -327,8 +335,8 @@ internal sealed class Plugin
         string titleText = hasTrack ? s.Title : running ? "Nothing playing" : "";
 
         var look = Look(c);
-        var accent = Accent(c);
-        var layout = look == "picture" && accent == "logo" ? "layouts/picture-logo.json" : $"layouts/{look}.json";
+        var show = Indicators(c);
+        var layout = look == "picture" && show.Logo ? "layouts/picture-logo.json" : $"layouts/{look}.json";
         if (c.Layout != layout)
         {
             c.Layout = layout;
@@ -341,14 +349,14 @@ internal sealed class Plugin
             ["overlay"] = new() { ["value"] = Icons.Get("notRunning"), ["opacity"] = running ? 0 : 1 },
             ["time"] = new() { ["value"] = hasTrack ? Clock(position) : "", ["opacity"] = showVolume ? 0 : 1 },
             ["duration"] = new() { ["value"] = hasTrack ? Clock(s.Duration) : "", ["opacity"] = showVolume ? 0 : 1 },
-            ["progress"] = new() { ["value"] = Math.Clamp(progress, 0, 100), ["bar_fill_c"] = accent == "timeline" ? SpotifyGreen : "#FFFFFF", ["opacity"] = showVolume ? 0 : (accent == "timeline" ? 1 : 0.8) },
-            ["playIcon"] = new() { ["value"] = Icons.Get(s.Playing ? "pause" : "play", accent == "play" ? SpotifyGreen : null) },
+            ["progress"] = new() { ["value"] = Math.Clamp(progress, 0, 100), ["bar_fill_c"] = show.Timeline ? SpotifyGreen : "#FFFFFF", ["opacity"] = showVolume ? 0 : (show.Timeline ? 1 : 0.8) },
+            ["playIcon"] = new() { ["value"] = Icons.Get(s.Playing ? "pause" : "play", show.Play ? SpotifyGreen : null) },
             ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = showVolume ? 1 : 0 },
             ["volumeLevel"] = new() { ["value"] = muted ? "Mute" : $"{volume ?? 0}%", ["opacity"] = showVolume ? 1 : 0 },
             ["volumeBar"] = new() { ["value"] = volume ?? 0, ["opacity"] = showVolume ? 1 : 0 },
         };
         if (look is "player" or "picture")
-            items["badge"] = new() { ["value"] = "imgs/badge-spotify.svg", ["opacity"] = accent == "logo" && hasTrack ? 1 : 0 };
+            items["badge"] = new() { ["value"] = "imgs/badge-spotify.svg", ["opacity"] = show.Logo && hasTrack ? 1 : 0 };
         if (look is "player" or "picture")
         {
             items["shuffleIcon"] = new() { ["value"] = Icons.Get(s.Shuffle == true ? "shuffleOn" : "shuffleOff") };

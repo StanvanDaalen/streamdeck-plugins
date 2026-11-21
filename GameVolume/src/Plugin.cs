@@ -300,7 +300,16 @@ internal sealed class Plugin
     }
 
     /// <summary>How a media dial shows which app it is: "play" (coloured play button), "timeline", "logo" or "off".</summary>
-    private static string Accent(Ctx c) => Str(c, "accent", "play") switch { "timeline" => "timeline", "logo" => "logo", "off" => "off", _ => "play" };
+    /// <summary>
+    /// How the dial shows which app it is; any combination can be on. Older settings stored one choice in
+    /// "accent" (play / timeline / logo / off): that choice is the starting point until a box is ticked.
+    /// </summary>
+    private static (bool Play, bool Timeline, bool Logo) Indicators(Ctx c)
+    {
+        var old = c.Settings["accent"] is JsonValue a && a.TryGetValue<string>(out var s) ? s : "play";
+        bool Flag(string key, bool fallback) => c.Settings[key] is JsonValue v && v.TryGetValue<bool>(out var b) ? b : fallback;
+        return (Flag("accentPlay", old == "play"), Flag("accentTimeline", old == "timeline"), Flag("accentLogo", old == "logo"));
+    }
 
     private static readonly HashSet<string> Browsers = new(StringComparer.OrdinalIgnoreCase) { "chrome", "msedge", "firefox", "brave", "opera", "vivaldi" };
 
@@ -309,6 +318,44 @@ internal sealed class Plugin
         Browsers.Contains(app) ? ("#FF0033", "images/media/badge-youtube.svg")
         : app.Equals("spotify", StringComparison.OrdinalIgnoreCase) ? ("#1ED760", "images/media/badge-spotify.svg")
         : (null, null);
+
+    /// <summary>An App Volume dial whose app is not running at all.</summary>
+    private static bool AppClosed(Ctx c)
+    {
+        if (c.Action != AppAction) return false;
+        var app = Str(c, "app", "");
+        if (app.Length == 0) return false;
+        var procs = System.Diagnostics.Process.GetProcessesByName(app);
+        foreach (var p in procs) p.Dispose();
+        return procs.Length == 0;
+    }
+
+    private async Task RenderClosed(Ctx c)
+    {
+        const string layout = "layouts/app-closed.json";
+        if (c.Layout != layout)
+        {
+            c.Layout = layout; c.ArtId = null; c.LastJson = null; c.MediaSent.Clear();
+            await SendAsync(new JsonObject { ["event"] = "setFeedbackLayout", ["context"] = c.Id, ["payload"] = new JsonObject { ["layout"] = layout } });
+        }
+        var app = Str(c, "app", "");
+        var exe = _knownAppExe.GetValueOrDefault(app) ?? G.AppExes.GetValueOrDefault(app);
+        var art = _art.ForExe("app:" + app.ToLowerInvariant(), exe) ?? _art.NoGame;
+        var cover = _art.ClosedCover(art, AppName(app, exe));
+        if (c.LastJson == cover) return;
+        c.LastJson = cover;
+        await SendAsync(new JsonObject { ["event"] = "setFeedback", ["context"] = c.Id, ["payload"] = new JsonObject { ["cover"] = cover } });
+    }
+
+    /// <summary>Starts the closed app, like tapping "Open Spotify" on the Spotify dial.</summary>
+    private async Task OpenApp(Ctx c)
+    {
+        var app = Str(c, "app", "");
+        var exe = _knownAppExe.GetValueOrDefault(app) ?? G.AppExes.GetValueOrDefault(app) ?? Str(c, "appExe", "");
+        if (exe.Length == 0 || !File.Exists(exe)) { await SendAsync(new JsonObject { ["event"] = "showAlert", ["context"] = c.Id }); return; }
+        ToggleApp(c);
+        _ = Task.Delay(1500).ContinueWith(_ => WithGate(() => _contexts.ContainsKey(c.Id) ? RenderDial(c) : Task.CompletedTask));
+    }
 
     private static string MediaStyle(Ctx c) => Str(c, "mediaStyle", "player") switch
     {
@@ -335,9 +382,9 @@ internal sealed class Plugin
     private async Task RenderMedia(Ctx c, MediaInfo m)
     {
         var style = MediaStyle(c);
-        var accent = Accent(c);
+        var show = Indicators(c);
         var (appColor, appBadge) = AppIdentity(Str(c, "app", ""));
-        var layout = style == "background" && accent == "logo" && appBadge != null ? "layouts/media-background-logo.json" : $"layouts/media-{style}.json";
+        var layout = style == "background" && show.Logo && appBadge != null ? "layouts/media-background-logo.json" : $"layouts/media-{style}.json";
         if (c.Layout != layout)
         {
             c.Layout = layout; c.ArtId = null; c.LastJson = null; c.MediaSent.Clear();
@@ -366,21 +413,21 @@ internal sealed class Plugin
 
         var items = new Dictionary<string, JsonObject>
         {
-            ["playIcon"] = new() { ["value"] = Icons.Get(m.Playing ? "pause" : "play", accent == "play" ? appColor : null) },
+            ["playIcon"] = new() { ["value"] = Icons.Get(m.Playing ? "pause" : "play", show.Play ? appColor : null) },
             ["time"] = new() { ["value"] = m.HasTimeline ? Clock(position) : "", ["opacity"] = timeOpacity },
             ["duration"] = new() { ["value"] = m.HasTimeline ? Clock(m.Duration) : "", ["opacity"] = timeOpacity },
             ["progress"] = new()
             {
                 ["value"] = Math.Clamp(progress, 0, 100),
-                ["bar_fill_c"] = accent == "timeline" && appColor != null ? appColor : Standard,
-                ["opacity"] = timeline ? (style == "background" || (accent == "timeline" && appColor != null) ? 1 : 0.8) : 0,
+                ["bar_fill_c"] = show.Timeline && appColor != null ? appColor : Standard,
+                ["opacity"] = timeline ? (style == "background" || (show.Timeline && appColor != null) ? 1 : 0.8) : 0,
             },
             ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = showVolume ? 1 : 0 },
             ["volumeLevel"] = new() { ["value"] = muted ? "Mute" : $"{volume}%", ["opacity"] = showVolume ? 1 : 0 },
             ["volumeBar"] = new() { ["value"] = volume, ["bar_fill_c"] = muted ? MutedBar : Standard, ["opacity"] = showVolume ? 1 : 0 },
         };
         if (style is "player" or "background")
-            items["badge"] = new() { ["value"] = appBadge ?? "images/media/panel.svg", ["opacity"] = accent == "logo" && appBadge != null ? 1 : 0 };
+            items["badge"] = new() { ["value"] = appBadge ?? "images/media/panel.svg", ["opacity"] = show.Logo && appBadge != null ? 1 : 0 };
         if (style is "player" or "background")
         {
             items["prevIcon"] = new() { ["value"] = Icons.Get("previous"), ["opacity"] = m.CanPrevious ? 1 : 0.35 };
@@ -524,6 +571,14 @@ internal sealed class Plugin
 
     private async Task OnClick(Ctx c)
     {
+        if (AppClosed(c))
+        {
+            c.ClickTimer?.Cancel();
+            c.ClickTimer = null;
+            c.Clicks = 0;
+            await OpenApp(c);
+            return;
+        }
         var actions = new[] { Str(c, "singleAction", "mute"), Str(c, "doubleAction", "window"), Str(c, "tripleAction", TripleDefault(c)) };
         int most = actions[2] != "none" ? 3 : actions[1] != "none" ? 2 : 1;
         c.ClickTimer?.Cancel();
@@ -549,7 +604,7 @@ internal sealed class Plugin
 
     private static string TripleDefault(Ctx c) => c.Action == AppAction ? "previous" : "none";
 
-    private Task Perform(Ctx c, string action) => action switch
+    private Task Perform(Ctx c, string action) => AppClosed(c) ? OpenApp(c) : action switch
     {
         "mute" => ToggleMute(c),
         "window" => ToggleWindow(c),
@@ -876,6 +931,7 @@ internal sealed class Plugin
     private async Task RenderDial(Ctx c)
     {
         if (!_contexts.ContainsKey(c.Id)) return;
+        if (AppClosed(c)) { await RenderClosed(c); return; }
         if (MediaFor(c) is { } media) { await RenderMedia(c, media); return; }
         string title, value;
         int bar;
@@ -1020,7 +1076,7 @@ internal sealed class Plugin
             if (node is not JsonValue v) continue;
             switch (key)
             {
-                case "display" or "theme" or "step" or "app" or "gameId" or "mediaStyle" or "accent" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
+                case "display" or "theme" or "step" or "app" or "gameId" or "mediaStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
                     c.Settings[key] = node.DeepClone();
                     perAction = true;
                     break;
@@ -1134,7 +1190,9 @@ internal sealed class Plugin
             {
                 ["display"] = Str(c, "display", "icon"),
                 ["mediaStyle"] = MediaStyle(c),
-                ["accent"] = Accent(c),
+                ["accentPlay"] = Indicators(c).Play,
+                ["accentTimeline"] = Indicators(c).Timeline,
+                ["accentLogo"] = Indicators(c).Logo,
                 ["theme"] = Str(c, "theme", "standard"),
                 ["step"] = Str(c, "step", "2"),
                 ["singleAction"] = Str(c, "singleAction", "mute"),

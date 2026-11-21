@@ -225,6 +225,35 @@ public sealed class ArtworkService
         };
     }
 
+    /// <summary>
+    /// Full-dial cover while the dial's app is closed, built like Spotify's "Open Spotify / Not running"
+    /// and the PS5 dial's "Open OBS" cover: the app's logo, "Open &lt;app&gt;" and "&lt;app&gt; not running".
+    /// </summary>
+    public string ClosedCover(Art art, string name)
+    {
+        var key = "closed:" + art.Id + "|" + name;
+        if (_closedCache.TryGetValue(key, out var url)) return url;
+        using var bmp = new Bitmap(400, 200, PixelFormat.Format32bppArgb);
+        using (var g = HighQuality(bmp))
+        {
+            g.Clear(Color.Black);
+            g.DrawImage(art.KeyIcon, new RectangleF(168, 22, 64, 64));
+            CoverText(g, "Open " + name, FontStyle.Bold, Color.White, new RectangleF(0, 104, 400, 40));
+            CoverText(g, name + " not running", FontStyle.Regular, Color.FromArgb(178, 255, 255, 255), new RectangleF(0, 144, 400, 40));
+        }
+        return _closedCache[key] = DataUrl(bmp);
+    }
+
+    private readonly Dictionary<string, string> _closedCache = new();
+
+    private static void CoverText(Graphics g, string s, FontStyle style, Color c, RectangleF r)
+    {
+        using var f = new Font("Segoe UI", 32, style, GraphicsUnit.Pixel);
+        using var br = new SolidBrush(c);
+        using var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+        g.DrawString(s, f, br, r, fmt);
+    }
+
     public static Bitmap Solid(int w, int h, Color c)
     {
         var b = new Bitmap(w, h, PixelFormat.Format32bppArgb);

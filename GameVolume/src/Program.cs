@@ -14,6 +14,17 @@ internal static class Program
 
         if (Arg("--assets") is { } dir) { Glyphs.WriteAssets(dir); return 0; }
         SettingsStore.Load();
+        if (Arg("--closed-test") is { } closedPng)
+        {
+            // Diagnostic: the "Open <app>" cover a closed App Volume app shows.
+            var app = Arg("--app") ?? "chrome";
+            var exe = SettingsStore.Current.AppExes.GetValueOrDefault(app);
+            var art = new ArtworkService(new GameLibrary());
+            var a = art.ForExe("app:" + app, exe) ?? art.NoGame;
+            var url = art.ClosedCover(a, Arg("--name") ?? "Chrome");
+            File.WriteAllBytes(closedPng, Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]));
+            return 0;
+        }
         if (Arg("--dump") is { } file) { Dump(file); return 0; }
         if (Arg("--media-list") is { } mediaOut)
         {

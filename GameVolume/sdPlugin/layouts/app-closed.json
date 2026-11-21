@@ -1,0 +1,17 @@
+{
+  "id": "gv-app-closed",
+  "items": [
+    {
+      "key": "cover",
+      "type": "pixmap",
+      "rect": [
+        0,
+        0,
+        200,
+        100
+      ],
+      "background": "black",
+      "zOrder": 100
+    }
+  ]
+}
