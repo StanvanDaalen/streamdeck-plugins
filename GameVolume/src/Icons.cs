@@ -21,6 +21,9 @@ internal static class Icons
         ["volume33"] = ("volume/volume33@16.svg", "images/media/volume.svg"),
         ["volume66"] = ("volume/volume66@16.svg", "images/media/volume.svg"),
         ["volume100"] = ("volume/volume100@16.svg", "images/media/volume.svg"),
+        // No official counterpart: always our own drawing, in the same 24px style.
+        ["speakers"] = ("-", "images/media/speakers.svg"),
+        ["headphones"] = ("-", "images/media/headphones.svg"),
     };
 
     private static readonly Dictionary<string, string> Cache = new();
