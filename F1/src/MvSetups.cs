@@ -204,6 +204,14 @@ public static class MvSetups
               w.state.streamData = { ...(w.state.streamData || {}), title: s.title, channelId: s.channelId };
             });
           }
+          // MultiViewer replaces the windows a setup has, but leaves other timing windows open. Close the
+          // timing windows this setup does not have (e.g. Sectors Leaderboard from the qualifying setup).
+          try {
+            const keep = new Set(copy.windows.map(w => w.type));
+            const open = new Set((await window.f1mv.setupManager.getWindows()).map(w => w.type));
+            for (const t of open)
+              if (t.startsWith('f1.live-timing.') && !keep.has(t)) await window.f1mv.setupManager.closeWindowsOfType(t);
+          } catch (e) { /* older MultiViewer without these calls: just open the setup */ }
           try { await window.f1mv.setupManager.restoreSetup(copy, payload); }
           catch (e) { return 'error: ' + ((e && e.message) || e); } // e.g. MultiViewer changed what it expects
           return 'ok';

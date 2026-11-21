@@ -3,7 +3,7 @@
     "Name":  "F1 Race Control",
     "Author":  "Stan",
     "Description":  "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.14.0.0",
+    "Version": "1.14.1.0",
     "SDKVersion":  2,
     "Icon":  "images/plugin",
     "Category":  "F1 Race Control",

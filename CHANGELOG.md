@@ -27,6 +27,7 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 ### Fixed
 
 - **F1 Race Control**: F1 Mode on automatic opened the race layout during a practice session.
+- **F1 Race Control**: switching between Race, Quali and Practice closes the timing windows the new setup does not have, instead of leaving them on top of the new layout.
 
 ## 1.1.24 (2026-11-21)
 
