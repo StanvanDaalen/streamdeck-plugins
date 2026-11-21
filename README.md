@@ -156,9 +156,9 @@ Philips Hue is optional: pair your bridge in the settings of the Track status di
 
 **Privacy:** the plugin stores no F1 TV or MultiViewer sign-in and sends no data to its author. MultiViewer and Ultimate F1 Viewer use their own sign-in on your own PC. Settings, such as your Hue Bridge key and window positions, are only stored locally in `%APPDATA%\StanF1`. For replays the plugin requests public data from OpenF1 and F1 TV, without signing in. MultiViewer and Ultimate F1 Viewer are started with a debug port (9334 and 9333) that can only be reached from your own PC.
 
-Works on Windows with the Stream Deck app and on Linux (x64) with [OpenDeck](https://github.com/nekename/OpenDeck). The `F1.streamDeckPlugin` file contains both versions; install it in OpenDeck through the Plugins tab.
+Works on Windows with the Stream Deck app or with [OpenDeck](https://github.com/nekename/OpenDeck), and on Linux (x64) with OpenDeck. The `F1.streamDeckPlugin` file contains both versions; install it in OpenDeck through the Plugins tab. Only one app can drive a Stream Deck at a time, so on Windows close the Stream Deck app completely before you start OpenDeck. Building from source: `F1\install.ps1 -OpenDeck` installs into OpenDeck instead of Stream Deck.
 
-| | Windows (Stream Deck) | Linux (OpenDeck) |
+| | Windows (Stream Deck or OpenDeck) | Linux (OpenDeck) |
 |---|---|---|
 | Flags on Hue, latency, volume, pause, live, sync, fullscreen, Session | yes | yes |
 | Race / Quali: MultiViewer setups, Ultimate F1 Viewer layouts, best of the rest, battle mode | yes | yes |
