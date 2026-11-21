@@ -203,6 +203,39 @@ public static class Art
         }));
     }
 
+    private static readonly string ElgatoIcons = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Elgato", "StreamDeck", "Plugins", "com.elgato.keycreator.sdPlugin", "static", "com.elgato.defaulticonswhite.sdIconPack", "icons");
+
+    /// <summary>
+    /// Elgato's own loudspeaker icon (with a cross when muted), cropped to its content so it fills the
+    /// 20 px spot. Without Elgato's icon pack a drawn loudspeaker takes its place.
+    /// </summary>
+    public static string Loudspeaker(bool muted)
+    {
+        var key = "loud|" + muted;
+        if (Rendered.TryGetValue(key, out var hit)) return hit;
+        try
+        {
+            var file = Path.Combine(ElgatoIcons, muted ? "IconVolumeMuted-Filled-White.svg" : "IconVolume-Filled-White.svg");
+            if (File.Exists(file))
+            {
+                var svg = File.ReadAllText(file).Replace("viewBox=\"0 0 144 144\"", "viewBox=\"24 24 96 96\"");
+                return Rendered[key] = "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(svg));
+            }
+        }
+        catch (Exception e) { Log.Write("speaker icon: " + e.Message); }
+        return Cached(key + "|own", () => Canvas(40, 40, g => DrawLoudspeaker(g, muted, Color.White)));
+    }
+
+    private static void DrawLoudspeaker(Graphics g, bool muted, Color c)
+    {
+        using var br = new SolidBrush(c);
+        g.FillPolygon(br, new PointF[] { new(3, 14), new(11, 14), new(21, 5), new(21, 35), new(11, 26), new(3, 26) });
+        using var pen = new Pen(c, 3f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        if (muted) { g.DrawLine(pen, 26, 14, 36, 26); g.DrawLine(pen, 36, 14, 26, 26); }
+        else { g.DrawArc(pen, 18, 12, 10, 16, -60, 120); g.DrawArc(pen, 18, 6, 18, 28, -60, 120); }
+    }
+
     private static void FillRound(Graphics g, Brush br, RectangleF r, float rad)
     {
         using var p = new GraphicsPath();
@@ -253,7 +286,7 @@ public static class Art
             Img(Tile(icon, r.on), 12, 12, 40, 40);
             Text(g, "PlayStation 5", 16, FontStyle.Bold, r.on ? Color.White : grey, new RectangleF(60, 12, 128, 20));
             Text(g, r.on ? "On" : "Off", 16, FontStyle.Regular, Color.FromArgb(178, 255, 255, 255), new RectangleF(60, 32, 128, 20));
-            Text(g, r.label, 16, FontStyle.Regular, Color.FromArgb(178, 255, 255, 255), new RectangleF(12, 57, 120, 20));
+            using (var tmp = new Bitmap(40, 40, PixelFormat.Format32bppArgb)) { using (var tg = Quality(tmp)) DrawLoudspeaker(tg, r.muted, Color.White); DrawFaded(g, tmp, new RectangleF(12, 57, 20, 20), r.on ? 1f : 0.5f, true); }
             Text(g, "72%", 16, FontStyle.Regular, r.on && !r.muted ? Color.White : grey, new RectangleF(138, 57, 50, 20), StringAlignment.Far);
             using (var bg = new SolidBrush(Color.FromArgb(204, 0x4D, 0x4D, 0x4D))) FillRound(g, bg, new RectangleF(12, 83, 176, 8), 4);
             using (var fg = new SolidBrush(r.on && !r.muted ? ColorTranslator.FromHtml("#0070D1") : Color.FromArgb(r.muted ? 77 : 102, 255, 255, 255))) FillRound(g, fg, new RectangleF(12, 83, 176 * 0.72f, 8), 4);

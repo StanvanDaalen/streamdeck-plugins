@@ -57,8 +57,10 @@ public sealed class Detector
         if (!_captureResolved || _resolvedFor != audioSource)
         {
             var settings = await obs.Request("GetInputSettings", new JsonObject { ["inputName"] = audioSource });
-            AudioFound = settings != null;
-            audio.UseCapture(settings?["inputSettings"]?["device_id"]?.GetValue<string>() ?? (settings != null ? "default" : null));
+            // Not in the open scene collection? The same capture card in another collection still tells us the device.
+            var device = settings?["inputSettings"]?["device_id"]?.GetValue<string>() ?? (settings != null ? "default" : SceneDevice(audioSource));
+            AudioFound = device != null;
+            audio.UseCapture(device);
             _captureResolved = true;
             _resolvedFor = audioSource;
         }

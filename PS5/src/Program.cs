@@ -304,7 +304,6 @@ internal static class Program
         string? icon = iconPath.Length > 0 ? iconPath : null;
 
         // Bottom left says what the bar shows; a short message (such as "Default 70%") replaces it briefly.
-        string label = c.Overlay ?? (muted ? "Muted" : "Volume");
         // Under the name: whether the capture card gets a signal from the PlayStation.
         string status = state switch
         {
@@ -312,13 +311,15 @@ internal static class Program
             Ps5State.Off => "Off",
             _ => "Checking…",
         };
+        if (c.Overlay != null) status = c.Overlay; // short messages such as "Default 70%"
 
         var payload = new JsonObject
         {
             ["artwork"] = Art.Tile(icon, on),
             ["name"] = new JsonObject { ["value"] = name, ["color"] = on ? "#FFFFFF" : "#8C8C8C" },
             ["status"] = new JsonObject { ["value"] = status },
-            ["label"] = new JsonObject { ["value"] = label },
+            // Loudspeaker, with a cross when muted.
+            ["speaker"] = new JsonObject { ["value"] = Art.Loudspeaker(muted), ["opacity"] = on ? 1 : 0.5 },
             ["percent"] = new JsonObject { ["value"] = volume == null ? "—" : $"{volume}%", ["color"] = on && !muted ? "#FFFFFF" : "#8C8C8C" },
             // PlayStation blue, like Spotify green / YouTube red on the media dials; grey when off or muted.
             ["progress"] = new JsonObject { ["value"] = volume ?? 0, ["bar_fill_c"] = on && !muted ? "#0070D1" : "#FFFFFF", ["opacity"] = muted ? 0.3 : on ? 1 : 0.4 },
