@@ -71,7 +71,9 @@
       <div class="row"><label>Double-click</label><select id="doubleAction" class="gesture"></select></div>
       <div class="row"><label>Triple-click</label><select id="tripleAction" class="gesture"></select></div>
       <div class="row"><label>Hold</label><select id="holdAction" class="gesture"></select></div>
-      <p class="muted hide" id="seekHint">Hold and turn: rewind or fast-forward 5 seconds per step while the app plays something.</p>
+      <div class="row hide" id="seekRow"><label>Seek step</label>
+        <select id="seekStep"><option value="5">5 sec</option><option value="10">10 sec</option><option value="15">15 sec</option><option value="30">30 sec</option><option value="60">60 sec</option></select></div>
+      <p class="muted hide" id="seekHint">Hold and turn: rewind or fast-forward this much per step while the app plays something.</p>
       <h4>Favorite volume</h4>
       <div class="row"><span class="lbl" id="favoriteFor">—</span><input type="number" id="favorite" min="0" max="100" placeholder="Not set"></div>
       <div class="row"><span class="lbl"></span><button id="favoriteCurrent">Use current volume</button></div>
@@ -131,6 +133,7 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   $('appRow').classList.toggle('hide', !isApp);
   $('mediaSection').classList.toggle('hide', !isApp);
   $('seekHint').classList.toggle('hide', !isApp);
+  $('seekRow').classList.toggle('hide', !isApp);
   $('gameRow').classList.toggle('hide', !actionId.endsWith('.game'));
   fillGestures(isApp);
   $('gameSections').classList.toggle('hide', isApp);
@@ -159,6 +162,7 @@ function apply(p) {
   $('favorite').disabled = $('favoriteCurrent').disabled = !p.favoriteFor;
   if (document.activeElement !== $('favorite')) $('favorite').value = p.favorite == null ? '' : p.favorite;
   $('step').value = p.step;
+  $('seekStep').value = p.seekStep || '5';
   $('duckPercent').value = String(p.duckPercent);
 
   const apps = [...new Set([...(p.apps || []), ...(p.app ? [p.app] : [])])];
@@ -223,6 +227,7 @@ $('favorite').addEventListener('change', () => send({ favorite: $('favorite').va
 $('favoriteCurrent').addEventListener('click', () => send({ favoriteCurrent: true }));
 $('startFavorite').addEventListener('change', () => send({ startFavorite: $('startFavorite').checked }));
 $('step').addEventListener('change', () => send({ step: $('step').value }));
+$('seekStep').addEventListener('change', () => send({ seekStep: $('seekStep').value }));
 $('app').addEventListener('change', () => send({ app: $('app').value }));
 $('gameId').addEventListener('change', () => send({ gameId: $('gameId').value }));
 $('duckPercent').addEventListener('change', () => send({ duckPercent: Number($('duckPercent').value) }));

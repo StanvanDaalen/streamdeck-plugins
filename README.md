@@ -52,7 +52,7 @@ Controls the volume of the game that is open right now, with that game's name an
 
 Controls the volume of one app, such as Discord, Chrome or Spotify.
 
-- **Turn**: volume. While the app plays something, a **pressed turn** seeks 5 seconds per step.
+- **Turn**: volume. While the app plays something, a **pressed turn** rewinds or fast-forwards per step, by 5, 10, 15, 30 or 60 seconds (**Seek step**, 5 by default).
 - **Click, double-click, triple-click and hold**: the same choices as Game Volume, plus play/pause, next track and previous track. Default: click = mute, double-click = minimize/open, triple-click = previous track, hold = close.
 - **While playing**: when the app plays something, for example a YouTube video, the dial shows the title, channel, picture, play/pause and a timeline. Styles: **Player**, **Picture** (the picture across the whole screen), **Compact** or **Off** (normal display). A short turn briefly shows the volume.
 - **App indicator**: so you can tell the dial apart from the Spotify dial, a browser gets YouTube red and Spotify gets green. Tick any of: on the play button, on the timeline and as a small black-and-white logo.

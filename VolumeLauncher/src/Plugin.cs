@@ -170,12 +170,13 @@ internal sealed class Plugin
         }
     }
 
-    private const int SeekStep = 5; // seconds per tick while the dial is held and turned
+    /// <summary>Seconds per tick while the dial is held and turned, chosen per dial (5 by default).</summary>
+    private static int SeekStep(Ctx c) => int.TryParse(Str(c, "seekStep", "5"), out var s) && s > 0 ? s : 5;
 
     private async Task Seek(Ctx c, MediaInfo m, int ticks)
     {
         var from = DateTime.UtcNow < c.SeekUntil ? c.SeekTarget : m.Position;
-        var target = from + TimeSpan.FromSeconds(ticks * SeekStep);
+        var target = from + TimeSpan.FromSeconds(ticks * SeekStep(c));
         if (target < TimeSpan.Zero) target = TimeSpan.Zero;
         if (target > m.Duration) target = m.Duration - TimeSpan.FromSeconds(1);
         c.SeekTarget = target;
@@ -1027,7 +1028,7 @@ internal sealed class Plugin
             if (node is not JsonValue v) continue;
             switch (key)
             {
-                case "display" or "theme" or "step" or "app" or "gameId" or "mediaStyle" or "idleStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
+                case "display" or "theme" or "step" or "seekStep" or "app" or "gameId" or "mediaStyle" or "idleStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
                     c.Settings[key] = node.DeepClone();
                     perAction = true;
                     break;
@@ -1127,6 +1128,7 @@ internal sealed class Plugin
                 ["accentLogo"] = Indicators(c).Logo,
                 ["theme"] = Str(c, "theme", "standard"),
                 ["step"] = Str(c, "step", "2"),
+                ["seekStep"] = SeekStep(c).ToString(),
                 ["singleAction"] = Str(c, "singleAction", "mute"),
                 ["doubleAction"] = Str(c, "doubleAction", "window"),
                 ["tripleAction"] = Str(c, "tripleAction", TripleDefault(c)),
