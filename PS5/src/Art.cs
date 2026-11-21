@@ -248,37 +248,48 @@ public static class Art
         g.ScaleTransform(s, s);
         using var br = new SolidBrush(c);
 
-        // P: a slanted stem with a bowl to the right, open in the middle.
+        // P: upright stem whose foot slopes down to the right, and a tall bowl beside it,
+        // separated from the stem by a narrow vertical slot with a rounded top.
         using (var p = new GraphicsPath())
         {
-            p.AddLine(36, 8, 55, 14);
-            p.AddBezier(55, 14, 84, 21, 86, 46, 62, 47);
-            p.AddLine(62, 47, 55, 45);
-            p.AddLine(55, 45, 55, 37);
-            p.AddBezier(55, 37, 67, 40, 69, 27, 55, 24);
-            p.AddLine(55, 24, 55, 86);
-            p.AddLine(55, 86, 36, 80);
+            p.StartFigure();
+            p.AddBezier(37.3f, 11f, 52f, 13.5f, 66f, 16.5f, 72f, 21f);
+            p.AddBezier(72f, 21f, 78f, 26f, 79f, 34f, 78f, 42f);
+            p.AddBezier(78f, 42f, 77.5f, 50f, 74f, 55.5f, 68f, 55.7f);
+            p.AddLine(68f, 55.7f, 59.9f, 55.2f);
+            p.AddLine(59.9f, 55.2f, 59.9f, 26f);
+            p.AddBezier(59.9f, 26f, 59.9f, 23.4f, 58.5f, 22.4f, 56.7f, 22.4f);
+            p.AddBezier(56.7f, 22.4f, 54.9f, 22.4f, 53.5f, 23.4f, 53.5f, 26f);
+            p.AddLine(53.5f, 26f, 53.5f, 88f);
+            p.AddLine(53.5f, 88f, 37.3f, 82.4f);
             p.CloseFigure();
             g.FillPath(br, p);
         }
-        // S, lying down: left curl in front of the stem, right curl behind it, both in perspective.
+        // S, lying flat: the left half is a thick band curling to a rounded point on the left, in front of
+        // the stem; the right half is a band running out to a rounded point on the right, behind it.
         using (var left = new GraphicsPath())
         {
-            left.AddBezier(32, 64, 14, 68, 2, 73, 4, 79);
-            left.AddBezier(4, 79, 6, 85, 20, 86, 33, 83);
-            left.AddLine(33, 83, 33, 77);
-            left.AddBezier(33, 77, 22, 80, 15, 79, 17, 76);
-            left.AddBezier(17, 76, 19, 73, 26, 71, 32, 70);
+            left.StartFigure();
+            left.AddBezier(33.9f, 54.6f, 20f, 58f, 3f, 63f, 0.8f, 68.6f);
+            left.AddBezier(0.8f, 68.6f, -1f, 74f, 6f, 78f, 15f, 78.5f);
+            left.AddBezier(15f, 78.5f, 22f, 79f, 29f, 78.6f, 33.9f, 77.8f);
+            left.AddLine(33.9f, 77.8f, 33.9f, 73.7f);
+            left.AddBezier(33.9f, 73.7f, 27f, 74.6f, 20f, 74.6f, 17f, 73.6f);
+            left.AddBezier(17f, 73.6f, 13.5f, 72.4f, 15f, 70.6f, 19f, 69.6f);
+            left.AddLine(19f, 69.6f, 33.9f, 67.2f);
             left.CloseFigure();
             g.FillPath(br, left);
         }
         using (var right = new GraphicsPath())
         {
-            right.AddBezier(59, 60, 74, 55, 97, 54, 97, 63);
-            right.AddBezier(97, 63, 97, 71, 78, 76, 59, 82);
-            right.AddLine(59, 82, 59, 75);
-            right.AddBezier(59, 75, 72, 71, 84, 68, 83, 64);
-            right.AddBezier(83, 64, 82, 61, 70, 62, 59, 66);
+            right.StartFigure();
+            right.AddBezier(56.5f, 60.3f, 72f, 57f, 92f, 57.5f, 98f, 62.5f);
+            right.AddBezier(98f, 62.5f, 102f, 66.5f, 99f, 70.5f, 93f, 73f);
+            right.AddLine(93f, 73f, 56.5f, 87f);
+            right.AddLine(56.5f, 87f, 56.5f, 72.2f);
+            right.AddLine(56.5f, 72.2f, 82.5f, 66.8f);
+            right.AddBezier(82.5f, 66.8f, 85.5f, 66.1f, 85f, 64.6f, 82f, 64.4f);
+            right.AddBezier(82f, 64.4f, 74f, 63.8f, 64f, 64.2f, 56.5f, 65.2f);
             right.CloseFigure();
             g.FillPath(br, right);
         }
