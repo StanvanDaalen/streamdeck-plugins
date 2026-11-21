@@ -3,7 +3,7 @@
     "Name":  "F1 Race Control",
     "Author":  "Stan",
     "Description":  "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.15.0.0",
+    "Version": "1.15.1.0",
     "SDKVersion":  2,
     "Icon":  "images/plugin",
     "Category":  "F1 Race Control",
@@ -166,7 +166,7 @@
                     {
                         "UUID":  "com.stan.f1.sync",
                         "Name":  "Sync",
-                        "Tooltip":  "Press: syncs all players with the main screen (as an F1 Party guest: to the host first). Hold: hosts an F1 Party and posts the Discord invite.",
+                        "Tooltip":  "Press: syncs all players with the main screen (as an F1 Party guest: to the host first). Hold 1 second: hosts an F1 Party and posts the invite to Discord; when you already host one, posts the invite again.",
                         "Icon":  "images/action-sync",
                         "Controllers":  [
                                             "Keypad"
