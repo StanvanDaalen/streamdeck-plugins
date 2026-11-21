@@ -10,6 +10,8 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Improved
 
+- **F1 Race Control**: the chequered flag on the Hue lights pulses slowly instead of flashing on and off, and shows once per finish. In qualifying and practice it stays until the last car is back in the pits (at most 5 minutes); in the race it lasts about 12 seconds.
+
 ### Fixed
 
 ## 1.1.25 (2026-11-21)

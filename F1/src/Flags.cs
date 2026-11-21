@@ -26,6 +26,11 @@ public sealed class FlagEngine
     private Dictionary<string, JsonObject>? _snapshot;
     private CancellationTokenSource? _fx;
     private int _seenChequered = -1;
+    /// <summary>When the chequered flag was last shown; a new one within a few minutes is the same finish.</summary>
+    private DateTime? _chequeredAt;
+    /// <summary>Race: the chequered flag pulses briefly. Qualifying/practice: until every car is back in.</summary>
+    private bool _chequeredUntilIn;
+    private DateTime _lastInCheck;
 
     public Flag Current { get; private set; } = Flag.Green;
     /// <summary>True while the lights show something other than the user's own light setting.</summary>
@@ -97,11 +102,27 @@ public sealed class FlagEngine
         }
 
         int cheq = state.Chequered;
-        if (_seenChequered < 0 || cheq < _seenChequered) _seenChequered = cheq; // start, or rewound in a replay
+        if (_seenChequered < 0 || cheq < _seenChequered) { _seenChequered = cheq; _chequeredAt = null; } // start, or rewound in a replay
         if (cheq > _seenChequered)
         {
             _seenChequered = cheq;
-            if (S.ShowChequered) await ShowAsync(Flag.Chequered);
+            // Once per finish: a further chequered message within 5 minutes (the same Q part) is ignored.
+            bool again = _chequeredAt is { } at && DateTime.UtcNow - at < TimeSpan.FromMinutes(5);
+            if (S.ShowChequered && !again)
+            {
+                _chequeredAt = DateTime.UtcNow;
+                _chequeredUntilIn = !state.IsRace;
+                await ShowAsync(Flag.Chequered);
+            }
+        }
+        else if (Current == Flag.Chequered && _chequeredUntilIn)
+        {
+            // Qualifying/practice: the finish lasts until the last car is back in the pits.
+            if (DateTime.UtcNow - _lastInCheck > TimeSpan.FromSeconds(2))
+            {
+                _lastInCheck = DateTime.UtcNow;
+                if (await AllInAsync()) { Store.Log("finishvlag: iedereen binnen"); await EndEffectAsync(); }
+            }
         }
         else if (Current != Flag.Chequered)
         {
@@ -233,14 +254,42 @@ public sealed class FlagEngine
         }
     }
 
+    /// <summary>
+    /// The chequered flag as a slow white pulse (bright and dim, fading), not as on/off flashing.
+    /// Race: about 12 seconds. Qualifying/practice: until every car is back in (UpdateAsync ends it),
+    /// at most 5 minutes.
+    /// </summary>
     private async Task ChequeredAsync(List<string> lights, CancellationToken t)
     {
-        for (int i = 0; i < 12; i++)
+        var until = DateTime.UtcNow + (_chequeredUntilIn ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(12));
+        bool high = true;
+        while (DateTime.UtcNow < until)
         {
-            await Hue.SetAllAsync(lights, i % 2 == 0 ? ColorState("white") : new JsonObject { ["on"] = false, ["transitiontime"] = 0 });
-            await Task.Delay(500, t);
+            await Hue.SetAllAsync(lights, ColorState("white", high ? S.Brightness : Math.Max(30, S.Brightness / 4), 10));
+            high = !high;
+            await Task.Delay(1100, t);
         }
         await FinishFxAsync(t);
+    }
+
+    /// <summary>Every car in the pits, retired or stopped (after the chequered flag: the session is over).</summary>
+    private static async Task<bool> AllInAsync()
+    {
+        var lines = (await MultiViewer.TimingAsync())?["TimingData"]?["Lines"] as JsonObject;
+        if (lines == null || lines.Count == 0) return false;
+        return lines.All(kv => kv.Value?["InPit"]?.ToString() == "true" || kv.Value?["Retired"]?.ToString() == "true"
+                               || kv.Value?["Stopped"]?.ToString() == "true");
+    }
+
+    /// <summary>Ends a running effect now and puts the lights back (called under the plugin's lock).</summary>
+    private async Task EndEffectAsync()
+    {
+        await StopFxAsync();
+        var snap = _snapshot;
+        _snapshot = null;
+        Current = Flag.Green;
+        if (snap != null) await RestoreAsync(snap);
+        Changed?.Invoke();
     }
 
     private async Task GreenAsync(List<string> lights, CancellationToken t)
