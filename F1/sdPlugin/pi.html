@@ -170,10 +170,12 @@ const HELP = {
     <li><b>Touch</b>: the other one of those two</li></ul>
     A new live stream starts at your start delay.`,
   live: `Shows where you are: <b>YOU'RE LIVE</b>, how far behind you are (e.g. <b>-40s</b>) or <b>REPLAY</b>. Press to drop the delay and go live; in a replay back to the point before shifting.`,
-  sync: `<ul>
-    <li><b>Press</b>: syncs all players in MultiViewer (onboards, extra feeds) with the main screen. Handy when an onboard lags behind. As a guest in an <b>F1 Party</b>, your main screen first jumps to the host.</li>
-    <li><b>Hold 1 second</b> (with the F1 Party app): not in a party yet → hosts an F1 Party and posts the invite with its code to your Discord channel. Already hosting → posts the invite again. F1 Party starts by itself when it isn't open.</li></ul>
-    Discord invites need a webhook, set once in F1 Party.`,
+  sync: `<b>Press</b> → all streams jump to your main screen.<br>
+    <i>In an F1 Party as a guest: first to the host.</i>
+    <br><br><b>Hold 1 second</b> → F1 Party:<ul>
+    <li><b>No party yet</b>: starts one and sends the invite to Discord</li>
+    <li><b>You're the host</b>: sends the invite again</li></ul>
+    Needs the F1 Party app (it opens by itself). For Discord, set a webhook in F1 Party once.`,
   pause: `Pauses or resumes the streams. Time spent paused counts as delay behind live.`,
   race: `Opens your whole race setup at once, for the live session or the replay open in MultiViewer:<ul>
     <li>your <b>MultiViewer setup</b> Race: all onboards, F1 LIVE and the timing windows in place</li>
