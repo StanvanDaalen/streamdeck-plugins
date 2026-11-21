@@ -237,21 +237,76 @@ public static class Art
     }
 
     /// <summary>
-    /// The small round logo on the cover corner, built like the YouTube badge of the media dials (18 px,
-    /// black circle, white mark): here the PlayStation console itself.
+    /// The PlayStation mark in its own simplified drawing: an upright "P" with a flat "S" lying in front of it.
+    /// Drawn on a 100x100 grid.
     /// </summary>
-    public static string Badge(string? path)
+    public static void PsMark(Graphics g, RectangleF r, Color c)
     {
-        var stamp = path != null && File.Exists(path) ? File.GetLastWriteTimeUtc(path).Ticks : 0;
-        return Cached($"badge|{path}|{stamp}", () => Canvas(36, 36, g =>
+        var st = g.Save();
+        float s = Math.Min(r.Width, r.Height) / 100f;
+        g.TranslateTransform(r.X + (r.Width - 100 * s) / 2, r.Y + (r.Height - 100 * s) / 2);
+        g.ScaleTransform(s, s);
+        using var br = new SolidBrush(c);
+
+        // P: a slanted stem with a bowl to the right, open in the middle.
+        using (var p = new GraphicsPath())
         {
-            using var ring = new SolidBrush(Color.Black);
-            g.FillEllipse(ring, 0, 0, 36, 36);
-            var icon = LoadIcon(path);
-            var r = new RectangleF(8, 8, 20, 20);
-            if (icon != null) g.DrawImage(icon, r);
-            else Controller(g, r, Color.White);
-        }));
+            p.AddLine(36, 8, 55, 14);
+            p.AddBezier(55, 14, 84, 21, 86, 46, 62, 47);
+            p.AddLine(62, 47, 55, 45);
+            p.AddLine(55, 45, 55, 37);
+            p.AddBezier(55, 37, 67, 40, 69, 27, 55, 24);
+            p.AddLine(55, 24, 55, 86);
+            p.AddLine(55, 86, 36, 80);
+            p.CloseFigure();
+            g.FillPath(br, p);
+        }
+        // S, lying down: left curl in front of the stem, right curl behind it, both in perspective.
+        using (var left = new GraphicsPath())
+        {
+            left.AddBezier(32, 64, 14, 68, 2, 73, 4, 79);
+            left.AddBezier(4, 79, 6, 85, 20, 86, 33, 83);
+            left.AddLine(33, 83, 33, 77);
+            left.AddBezier(33, 77, 22, 80, 15, 79, 17, 76);
+            left.AddBezier(17, 76, 19, 73, 26, 71, 32, 70);
+            left.CloseFigure();
+            g.FillPath(br, left);
+        }
+        using (var right = new GraphicsPath())
+        {
+            right.AddBezier(59, 60, 74, 55, 97, 54, 97, 63);
+            right.AddBezier(97, 63, 97, 71, 78, 76, 59, 82);
+            right.AddLine(59, 82, 59, 75);
+            right.AddBezier(59, 75, 72, 71, 84, 68, 83, 64);
+            right.AddBezier(83, 64, 82, 61, 70, 62, 59, 66);
+            right.CloseFigure();
+            g.FillPath(br, right);
+        }
+        g.Restore(st);
+    }
+
+    /// <summary>
+    /// The small round logo on the cover corner, built like the YouTube badge of the media dials (18 px,
+    /// black circle, white mark): here the PlayStation mark.
+    /// </summary>
+    public static string Badge() => Cached("badge-ps", () => Canvas(36, 36, g =>
+    {
+        using var ring = new SolidBrush(Color.Black);
+        g.FillEllipse(ring, 0, 0, 36, 36);
+        PsMark(g, new RectangleF(7, 7, 22, 22), Color.White);
+    }));
+
+    /// <summary>Large view of the mark and the badge, for checking the drawing.</summary>
+    public static void MarkPreview(string file)
+    {
+        using var b = Canvas(420, 220, g =>
+        {
+            g.Clear(Color.Black);
+            PsMark(g, new RectangleF(10, 10, 200, 200), Color.White);
+            using var big = FromUrl(Badge());
+            g.DrawImage(big, 240, 40, 144, 144);
+        });
+        b.Save(file, ImageFormat.Png);
     }
 
     private static void FillRound(Graphics g, Brush br, RectangleF r, float rad)
@@ -302,7 +357,7 @@ public static class Art
             void Img(string url, float x, float y, float w, float h) { using var b = FromUrl(url); g.DrawImage(b, x, y, w, h); }
             if (r.closed) { Img(ObsClosed(icon), 0, 0, 200, 100); g.Restore(st); continue; }
             Img(Tile(icon, r.on), 12, 12, 40, 40);
-            Img(Badge(icon), 38, 38, 18, 18);
+            Img(Badge(), 38, 38, 18, 18);
             Text(g, "PlayStation 5", 16, FontStyle.Bold, r.on ? Color.White : grey, new RectangleF(60, 12, 128, 20));
             Text(g, r.on ? "On" : "Off", 16, FontStyle.Regular, Color.FromArgb(178, 255, 255, 255), new RectangleF(60, 32, 128, 20));
             using (var tmp = new Bitmap(40, 40, PixelFormat.Format32bppArgb)) { using (var tg = Quality(tmp)) DrawLoudspeaker(tg, r.muted, Color.White); DrawFaded(g, tmp, new RectangleF(12, 57, 20, 20), r.on ? 1f : 0.5f, true); }

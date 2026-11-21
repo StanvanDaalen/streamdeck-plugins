@@ -34,6 +34,7 @@ internal static class Program
     {
         string? Arg(string n) { int i = Array.IndexOf(args, n); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         if (Arg("--assets") is { } assets) { Art.WriteAssets(assets); return 0; }
+        if (Arg("--mark") is { } mark) { Art.MarkPreview(mark); return 0; }
         if (Arg("--preview") is { } preview) { Art.Preview(preview, File.Exists(DefaultIcon) ? DefaultIcon : null); return 0; }
         Log.Reset();
         if (Arg("--probe") is { } probe) { await Probe(probe); return 0; }
@@ -322,8 +323,8 @@ internal static class Program
             ["name"] = new JsonObject { ["value"] = name, ["color"] = on ? "#FFFFFF" : "#8C8C8C" },
             ["status"] = new JsonObject { ["value"] = status },
             // Loudspeaker, with a cross when muted.
-            // Small console badge on the cover corner, like the YouTube and Spotify logos on the media dials.
-            ["badge"] = new JsonObject { ["value"] = Art.Badge(icon), ["opacity"] = Bool(c, "accentLogo", true) ? (on ? 1 : 0.5) : 0 },
+            // Small PlayStation badge on the cover corner, like the YouTube and Spotify logos on the media dials.
+            ["badge"] = new JsonObject { ["value"] = Art.Badge(), ["opacity"] = Bool(c, "accentLogo", true) ? (on ? 1 : 0.5) : 0 },
             ["speaker"] = new JsonObject { ["value"] = Art.Loudspeaker(muted), ["opacity"] = on ? 1 : 0.5 },
             ["percent"] = new JsonObject { ["value"] = volume == null ? "—" : $"{volume}%", ["color"] = on && !muted ? "#FFFFFF" : "#8C8C8C" },
             // PlayStation blue, like Spotify green / YouTube red on the media dials; grey when off or muted.
