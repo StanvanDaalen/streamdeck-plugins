@@ -69,6 +69,7 @@ internal sealed class Plugin
         _ = Task.Run(PollLoop);
         _ = Task.Run(HandleLoop);
         _ = Task.Run(RestLoop);
+        Remote.Start(RequestRemote, () => { lock (_jobLock) return _busy; });
 
         var buffer = new byte[1 << 16];
         using var ms = new MemoryStream();
@@ -115,13 +116,29 @@ internal sealed class Plugin
     /// - anything while closing: nothing.
     /// The keys involved show "…" meanwhile.
     /// </remarks>
-    private void Request(Ctx c, string kind)
+    /// <summary>
+    /// Race / Quali / Practice asked for by another app (F1 Party), optionally for a given F1 TV session.
+    /// Runs as if the key was pressed; that key (when it is on the Stream Deck) shows the result.
+    /// </summary>
+    private bool RequestRemote(string kind, string? contentId)
+    {
+        var action = kind == "quali" ? Quali : Race;
+        Ctx? key = null;
+        try { key = _contexts.Values.ToArray().FirstOrDefault(x => x.Action == action); } // keys may appear meanwhile
+        catch (InvalidOperationException) { }
+        var c = key ?? new Ctx { Id = "", Action = action };
+        Request(c, kind, contentId);
+        return true;
+    }
+
+    /// <param name="contentId">Open this F1 TV session instead of the live or latest one (F1 Party).</param>
+    private void Request(Ctx c, string kind, string? contentId = null)
     {
         Func<Task<bool>> job = kind switch
         {
             "close" => CloseF1Async,
             "mode" => StartF1Async,
-            _ => () => OpenLayoutAsync(kind, closeCurrent: true),
+            _ => () => OpenLayoutAsync(kind, closeCurrent: true, contentId),
         };
         lock (_jobLock)
         {
@@ -151,7 +168,7 @@ internal sealed class Plugin
                     return;
                 }
                 // Already done and still there: no second round of windows, just to F1's desktop.
-                if (kind is "race" or "quali" or "practice" && _layoutOpen == kind && _f1ModeOn && _f1Running)
+                if (kind is "race" or "quali" or "practice" && _layoutOpen == kind && _f1ModeOn && _f1Running && contentId == null)
                 {
                     Store.Log($"{kind}: staat al open");
                     _ = Task.Run(async () =>
@@ -223,8 +240,9 @@ internal sealed class Plugin
         finally { _sendLock.Release(); }
     }
 
-    private Task Alert(Ctx c) => SendAsync(new JsonObject { ["event"] = "showAlert", ["context"] = c.Id });
-    private Task Ok(Ctx c) => SendAsync(new JsonObject { ["event"] = "showOk", ["context"] = c.Id });
+    // A remote request without its key on the Stream Deck has no context to show the result on.
+    private Task Alert(Ctx c) => c.Id == "" ? Task.CompletedTask : SendAsync(new JsonObject { ["event"] = "showAlert", ["context"] = c.Id });
+    private Task Ok(Ctx c) => c.Id == "" ? Task.CompletedTask : SendAsync(new JsonObject { ["event"] = "showOk", ["context"] = c.Id });
 
     private async Task PollLoop()
     {
@@ -596,7 +614,7 @@ internal sealed class Plugin
     /// 3. the MultiViewer setup (best of the rest filled in), then the Ultimate F1 Viewer layout,
     ///    then the battle mode drivers (race).
     /// </summary>
-    private async Task<bool> OpenLayoutAsync(string kind, bool closeCurrent)
+    private async Task<bool> OpenLayoutAsync(string kind, bool closeCurrent, string? onlyContent = null)
     {
         bool any = false;
         _layoutOpen = null;
@@ -616,7 +634,7 @@ internal sealed class Plugin
         Job.Check();
         if (!await MvSetups.EnsureAsync()) { Store.Log($"layout {kind}: MultiViewer niet bereikbaar"); return false; }
         if (Uf1Available) await Uf1.EnsureAsync();
-        await OpenSessionAsync(kind);
+        await OpenSessionAsync(kind, onlyContent);
         MultiViewer.Expect(_sessionMeeting, kind); // only this session's timing counts from here
         Job.Check();
 
@@ -717,7 +735,7 @@ internal sealed class Plugin
     /// Makes MultiViewer show a session of the wanted kind: keeps one that is already open, else opens
     /// the live race/qualifying, else the latest replay of it (when that setting is on).
     /// </summary>
-    private async Task OpenSessionAsync(string kind)
+    private async Task OpenSessionAsync(string kind, string? onlyContent = null)
     {
         bool wanted(string? type) => kind switch
         {
@@ -728,20 +746,30 @@ internal sealed class Plugin
 
         var openNow = await MvSetups.OpenContentAsync();
         _sessionMeeting = int.TryParse(_mv.Timing?["SessionInfo"]?["Meeting"]?["Key"]?.ToString(), out var mk) ? mk : null;
-        if (openNow != null && wanted((string?)_mv.Timing?["SessionInfo"]?["Type"]))
+        if (onlyContent == null && openNow != null && wanted((string?)_mv.Timing?["SessionInfo"]?["Type"]))
         {
             Store.Log($"sessie: al open ({_mv.Session})");
             return;
         }
 
         string? contentId = null, what = null;
-        var (live, type) = Uf1Available ? await Uf1.WaitLiveSessionAsync(5) : (false, (string?)null);
-        if (live && wanted(type) && await Uf1.LiveContentIdAsync() is { } liveId) { contentId = liveId; what = $"live {type}"; }
-        // Practice is only opened live (or as it is already open): there is no "latest practice" replay to look for.
-        else if (kind != "practice" && S.OpenLatestReplay && await Replays.LatestAsync(kind) is { } latest)
+        if (onlyContent != null)
         {
-            contentId = latest.Id; what = latest.Title;
-            _sessionMeeting = Replays.LastMeetingKey;
+            // Asked for one session (F1 Party: the host's): that one, whatever kind it is.
+            if (openNow == onlyContent) { Store.Log($"sessie: al open ({_mv.Session})"); return; }
+            contentId = onlyContent; what = "gevraagde sessie";
+            _sessionMeeting = null;
+        }
+        else
+        {
+            var (live, type) = Uf1Available ? await Uf1.WaitLiveSessionAsync(5) : (false, (string?)null);
+            if (live && wanted(type) && await Uf1.LiveContentIdAsync() is { } liveId) { contentId = liveId; what = $"live {type}"; }
+            // Practice is only opened live (or as it is already open): there is no "latest practice" replay to look for.
+            else if (kind != "practice" && S.OpenLatestReplay && await Replays.LatestAsync(kind) is { } latest)
+            {
+                contentId = latest.Id; what = latest.Title;
+                _sessionMeeting = Replays.LastMeetingKey;
+            }
         }
         if (contentId == null || contentId == openNow) { Store.Log($"sessie: niets nieuws te openen voor {kind}"); return; }
 

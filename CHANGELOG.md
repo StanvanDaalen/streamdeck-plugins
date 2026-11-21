@@ -8,6 +8,8 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
+- **F1 Race Control**: other apps on this PC can ask for Race, Quali or Practice, optionally for one F1 TV session. [F1 Party](https://github.com/Jeremy0538/f1party) uses this: when you join a watch party, the plugin opens the host's session with your own desktop, setup and Ultimate F1 Viewer layout. Local only (127.0.0.1:9335), web pages can't use it.
+
 ### Improved
 
 ### Fixed

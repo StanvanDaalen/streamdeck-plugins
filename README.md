@@ -148,6 +148,7 @@ For watching F1 with [MultiViewer](https://multiviewer.app/download) (required) 
 - **Race** / **Quali**: opens your MultiViewer setup and Ultimate F1 Viewer layout with that name, for the live session or otherwise the latest replay. Fills onboards of drivers outside the top teams with the best of the rest and picks the drivers in battle mode.
 - **Session**: time or laps remaining, and the weather. Without a running session it shows the next session with a countdown.
 - **Pause**, **Go live**, **Sync**, **Fullscreen**: MultiViewer controls.
+- **F1 Party**: when you join a party in [F1 Party](https://github.com/Jeremy0538/f1party) with "Stream Deck: F1 Race Control" chosen, the plugin opens the host's session as Race, Quali or Practice would. It listens on `127.0.0.1:9335` only (`GET /f1/status`, `POST /f1/open {"kind": "race", "contentId": "…"}`) and refuses requests from web pages.
 - Dials: **Live delay**, **Volume**, **Track status** (flags on Philips Hue) and **Flag lights** (which Hue room).
 
 Philips Hue is optional: pair your bridge in the settings of the Track status dial. Without Hue those functions show "Not set up". Use your own logo locally: put it in `%APPDATA%\StanF1` as `f1-logo.svg` or `f1-logo.png`. F1 Mode shows it on its key, and `install.ps1` also puts it on the plugin, category and F1 Mode icons of the installed copy. No logo is shipped with the plugin.
