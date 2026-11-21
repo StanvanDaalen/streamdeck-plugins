@@ -319,6 +319,55 @@ internal sealed class Plugin
         : app.Equals("spotify", StringComparison.OrdinalIgnoreCase) ? ("#1ED760", "images/media/badge-spotify.svg")
         : (null, null);
 
+    /// <summary>
+    /// App Volume while the app plays nothing, built like the media dials and the PS5 dial: logo, name and
+    /// status on top, then "Volume" with the level and a volume bar. The Classic style keeps the old look.
+    /// </summary>
+    private async Task RenderIdle(Ctx c)
+    {
+        const string layout = "layouts/app-player.json";
+        if (c.Layout != layout)
+        {
+            c.Layout = layout; c.ArtId = null; c.LastJson = null; c.MediaSent.Clear();
+            await SendAsync(new JsonObject { ["event"] = "setFeedbackLayout", ["context"] = c.Id, ["payload"] = new JsonObject { ["layout"] = layout } });
+        }
+        var app = Str(c, "app", "");
+        var exe = _knownAppExe.GetValueOrDefault(app) ?? G.AppExes.GetValueOrDefault(app);
+        var art = _art.ForExe("app:" + app.ToLowerInvariant(), exe) ?? _art.NoGame;
+        var sessions = SessionsFor(c);
+        bool audio = sessions.Count > 0;
+        int volume = (int)Math.Round((AudioSessions.Volume(sessions) ?? 0f) * 100f);
+        bool muted = audio && AudioSessions.Muted(sessions);
+
+        var name = AppName(app, exe);
+        if (Str(c, "titleMode", "app") == "custom" && Str(c, "customTitle", "").Trim() is { Length: > 0 } custom) name = custom;
+        string label = muted ? "Muted" : "Volume";
+        if (c.Overlay != null)
+        {
+            if (DateTime.UtcNow < c.OverlayUntil) label = c.Overlay; else c.Overlay = null;
+        }
+
+        var items = new Dictionary<string, JsonObject>
+        {
+            ["icon"] = new() { ["value"] = art.IconUrl },
+            ["name"] = new() { ["value"] = name },
+            ["status"] = new() { ["value"] = audio ? "Nothing playing" : "No audio" },
+            ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = audio ? 1 : 0.4 },
+            ["label"] = new() { ["value"] = label },
+            ["percent"] = new() { ["value"] = audio ? (muted ? "Mute" : $"{volume}%") : "—", ["color"] = audio && !muted ? Standard : "#8C8C8C" },
+            ["progress"] = new() { ["value"] = audio ? volume : 0, ["bar_fill_c"] = Standard, ["opacity"] = muted ? 0.3 : audio ? 0.8 : 0.4 },
+        };
+        var payload = new JsonObject();
+        foreach (var (key, value) in items)
+        {
+            var json = value.ToJsonString();
+            if (c.MediaSent.GetValueOrDefault(key) == json) continue;
+            c.MediaSent[key] = json;
+            payload[key] = value;
+        }
+        if (payload.Count > 0) await SendAsync(new JsonObject { ["event"] = "setFeedback", ["context"] = c.Id, ["payload"] = payload });
+    }
+
     /// <summary>An App Volume dial whose app is not running at all.</summary>
     private static bool AppClosed(Ctx c)
     {
@@ -933,6 +982,7 @@ internal sealed class Plugin
         if (!_contexts.ContainsKey(c.Id)) return;
         if (AppClosed(c)) { await RenderClosed(c); return; }
         if (MediaFor(c) is { } media) { await RenderMedia(c, media); return; }
+        if (c.Action == AppAction && Str(c, "idleStyle", "player") == "player" && Str(c, "app", "").Length > 0) { await RenderIdle(c); return; }
         string title, value;
         int bar;
         string titleColor = Standard, barColor = Standard;
@@ -1076,7 +1126,7 @@ internal sealed class Plugin
             if (node is not JsonValue v) continue;
             switch (key)
             {
-                case "display" or "theme" or "step" or "app" or "gameId" or "mediaStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
+                case "display" or "theme" or "step" or "app" or "gameId" or "mediaStyle" or "idleStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "iconSpeakers" or "iconHeadphones" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
                     c.Settings[key] = node.DeepClone();
                     perAction = true;
                     break;
@@ -1190,6 +1240,7 @@ internal sealed class Plugin
             {
                 ["display"] = Str(c, "display", "icon"),
                 ["mediaStyle"] = MediaStyle(c),
+                ["idleStyle"] = Str(c, "idleStyle", "player"),
                 ["accentPlay"] = Indicators(c).Play,
                 ["accentTimeline"] = Indicators(c).Timeline,
                 ["accentLogo"] = Indicators(c).Logo,

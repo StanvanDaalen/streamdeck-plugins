@@ -49,6 +49,9 @@
       <div class="row"><label>App</label><select id="app"></select></div>
     </div>
     <h4 id="viewTitle">Display</h4>
+    <div class="row hide" id="idleRow"><span class="lbl">Style</span><div class="seg" data-group="idleStyle">
+      <button value="player">Player</button><button value="classic">Classic</button></div></div>
+    <p class="muted hide" id="idleHint">How the dial looks while the app plays nothing. Player matches the media and Spotify dials; Classic is the original App Volume look.</p>
     <div class="row" id="titleRow"><span class="lbl">Title</span><div class="seg" data-group="titleMode">
       <button value="app">App name</button><button value="custom">Custom text</button></div></div>
     <div class="row hide" id="customTitleRow"><label>Custom title</label><input type="text" id="customTitle" placeholder="e.g. Game"></div>
@@ -168,6 +171,9 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   let controller = '';
   try { controller = JSON.parse(actionInfo).payload.controller; } catch {}
   const isApp = actionId.endsWith('.app'), isOutput = /\.(output|speakers|headphones)$/.test(actionId);
+  window.isAppDial = isApp;
+  $('idleRow').classList.toggle('hide', !isApp);
+  $('idleHint').classList.toggle('hide', !isApp);
   $('iconSection').classList.toggle('hide', !actionId.endsWith('.output'));
   $('dialOnly').classList.toggle('hide', isOutput && controller !== 'Encoder');
   $('appRow').classList.toggle('hide', !isApp);
@@ -242,6 +248,8 @@ function apply(p) {
   document.querySelectorAll('.seg').forEach(s =>
     s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === p[s.dataset.group])));
   for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo']) $(k).checked = !!p[k];
+  // Logo and slider colour only apply to the Classic look.
+  if (window.isAppDial) for (const r of ['displayRow', 'themeRow']) $(r).classList.toggle('hide', p.idleStyle !== 'classic');
   $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
   $('duckRow').classList.toggle('hide', !p.duck);
   if (document.activeElement !== $('customTitle')) $('customTitle').value = p.customTitle;
