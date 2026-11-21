@@ -329,6 +329,10 @@ public static class MvSetups
           const root = document.documentElement;
           root.style.zoom = '1';
           const h = innerHeight;
+          // The replay bar at the bottom (play, timeline) only shows on mouse-over but keeps its 64 px
+          // empty the rest of the time; the rows get that space. The replay stays under the Stream Deck keys.
+          for (const bar of document.querySelectorAll('.MuiToolbar-root'))
+            if (bar.getBoundingClientRect().top > h / 2) bar.style.display = 'none';
           let bottom = 0;
           // Lowest piece of text on the page (the last driver row), ignoring anything as tall as half the window.
           for (const el of document.body.querySelectorAll('*')) {
