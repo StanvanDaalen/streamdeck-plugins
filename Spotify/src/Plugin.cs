@@ -353,7 +353,8 @@ internal sealed class Plugin
             ["playIcon"] = new() { ["value"] = Icons.Get(s.Playing ? "pause" : "play", show.Play ? SpotifyGreen : null) },
             ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = showVolume ? 1 : 0 },
             ["volumeLevel"] = new() { ["value"] = muted ? "Mute" : $"{volume ?? 0}%", ["opacity"] = showVolume ? 1 : 0 },
-            ["volumeBar"] = new() { ["value"] = volume ?? 0, ["opacity"] = showVolume ? 1 : 0 },
+            // Colour is for the timeline; the volume bar is always white (grey when muted), like App Volume.
+            ["volumeBar"] = new() { ["value"] = volume ?? 0, ["bar_fill_c"] = muted ? "#555555" : "#FFFFFF", ["opacity"] = showVolume ? 1 : 0 },
         };
         if (look is "player" or "picture")
             items["badge"] = new() { ["value"] = "imgs/badge-spotify.svg", ["opacity"] = show.Logo && hasTrack ? 1 : 0 };

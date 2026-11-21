@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.20 (2026-11-21)
+
+### Improved
+
+- **Better Spotify Dial**: while you change the volume the bar is now white (grey when muted), the same as App Volume. Green stays for the timeline, so you can always tell volume and timeline apart.
+
 ## 1.1.19 (2026-11-21)
 
 ### New
