@@ -8,16 +8,22 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
-- **F1 Race Control**: in an F1 Party the Pause key pauses the whole party; with "pause everyone" off only you pause and the party plays on.
-
-- **F1 Race Control**: also runs on Windows with OpenDeck instead of the Stream Deck app. `install.ps1 -OpenDeck` installs a build into OpenDeck.
-
-- **F1 Race Control**: other apps on this PC can ask for Race, Quali or Practice, optionally for one F1 TV session. [F1 Party](https://github.com/Jeremy0538/f1party) uses this: when you join a watch party, the plugin opens the host's session with your own desktop, setup and Ultimate F1 Viewer layout. Local only (127.0.0.1:9335), web pages can't use it.
-- **F1 Race Control**: the Sync key works with [F1 Party](https://github.com/Jeremy0538/f1party). Press: as a party guest it first jumps to the host, then all players follow; otherwise it syncs all players with the main screen as before. Hold 1 second: hosts an F1 Party (starting the app when needed) and posts the party code to your Discord channel.
-
 ### Improved
 
 ### Fixed
+
+## 1.1.28 (2026-11-22)
+
+### New
+
+- **F1 Race Control**: works with [F1 Party](https://github.com/Jeremy0538/f1party), the app for watching F1 in sync with friends. When you join a party, the plugin opens the host's session with your own desktop, setup and Ultimate F1 Viewer layout (local only, on 127.0.0.1:9335; web pages can't use it).
+- **F1 Race Control**: Sync key with F1 Party. Press: all streams jump to your main screen (as a guest: first to the host). Hold 1 second: starts an F1 Party and sends the invite to Discord; already hosting: everyone syncs to you and the invite is sent again.
+- **F1 Race Control**: Pause key with F1 Party: the whole party pauses and plays with you; with "Pause everyone" off only you pause and the party plays on.
+- **F1 Race Control**: also runs on Windows with OpenDeck instead of the Stream Deck app (`install.ps1 -OpenDeck`).
+
+### Improved
+
+- **F1 Race Control**: clearer settings for every key: one line per action at the top, each setting with its own short note, on/off switches instead of tick boxes, and tooltips in one style.
 
 ## 1.1.27 (2026-11-21)
 
