@@ -47,6 +47,8 @@ internal sealed class Plugin
     private RunningGame? _game;
     private int _missedScans;
     private readonly HashSet<string> _appliedSessions = new();
+    private readonly HashSet<string> _appSessionsSeen = new();
+    private bool _appSessionsSeeded;
     private DateTime _libraryLoaded = DateTime.MinValue;
     private readonly Dictionary<string, string> _knownAppExe = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, MediaInfo?> _media = new(StringComparer.OrdinalIgnoreCase);
@@ -252,6 +254,17 @@ internal sealed class Plugin
                     .Select(c => Str(c, "app", "")).Where(a => a.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                 return Task.CompletedTask;
             });
+            await WithGate(() =>
+            {
+                // An app that had no audio yet: pick up its new audio quickly, so the chosen level applies at once.
+                if (_contexts.Values.Any(c => c.Action == AppAction && Str(c, "app", "") is { Length: > 0 } a
+                                              && G.AppVolumes.ContainsKey(a) && !_audio.ForProcess(a).Any()))
+                {
+                    _audio.Refresh();
+                    ApplyAppPresets();
+                }
+                return Task.CompletedTask;
+            });
             foreach (var app in apps)
             {
                 var info = await MediaControl.GetAsync(app); // outside the gate: never holds up dial presses
@@ -336,26 +349,27 @@ internal sealed class Plugin
         var art = _art.ForExe("app:" + app.ToLowerInvariant(), exe) ?? _art.NoGame;
         var sessions = SessionsFor(c);
         bool audio = sessions.Count > 0;
-        int volume = (int)Math.Round((AudioSessions.Volume(sessions) ?? 0f) * 100f);
+        // Without audio, show the level the app will start at (chosen on this dial), so it can be set in advance.
+        float? level = audio ? AudioSessions.Volume(sessions) : G.AppVolumes.TryGetValue(app, out var preset) ? preset : null;
+        int volume = (int)Math.Round((level ?? 0f) * 100f);
         bool muted = audio && AudioSessions.Muted(sessions);
 
         var name = AppName(app, exe);
         if (Str(c, "titleMode", "app") == "custom" && Str(c, "customTitle", "").Trim() is { Length: > 0 } custom) name = custom;
-        string label = muted ? "Muted" : "Volume";
+        string status = audio ? "Nothing playing" : "No audio";
         if (c.Overlay != null)
         {
-            if (DateTime.UtcNow < c.OverlayUntil) label = c.Overlay; else c.Overlay = null;
+            if (DateTime.UtcNow < c.OverlayUntil) status = c.Overlay; else c.Overlay = null;
         }
 
         var items = new Dictionary<string, JsonObject>
         {
             ["icon"] = new() { ["value"] = art.IconUrl },
             ["name"] = new() { ["value"] = name },
-            ["status"] = new() { ["value"] = audio ? "Nothing playing" : "No audio" },
-            ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = audio ? 1 : 0.4 },
-            ["label"] = new() { ["value"] = label },
-            ["percent"] = new() { ["value"] = audio ? (muted ? "Mute" : $"{volume}%") : "—", ["color"] = audio && !muted ? Standard : "#8C8C8C" },
-            ["progress"] = new() { ["value"] = audio ? volume : 0, ["bar_fill_c"] = Standard, ["opacity"] = muted ? 0.3 : audio ? 0.8 : 0.4 },
+            ["status"] = new() { ["value"] = status },
+            ["volumeIcon"] = new() { ["value"] = Icons.Volume(volume, muted), ["opacity"] = level == null ? 0.4 : 1 },
+            ["percent"] = new() { ["value"] = level == null ? "—" : muted ? "Mute" : $"{volume}%", ["color"] = level != null && !muted ? Standard : "#8C8C8C" },
+            ["progress"] = new() { ["value"] = level == null ? 0 : volume, ["bar_fill_c"] = Standard, ["opacity"] = muted ? 0.3 : level == null ? 0.4 : 0.8 },
         };
         var payload = new JsonObject();
         foreach (var (key, value) in items)
@@ -366,6 +380,22 @@ internal sealed class Plugin
             payload[key] = value;
         }
         if (payload.Count > 0) await SendAsync(new JsonObject { ["event"] = "setFeedback", ["context"] = c.Id, ["payload"] = payload });
+    }
+
+    /// <summary>
+    /// New audio of an App Volume app starts at the level chosen on its dial, also when that level was set while
+    /// nothing played. Audio that already ran when the plugin started is left alone.
+    /// </summary>
+    private void ApplyAppPresets()
+    {
+        var apps = _contexts.Values.Where(c => c.Action == AppAction).Select(c => Str(c, "app", ""))
+            .Where(a => a.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var s in _audio.All)
+        {
+            if (!apps.Contains(s.Process) || !_appSessionsSeen.Add(s.Id) || !_appSessionsSeeded) continue;
+            if (G.AppVolumes.TryGetValue(s.Process, out var level)) AudioSessions.SetVolume(new[] { s }, level);
+        }
+        _appSessionsSeeded = true;
     }
 
     /// <summary>An App Volume dial whose app is not running at all.</summary>
@@ -593,6 +623,8 @@ internal sealed class Plugin
                 SettingsStore.MarkDirty();
             }
         }
+
+        ApplyAppPresets();
 
         var found = _detector.FindCurrent(_game);
         if (found == null && _game != null && ++_missedScans < 2) found = _game; // ride out a brief window swap
@@ -984,12 +1016,22 @@ internal sealed class Plugin
         }
 
         var sessions = SessionsFor(c);
-        if (sessions.Count == 0) return;
+        if (sessions.Count == 0)
+        {
+            // Nothing playing yet: choose the level the app's audio will start at.
+            if (c.Action != AppAction || Str(c, "app", "") is not { Length: > 0 } quietApp) return;
+            var preset = Math.Clamp(G.AppVolumes.GetValueOrDefault(quietApp, 1f) + ticks * Step(c) / 100f, 0f, 1f);
+            G.AppVolumes[quietApp] = MathF.Round(preset * 100f) / 100f;
+            SettingsStore.MarkDirty();
+            await RenderDial(c);
+            return;
+        }
         var v = Math.Clamp((AudioSessions.Volume(sessions) ?? 1f) + ticks * Step(c) / 100f, 0f, 1f);
         v = MathF.Round(v * 100f) / 100f;
         AudioSessions.SetVolume(sessions, v);
         if (AudioSessions.Muted(sessions) && ticks > 0) AudioSessions.SetMute(sessions, false);
         RememberVolume(c, v);
+        if (c.Action == AppAction && Str(c, "app", "") is { Length: > 0 } turnedApp) { G.AppVolumes[turnedApp] = v; SettingsStore.MarkDirty(); }
         ShowVolumeBriefly(c);
         await RenderDial(c);
     }

@@ -29,6 +29,8 @@ public sealed class GlobalSettings
     public bool StartOnFavorite { get; set; }
     /// <summary>Last known program path per process name, so closed apps can be started again.</summary>
     public Dictionary<string, string> AppExes { get; set; } = new();
+    /// <summary>Volume (0-1) per App Volume app, also set while the app plays nothing; new audio of the app starts at it.</summary>
+    public Dictionary<string, float> AppVolumes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public string? LastGameId { get; set; }
     public string? LastGameExe { get; set; }
     /// <summary>Spotify's normal volume while ducked; persisted so a plugin restart can still restore it.</summary>
