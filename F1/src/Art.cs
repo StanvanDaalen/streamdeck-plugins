@@ -134,14 +134,17 @@ public static class Art
         }
     }
 
-    /// <summary>Only the logo on a transparent square of <paramref name="size"/> pixels, as PNG bytes.</summary>
+    /// <summary>Only the logo on a transparent square of <paramref name="size"/> pixels, as PNG bytes, in plain white like the other plugins' icons in the action list.</summary>
     private static byte[] LogoIcon(string file, int size)
     {
         using var bmp = new SKBitmap(size, size);
         using (var canvas = new SKCanvas(bmp))
         {
             canvas.Clear(SKColors.Transparent);
+            using var white = new SKPaint { ColorFilter = SKColorFilter.CreateBlendMode(SKColors.White, SKBlendMode.SrcIn) };
+            canvas.SaveLayer(white);
             DrawLogo(canvas, file, size / 2f, size / 2f, size * 0.94f, size * 0.94f);
+            canvas.Restore();
         }
         return EncodePng(bmp).ToArray();
     }
@@ -170,9 +173,9 @@ public static class Art
     }
 
     /// <summary>"F1" in heavy italic with speed lines, in the spirit of F1 graphics (not the trademarked logo).</summary>
-    public static string F1Mark() =>
+    public static string F1Mark(string color = Red) =>
         $"<path d='M-46 -10 H-22 M-50 0 H-26 M-46 10 H-30' stroke='{White}' stroke-width='4' stroke-linecap='round'/>" +
-        $"<text x='12' y='17' font-family='{Font}' font-size='50' font-weight='900' font-style='italic' text-anchor='middle' fill='{Red}' letter-spacing='-2'>F1</text>";
+        $"<text x='12' y='17' font-family='{Font}' font-size='50' font-weight='900' font-style='italic' text-anchor='middle' fill='{color}' letter-spacing='-2'>F1</text>";
 
     /// <summary>Action-list / dial icon: only the glyph, on a transparent background.</summary>
     public static string Icon(string glyph, int size = 72) =>
@@ -331,10 +334,10 @@ public static class Art
     public static IEnumerable<(string Name, string Svg)> Assets()
     {
         yield return ("plugin", Key(F1Mark(), "F1"));
-        yield return ("category", Icon(F1Mark(), 28));
+        yield return ("category", Icon(F1Mark(White), 28));   // white, like the other plugins in the action list
         foreach (var (name, glyph) in new[]
         {
-            ("mode", F1Mark()), ("session", Tower()), ("flags", Flag(White)), ("zone", Bulb()), ("volume", Speaker()),
+            ("mode", F1Mark(White)), ("session", Tower()), ("flags", Flag(White)), ("zone", Bulb()), ("volume", Speaker()),
             ("latency", Clock()), ("live", Live(White)), ("sync", Sync()), ("pause", Pause()),
             ("race", Chequered()), ("quali", Stopwatch(White)), ("fullscreen", Expand()),
         })

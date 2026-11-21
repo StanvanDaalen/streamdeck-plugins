@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.24 (2026-11-21)
+
+### Improved
+
+- **F1 Race Control** and **Better Spotify Dial**: the icon in the Stream Deck action list is white, like the other plugins.
+
 ## 1.1.23 (2026-11-21)
 
 ### Improved
