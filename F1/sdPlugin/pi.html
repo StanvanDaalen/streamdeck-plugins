@@ -6,17 +6,24 @@
   body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
   h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
   h4.first { margin-top: 2px; border-top: 0; padding-top: 0; }
-  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; gap: 6px; }
+  .row { display: flex; align-items: center; margin: 6px 0 0; min-height: 22px; gap: 6px; }
   .lbl { flex: 0 0 112px; color: #9a9a9a; }
   select, input[type=text], input[type=number] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
   .check { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
   .check input { margin: 0; flex: none; }
   button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #5a5a5a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; }
   button:hover { background: #4a4a4a; }
+  /* the short explanation right under a setting */
+  .note { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 2px 0 4px 19px; }
+  .row + .note.lblnote, .note.lblnote { margin-left: 118px; }
   .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
-  .help { color: #c8c8c8; font-size: 11.5px; line-height: 1.5; margin: 2px 0 4px; }
-  .help b { color: #fff; font-weight: 600; }
-  .help ul { margin: 4px 0 0; padding-left: 16px; }
+  .sub { margin-left: 19px; }
+  /* what the key does: one line per action */
+  .help { font-size: 11.5px; line-height: 1.45; margin: 2px 0 4px; }
+  .ctl { display: grid; grid-template-columns: 84px 1fr; gap: 6px; margin: 4px 0; color: #c8c8c8; }
+  .ctl b { color: #fff; font-weight: 600; }
+  .shows { color: #9a9a9a; margin: 2px 0 6px; }
+  .help ul { margin: 2px 0 0; padding-left: 16px; }
   .warn { color: #ffb800; font-size: 11px; line-height: 1.45; margin: 4px 0; }
   .status { margin: 8px 0 2px; }
   .st { display: flex; align-items: baseline; gap: 7px; margin: 3px 0; font-size: 11.5px; }
@@ -34,43 +41,49 @@
 
   <!-- F1 Mode -->
   <div class="box" data-for="mode">
-    <h4>Settings</h4>
+    <h4>When F1 starts</h4>
     <div class="row"><span class="lbl">Desktop</span>
       <select data-key="ModeDesktop">
         <option value="f1">Desktop "F1" (created if missing)</option>
         <option value="current">Stay on the current desktop</option>
       </select></div>
-    <div class="row"><span class="lbl">Layout at start</span>
+    <div class="row"><span class="lbl">Layout</span>
       <select data-key="ModeLayout">
-        <option value="auto">Automatic: quali during qualifying, otherwise race (live sessions only)</option>
+        <option value="auto">Automatic</option>
         <option value="race">Always Race</option>
         <option value="quali">Always Quali</option>
-        <option value="none">Don't open a layout</option>
+        <option value="none">None</option>
       </select></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="ModeFlagsOn">Turn on flags on the lights</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="TaskbarMainOnly">Taskbar on the main screen only while F1 runs (also for Race/Quali; back on all screens when closing)</label></div>
+    <p class="note lblnote">Automatic: the session on track opens with its own layout (practice, qualifying or race); without a live session, no layout.</p>
+    <div class="row"><label class="check"><input type="checkbox" data-key="ModeFlagsOn">Turn on the flags on your lights</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="TaskbarMainOnly">Taskbar on the main screen only</label></div>
+    <p class="note">While F1 runs (also from Race and Quali). Back on all screens when F1 closes.</p>
+
     <h4>Window positions</h4>
-    <p class="muted">If MultiViewer and Ultimate F1 Viewer are not open yet, F1 Mode starts them and puts their main window here. Already open? Then they stay where they are.</p>
     <div class="row"><span class="lbl">MultiViewer</span><span class="muted" id="placeMv">–</span></div>
     <div class="row"><span class="lbl">Ultimate F1 Viewer</span><span class="muted" id="placeUf1">–</span></div>
     <div class="row"><span class="lbl"></span><button id="savePlaces">Save current positions</button></div>
-    <p class="muted">Put both main windows where you want them and click this.</p>
-    <h4>On hold (close)</h4>
+    <p class="note lblnote">Put both main windows where you want them, then click. Apps F1 Mode starts open there; apps already open stay where they are.</p>
+
+    <h4>When you hold to close</h4>
     <div class="row"><label class="check"><input type="checkbox" data-key="CloseMultiViewer">Close MultiViewer</label></div>
     <div class="row"><label class="check"><input type="checkbox" data-key="CloseUf1">Close Ultimate F1 Viewer</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="CloseDesktop">Remove the F1 desktop when it is empty</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="CloseDesktop">Remove the F1 desktop when it's empty</label></div>
+    <p class="note">Off: the desktop stays for next time.</p>
   </div>
 
   <!-- Flags (key and dial) -->
   <div class="box" data-for="flags">
     <h4>Flags</h4>
     <div class="row"><label class="check"><input type="checkbox" data-key="FlagsEnabled">Show flags on the lights</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="ShowYellow">Yellow flag</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="ShowSafetyCar">Safety Car and VSC (orange)</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="VscPulse">Pulse during VSC</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="ShowRed">Red flag</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="ShowChequered">Chequered flag (white flashing)</label></div>
-    <div class="row"><span class="lbl">Green after a flag</span><input type="number" data-key="GreenSeconds" min="0" max="30" step="1"><span class="muted">sec</span></div>
+    <p class="note">The main switch; the key and the dial push turn it on and off too.</p>
+    <div class="row sub"><label class="check"><input type="checkbox" data-key="ShowYellow">Yellow flag</label></div>
+    <div class="row sub"><label class="check"><input type="checkbox" data-key="ShowSafetyCar">Safety Car and VSC (orange)</label></div>
+    <div class="row sub"><label class="check"><input type="checkbox" data-key="VscPulse">Pulse during VSC</label></div>
+    <div class="row sub"><label class="check"><input type="checkbox" data-key="ShowRed">Red flag</label></div>
+    <div class="row sub"><label class="check"><input type="checkbox" data-key="ShowChequered">Chequered flag (white, pulsing)</label></div>
+    <div class="row"><span class="lbl">Green afterwards</span><input type="number" data-key="GreenSeconds" min="0" max="30" step="1"><span class="muted">sec</span></div>
+    <p class="note lblnote">How long the lights show green when a flag ends, before your own lighting returns.</p>
     <div class="row"><span class="lbl"></span><button id="test">Test the flags now</button></div>
   </div>
 
@@ -79,9 +92,9 @@
     <h4>Philips Hue</h4>
     <div class="row"><span class="lbl">Bridge</span><span id="bridge">–</span></div>
     <div class="row"><span class="lbl"></span><button id="pair">Pair bridge</button></div>
-    <p class="muted" id="pairStatus"></p>
+    <p class="note lblnote" id="pairStatus"></p>
     <div class="row"><span class="lbl">Lights</span><select data-key="Group" id="zone"></select></div>
-    <p class="muted">The choices are the rooms and zones of your Hue Bridge. Only colour lights take part; plugs and white lights never do.</p>
+    <p class="note lblnote">Rooms and zones of your bridge. Only colour lights take part; plugs and white lights never do.</p>
   </div>
 
   <!-- Volume -->
@@ -95,47 +108,63 @@
   <div class="box" data-for="latency">
     <h4>Settings</h4>
     <div class="row"><span class="lbl">Start delay</span><input type="number" data-key="BaseLatency" min="0" max="300" step="1"><span class="muted">sec</span></div>
-    <p class="muted">Set this to the delay you set in MultiViewer for live streams (e.g. 40). MultiViewer does not report it, so the plugin adds it itself.</p>
+    <p class="note lblnote">The delay you set in MultiViewer for live streams (e.g. 40). MultiViewer doesn't report it, so enter it here.</p>
     <div class="row"><span class="lbl">Step per click</span>
       <select data-key="LatencyStep"><option value="1">1 second</option><option value="2">2 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option></select></div>
-    <div class="row"><span class="lbl">Push</span>
-      <select data-key="LatencyPush"><option value="live">Go live (replay: back to 0s); touch = pause</option><option value="pause">Pause / play; touch = go live</option></select></div>
+    <div class="row"><span class="lbl">Push does</span>
+      <select data-key="LatencyPush"><option value="live">Go live</option><option value="pause">Pause / play</option></select></div>
+    <p class="note lblnote">Touch does the other one.</p>
   </div>
 
   <!-- Go live -->
   <div class="box" data-for="live">
     <h4>Settings</h4>
-    <div class="row"><label class="check"><input type="checkbox" data-key="LiveSyncAll">Bring all other players along (sync)</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="LiveSyncAll">Bring all other players along</label></div>
+    <p class="note">The onboards and extra feeds jump with the main screen.</p>
+  </div>
+
+  <!-- Sync -->
+  <div class="box" data-for="sync">
+    <h4>F1 Party</h4>
+    <p class="muted">Hold works with the F1 Party app (it opens by itself). For Discord invites, set a webhook in F1 Party once.</p>
   </div>
 
   <!-- Pause -->
   <div class="box" data-for="pause">
     <h4>Settings</h4>
-    <div class="row"><label class="check"><input type="checkbox" data-key="PauseAll">Pause all players (off = main screen only)</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="PauseParty">F1 Party: pause everyone (off = just you)</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="PauseAll">Pause all players</label></div>
+    <p class="note">Off: only the main screen pauses.</p>
+    <h4>F1 Party</h4>
+    <div class="row"><label class="check"><input type="checkbox" data-key="PauseParty">Pause everyone</label></div>
+    <p class="note">On: the whole party pauses and plays with you.<br>Off: only you pause; the party plays on and you catch up when you play again.</p>
   </div>
 
   <!-- Race / Quali -->
   <div class="box" data-for="race quali">
     <h4>What opens</h4>
-    <div class="row"><span class="lbl">MultiViewer-setup</span><select id="mvSetup"></select></div>
+    <div class="row"><span class="lbl">MultiViewer setup</span><select id="mvSetup"></select></div>
     <div class="row"><span class="lbl">Ultimate F1 Viewer</span><select id="layout"></select></div>
     <div class="row"><label class="check"><input type="checkbox" data-key="OpenLatestReplay">No live session of this type? Open the latest replay</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="LayoutCloseCurrent">Close the open Ultimate F1 Viewer windows first</label></div>
+    <div class="row"><span class="lbl"></span><button id="saveLayout">Save current windows</button></div>
+    <p class="note lblnote" id="saveStatus">Saves the windows open in Ultimate F1 Viewer as this layout. Save your MultiViewer setup in MultiViewer itself.</p>
+
     <div class="race-only">
       <h4>Battle mode (Ultimate F1 Viewer)</h4>
-      <div class="row"><label class="check"><input type="checkbox" data-key="BattleEnabled">Pick drivers automatically (left: race top 4)</label></div>
-      <div class="row"><span class="lbl">Right</span>
+      <div class="row"><label class="check"><input type="checkbox" data-key="BattleEnabled">Pick the drivers automatically</label></div>
+      <p class="note">Left: the race top 4. Right: chosen below.</p>
+      <div class="row"><span class="lbl">Right side</span>
         <select data-key="BattleRight"><option value="champ3">Championship top 3</option><option value="p5to8">Positions 5 to 8</option></select></div>
-      <div class="row"><label class="check"><input type="checkbox" data-key="BattleLive">Update during the race (every 30 s)</label></div>
+      <div class="row"><label class="check"><input type="checkbox" data-key="BattleLive">Keep up during the race</label></div>
+      <p class="note">Checks every 30 seconds.</p>
     </div>
+
     <h4>Best of the rest</h4>
-    <div class="row"><label class="check"><input type="checkbox" data-key="RestEnabled">Fill onboards of drivers outside the top teams with the best of the rest</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="RestLive">Update during the session (every 30 s)</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="RestEnabled">Fill the onboards outside the top teams</label></div>
+    <p class="note">Every onboard in your setup of a driver outside the top teams shows one of the best of the rest; the highest placed goes top left.</p>
+    <div class="row"><label class="check"><input type="checkbox" data-key="RestLive">Keep up during the session</label></div>
+    <p class="note">Checks every 30 seconds.</p>
     <div class="row"><span class="lbl">Top teams</span><input type="text" data-key="TopTeams" placeholder="McLaren, Ferrari, Mercedes, Red Bull Racing"></div>
-    <p class="muted">Every onboard in your setup of a driver outside these teams is a slot for "the best of the rest". The highest placed goes top left.</p>
-    <div class="row"><label class="check"><input type="checkbox" data-key="LayoutCloseCurrent">Close the current Ultimate F1 Viewer windows first</label></div>
-    <div class="row"><span class="lbl"></span><button id="saveLayout">Save current windows</button></div>
-    <p class="muted" id="saveStatus">Saves the windows now open in Ultimate F1 Viewer as this layout. Save your MultiViewer setup in MultiViewer itself.</p>
   </div>
 
 <script>
@@ -145,55 +174,57 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const send = payload => ws && ws.readyState === 1 &&
   ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
 
+// What each key does: one line per action ("Press", "Hold"…), and what the key shows. Settings and what they
+// change are explained next to the settings below, not here.
+const ctl = (what, text) => `<div class="ctl"><b>${what}</b><span>${text}</span></div>`;
+const shows = text => `<div class="shows">${text}</div>`;
 const HELP = {
-  mode: `One key for watching F1:<ul>
-    <li><b>Press</b>: starts everything (a <b>…</b> top left means it is busy; a press in that time runs afterwards): the <b>F1</b> desktop (created if missing), MultiViewer and Ultimate F1 Viewer in their fixed place, the flags on your lights and, during a live session, the right layout. If F1 is already running, nothing happens.</li>
-    <li><b>Double-press</b>: hides F1: all windows minimised and all streams muted. Double-press again (or press once) to bring everything back.</li>
-    <li><b>Hold 1 second</b>: closes everything: lights restored, MultiViewer and Ultimate F1 Viewer closed, back to desktop 1. The F1 desktop stays for next time.</li></ul>
-    <b>HID</b> shows top left while F1 is hidden.`,
-  session: `Session info from live timing:<ul>
-    <li>in qualifying and practice the <b>time remaining</b></li>
-    <li>in the race the number of <b>laps</b> (e.g. 34/57)</li>
-    <li><b>Press</b>: switches to the <b>weather</b>: track temperature, air temperature and whether it rains</li></ul>
-    Also follows a replay.`,
-  flags: `Shows the track status from MultiViewer on your Hue lights: <b>yellow</b>, <b>Safety Car/VSC</b> (orange), <b>red</b> and the <b>chequered flag</b> (white flashing). Afterwards they turn green briefly and go back to your own lighting.<ul>
-    <li><b>Key</b>: flags on/off</li>
-    <li><b>Turn dial</b>: flag brightness</li>
-    <li><b>Push dial</b>: on/off</li>
-    <li><b>Touch screen</b>: test all colours</li></ul>`,
-  zone: `Chooses which lights show the flags. <b>Turn</b> to switch between the rooms and zones of your Hue Bridge; the bar shows where you are in that list. Without Hue it shows "Not set up".`,
-  volume: `Volume of the main screen in MultiViewer.<ul>
-    <li><b>Turn</b>: louder/quieter</li>
-    <li><b>Push or touch</b>: mute on/off</li></ul>`,
-  latency: `How far behind live you are, or in a replay how far you have shifted. Shown as <b>0s</b>, <b>-40s</b> (behind) or <b>+3s</b> (ahead).<ul>
-    <li><b>Turn</b>: shift per click</li>
-    <li><b>Push</b>: go live (in a replay back to 0s), or pause; configurable</li>
-    <li><b>Touch</b>: the other one of those two</li></ul>
-    A new live stream starts at your start delay.`,
-  live: `Shows where you are: <b>YOU'RE LIVE</b>, how far behind you are (e.g. <b>-40s</b>) or <b>REPLAY</b>. Press to drop the delay and go live; in a replay back to the point before shifting.`,
-  sync: `<b>Press</b> → all streams jump to your main screen.<br>
-    <i>In an F1 Party as a guest: first to the host.</i>
-    <br><br><b>Hold 1 second</b> → F1 Party:<ul>
-    <li><b>No party yet</b>: starts one and sends the invite to Discord</li>
-    <li><b>You're the host</b>: everyone syncs to you, and the invite is sent again</li></ul>
-    Needs the F1 Party app (it opens by itself). For Discord, set a webhook in F1 Party once.`,
-  pause: `<b>Press</b> → pause or play. Time spent paused counts as delay behind live.
-    <br><br><b>In an F1 Party</b>, with <b>pause everyone</b>:<ul>
-    <li><b>On</b>: the whole party pauses and plays with you</li>
-    <li><b>Off</b>: only you pause; the party plays on and you catch up when you play again</li></ul>`,
-  race: `Opens your whole race setup at once, for the live session or the replay open in MultiViewer:<ul>
-    <li>your <b>MultiViewer setup</b> Race: all onboards, F1 LIVE and the timing windows in place</li>
-    <li>then the <b>Ultimate F1 Viewer</b> layout Race on top (flag bars, battle mode, statuses), with the top 4 on the left of battle mode and the championship top 3 on the right</li>
-    <li><b>Best of the rest</b>: onboards of drivers outside the top teams become the two best drivers of the rest, and stay that way during the session</li></ul>
-    <b>Hold 1 second</b> closes everything, like F1 Mode. Save windows below.<br>
-    If F1 Mode has not started yet, it does that first (F1 desktop, apps, flags); otherwise it goes to the F1 desktop. If there is no live session of this type, it opens the latest replay of it.`,
-  quali: `Opens your whole qualifying setup at once, for the live session or the replay open in MultiViewer:<ul>
-    <li>your <b>MultiViewer setup</b> Qualifying: all onboards, F1 LIVE and the timing windows in place</li>
-    <li>then the <b>Ultimate F1 Viewer</b> layout Qualifying on top (flag bars)</li>
-    <li><b>Best of the rest</b>: onboards of drivers outside the top teams become the two best drivers of the rest, and stay that way during the session</li></ul>
-    <b>Hold 1 second</b> closes everything, like F1 Mode. Save windows below.<br>
-    If F1 Mode has not started yet, it does that first (F1 desktop, apps, flags); otherwise it goes to the F1 desktop. If there is no live session of this type, it opens the latest replay of it.`,
-  fullscreen: `Makes the main MultiViewer screen fullscreen, or back again. ON shows top left while it is fullscreen.`,
+  mode:
+    ctl('Press', 'Starts F1: its own desktop, MultiViewer and Ultimate F1 Viewer in place, the flags and the layout. Already running? Nothing happens.') +
+    ctl('Double-press', 'Hides F1 (windows minimised, streams muted). Again to bring it back.') +
+    ctl('Hold 1 s', 'Closes F1: lights back to normal, apps closed, back to desktop 1.') +
+    shows('Shows <b>…</b> while busy and <b>HID</b> while hidden.'),
+  session:
+    ctl('Press', 'A session on track? Opens it with its own layout (practice, qualifying or race). Otherwise switches between clock and weather.') +
+    shows('Shows the time remaining (qualifying, practice) or laps (race), or the weather. With nothing on track, the next session with a countdown. Follows replays too.'),
+  flags:
+    ctl('Press', 'Flags on the lights on or off.') +
+    ctl('Turn', 'Flag brightness.') +
+    ctl('Push', 'Flags on or off.') +
+    ctl('Touch', 'Tests all colours.') +
+    shows('Your Hue lights show the track status: yellow, Safety Car/VSC (orange), red and the chequered flag; then green briefly and back to your own lighting.'),
+  zone:
+    ctl('Turn', 'Chooses which lights show the flags: the rooms and zones of your Hue bridge.') +
+    shows('The bar shows where you are in that list. Without Hue: "Not set up".'),
+  volume:
+    ctl('Turn', 'Louder or quieter.') +
+    ctl('Push / Touch', 'Mute on or off.') +
+    shows('The volume of the main screen in MultiViewer.'),
+  latency:
+    ctl('Turn', 'Shifts the stream by one step.') +
+    ctl('Push', 'Go live (in a replay: back to 0s), or pause; see below.') +
+    ctl('Touch', 'The other one of those two.') +
+    shows('How far behind live you are, or how far a replay is shifted: <b>0s</b>, <b>-40s</b> (behind), <b>+3s</b> (ahead). A new live stream starts at your start delay.'),
+  live:
+    ctl('Press', 'Drops the delay and goes live. In a replay: back to before you shifted.') +
+    shows('Shows <b>YOU\'RE LIVE</b>, how far behind you are (e.g. <b>-40s</b>) or <b>REPLAY</b>.'),
+  sync:
+    ctl('Press', 'All streams jump to your main screen. As a guest in an F1 Party: first to the host.') +
+    ctl('Hold 1 s', 'No party yet: starts an F1 Party and sends the invite to Discord. Already hosting: everyone syncs to you and the invite is sent again.'),
+  pause:
+    ctl('Press', 'Pause or play. In an F1 Party: see "Pause everyone" below.') +
+    shows('Time spent paused counts as delay behind live.'),
+  race:
+    ctl('Press', 'Opens your race setup: the MultiViewer setup (onboards, F1 LIVE, timing), then the Ultimate F1 Viewer layout on top (flag bars, battle mode).') +
+    ctl('Hold 1 s', 'Closes F1, like F1 Mode.') +
+    shows('For the live race, or the replay open in MultiViewer. Starts F1 Mode first when it isn\'t running.'),
+  quali:
+    ctl('Press', 'Opens your qualifying setup: the MultiViewer setup (onboards, F1 LIVE, timing), then the Ultimate F1 Viewer layout on top (flag bars).') +
+    ctl('Hold 1 s', 'Closes F1, like F1 Mode.') +
+    shows('For the live qualifying, or the replay open in MultiViewer. Starts F1 Mode first when it isn\'t running.'),
+  fullscreen:
+    ctl('Press', 'The main MultiViewer screen fullscreen, or back.') +
+    shows('Shows <b>ON</b> while it is fullscreen.'),
 };
 
 function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {

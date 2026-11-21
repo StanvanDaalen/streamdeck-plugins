@@ -3,7 +3,7 @@
     "Name":  "F1 Race Control",
     "Author":  "Stan",
     "Description":  "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.16.0.0",
+    "Version": "1.16.1.0",
     "SDKVersion":  2,
     "Icon":  "images/plugin",
     "Category":  "F1 Race Control",
@@ -23,7 +23,7 @@
                     {
                         "UUID":  "com.stan.f1.mode",
                         "Name":  "F1 Mode",
-                        "Tooltip":  "Press = start F1 on the F1 desktop (MultiViewer and Ultimate F1 Viewer in place, flags, the right layout). Hold 1 second = stop what is running and close everything. Double-press = minimise and mute everything, again = bring it back.",
+                        "Tooltip":  "Press: start F1 (own desktop, apps in place, flags, layout). Double-press: hide or show. Hold 1 s: close everything.",
                         "Icon":  "images/action-mode",
                         "Controllers":  [
                                             "Keypad"
@@ -38,7 +38,7 @@
                     {
                         "UUID":  "com.stan.f1.session",
                         "Name":  "Session",
-                        "Tooltip":  "Session info: time remaining (qualifying, practice) or laps (race). Press = switch to the weather (track and air temperature, rain).",
+                        "Tooltip":  "Shows time remaining or laps, or the weather. Press: open the session on track with its layout, otherwise switch clock/weather.",
                         "Icon":  "images/action-session",
                         "Controllers":  [
                                             "Keypad"
@@ -54,7 +54,7 @@
                     {
                         "UUID":  "com.stan.f1.flags",
                         "Name":  "Flags",
-                        "Tooltip":  "Track status on your Hue lights: yellow, Safety Car/VSC, red and chequered. Key = on/off. Dial: turn = brightness, push = on/off, touch = test.",
+                        "Tooltip":  "Track status on your Hue lights. Press: flags on/off. Turn: brightness. Push: on/off. Touch: test.",
                         "Icon":  "images/action-flags",
                         "Controllers":  [
                                             "Keypad",
@@ -80,7 +80,7 @@
                     {
                         "UUID":  "com.stan.f1.zone",
                         "Name":  "Flag lights",
-                        "Tooltip":  "Choose which Hue room or zone shows the flags.",
+                        "Tooltip":  "Turn: choose which Hue room or zone shows the flags.",
                         "Icon":  "images/action-zone",
                         "Controllers":  [
                                             "Encoder"
@@ -102,7 +102,7 @@
                     {
                         "UUID":  "com.stan.f1.volume",
                         "Name":  "Volume",
-                        "Tooltip":  "Volume of only the main F1 LIVE stream in MultiViewer (never an onboard). Turn = louder/quieter, push = mute.",
+                        "Tooltip":  "Volume of the main F1 LIVE stream. Turn: louder/quieter. Push or touch: mute.",
                         "Icon":  "images/action-volume",
                         "Controllers":  [
                                             "Encoder"
@@ -126,7 +126,7 @@
                     {
                         "UUID":  "com.stan.f1.latency",
                         "Name":  "Live delay",
-                        "Tooltip":  "Delay behind live (or offset of a replay) as 0s, -40s or +3s. Turn = shift, push = go live, touch = pause.",
+                        "Tooltip":  "Delay behind live (or replay offset): 0s, -40s, +3s. Turn: shift. Push: go live or pause (setting). Touch: the other one.",
                         "Icon":  "images/action-latency",
                         "Controllers":  [
                                             "Encoder"
@@ -150,7 +150,7 @@
                     {
                         "UUID":  "com.stan.f1.live",
                         "Name":  "Go live",
-                        "Tooltip":  "Shows where you are (YOU\u0027RE LIVE, -40s, REPLAY). Press = go live, or back to 0s in a replay.",
+                        "Tooltip":  "Shows YOU'RE LIVE, -40s or REPLAY. Press: go live (in a replay: back to 0s).",
                         "Icon":  "images/action-live",
                         "Controllers":  [
                                             "Keypad"
@@ -166,7 +166,7 @@
                     {
                         "UUID":  "com.stan.f1.sync",
                         "Name":  "Sync",
-                        "Tooltip":  "Press: all streams jump to your main screen. Hold 1 s: start an F1 Party and send the Discord invite (already hosting: everyone syncs to you, invite sent again).",
+                        "Tooltip":  "Press: all streams jump to your main screen. Hold 1 s: start an F1 Party with a Discord invite (already hosting: everyone syncs to you, invite again).",
                         "Icon":  "images/action-sync",
                         "Controllers":  [
                                             "Keypad"
@@ -181,7 +181,7 @@
                     {
                         "UUID":  "com.stan.f1.pause",
                         "Name":  "Pause / play",
-                        "Tooltip":  "Press: pause or play. In an F1 Party it pauses everyone (setting: or just you).",
+                        "Tooltip":  "Press: pause or play. In an F1 Party: everyone pauses (setting: or just you).",
                         "Icon":  "images/action-pause",
                         "Controllers":  [
                                             "Keypad"
@@ -197,7 +197,7 @@
                     {
                         "UUID":  "com.stan.f1.fullscreen",
                         "Name":  "Fullscreen",
-                        "Tooltip":  "Main MultiViewer screen fullscreen on/off.",
+                        "Tooltip":  "Press: main MultiViewer screen fullscreen on/off.",
                         "Icon":  "images/action-fullscreen",
                         "Controllers":  [
                                             "Keypad"
@@ -213,7 +213,7 @@
                     {
                         "UUID":  "com.stan.f1.race",
                         "Name":  "Race",
-                        "Tooltip":  "Opens your MultiViewer setup Race and the Ultimate F1 Viewer layout Race, with the two best drivers of the rest in the free onboard slots. Pressing again while it is busy or already open does nothing. Hold 1 second = stop what is running and close everything, like F1 Mode.",
+                        "Tooltip":  "Press: open your Race setup in MultiViewer and Ultimate F1 Viewer, best of the rest filled in. Hold 1 s: close everything.",
                         "Icon":  "images/action-race",
                         "Controllers":  [
                                             "Keypad"
@@ -228,7 +228,7 @@
                     {
                         "UUID":  "com.stan.f1.quali",
                         "Name":  "Quali",
-                        "Tooltip":  "Opens your MultiViewer setup Qualifying and the Ultimate F1 Viewer layout Qualifying, with the two best drivers of the rest in the free onboard slots. Pressing again while it is busy or already open does nothing. Hold 1 second = stop what is running and close everything, like F1 Mode.",
+                        "Tooltip":  "Press: open your Qualifying setup in MultiViewer and Ultimate F1 Viewer, best of the rest filled in. Hold 1 s: close everything.",
                         "Icon":  "images/action-quali",
                         "Controllers":  [
                                             "Keypad"
