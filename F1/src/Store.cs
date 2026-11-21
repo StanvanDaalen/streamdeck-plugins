@@ -69,6 +69,9 @@ public sealed class F1Settings
     /// <summary>MultiViewer setups opened with them (names; null = by name).</summary>
     public string? RaceMvSetup { get; set; }
     public string? QualiMvSetup { get; set; }
+    /// <summary>Free practice: MultiViewer setup and Ultimate F1 Viewer layout (null = by name).</summary>
+    public string? PracticeMvSetup { get; set; }
+    public string? PracticeLayout { get; set; }
     /// <summary>Remote-debugging port MultiViewer is started with, to open its setups.</summary>
     public int MvPort { get; set; } = 9334;
     // Where the apps are, when the plugin cannot find them itself (mainly Linux: an AppImage or zip anywhere).

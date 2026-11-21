@@ -197,16 +197,19 @@ public static class MultiViewer
         if (info == null) return true; // a query without SessionInfo cannot tell
         if (!int.TryParse(info["Meeting"]?["Key"]?.ToString(), out var key) || key != meeting) return false;
         var type = (string?)info["Type"] ?? "";
-        return _expectKind == "quali"
-            ? type.Contains("Qualifying", StringComparison.OrdinalIgnoreCase)
-            : string.Equals(type, "Race", StringComparison.OrdinalIgnoreCase);
+        return _expectKind switch
+        {
+            "quali" => type.Contains("Qualifying", StringComparison.OrdinalIgnoreCase),
+            "practice" => type.Contains("Practice", StringComparison.OrdinalIgnoreCase),
+            _ => string.Equals(type, "Race", StringComparison.OrdinalIgnoreCase),
+        };
     }
 
     public static async Task<JsonObject?> TimingAsync()
     {
         try
         {
-            var t = (await QueryAsync("{ f1LiveTimingState { SessionInfo TimingData DriverList ChampionshipPrediction } }"))?["f1LiveTimingState"] as JsonObject;
+            var t = (await QueryAsync("{ f1LiveTimingState { SessionInfo TimingData DriverList ChampionshipPrediction LapCount TrackStatus } }"))?["f1LiveTimingState"] as JsonObject;
             return Matches(t) ? t : null;
         }
         catch { return null; }

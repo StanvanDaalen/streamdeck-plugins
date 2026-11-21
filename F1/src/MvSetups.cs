@@ -31,8 +31,10 @@ public static class MvSetups
     public static string? Find(string kind)
     {
         var names = List().Select(s => s.Name).ToList();
-        var chosen = kind == "quali" ? Store.Current.QualiMvSetup : Store.Current.RaceMvSetup;
+        var chosen = kind switch { "quali" => Store.Current.QualiMvSetup, "practice" => Store.Current.PracticeMvSetup, _ => Store.Current.RaceMvSetup };
         if (chosen != null && names.Contains(chosen)) return chosen;
+        if (kind == "practice")
+            return names.FirstOrDefault(n => n.Contains("practice", StringComparison.OrdinalIgnoreCase) || n.Contains("training", StringComparison.OrdinalIgnoreCase));
         return kind == "quali"
             ? names.FirstOrDefault(n => n.Contains("qual", StringComparison.OrdinalIgnoreCase))
             : names.FirstOrDefault(n => n.Equals("race", StringComparison.OrdinalIgnoreCase))
@@ -215,6 +217,13 @@ public static class MvSetups
     /// <summary>Set when Race/Quali opened a setup; only then are slots updated (never onboards placed by hand).</summary>
     public static bool Active { get; set; }
 
+    /// <summary>Session type of the setup that is open: "race", "quali" or "practice".</summary>
+    public static string Kind { get; set; } = "race";
+
+    // Race: when a new order was first seen (lap), and the lap of the last swap.
+    private static int? _changeSeenLap;
+    private static int _lastSwapLap = -1;
+
     /// <summary>
     /// Keeps the best-of-the-rest onboards current: when the two best drivers outside the top teams
     /// change (and stay changed for two checks), the slot players are swapped in place.
@@ -223,6 +232,7 @@ public static class MvSetups
     public static async Task UpdateRestSlotsAsync(bool force = false)
     {
         if (!Active || !Store.Current.RestEnabled || (!force && !Store.Current.RestLive)) return;
+        if (Kind == "practice") return; // positions mean little in practice: the slots keep their drivers
         // A swap opens a new player window, and Windows puts it on the desktop that is showing. So swap
         // only while F1's own desktop shows; elsewhere the slot waits until you are back on it.
         if (!OnF1Desktop()) return;
@@ -247,16 +257,35 @@ public static class MvSetups
         if (slots.Count == 0) return;
 
         var wanted = (await BestOfRestAsync()).Take(slots.Count).ToList();
-        if (wanted.Count < slots.Count) { _lastWanted = null; return; }
-        bool stable = force || (_lastWanted != null && _lastWanted.SequenceEqual(wanted));
+        if (wanted.Count < slots.Count) { _lastWanted = null; _changeSeenLap = null; return; }
+        bool sameAsBefore = _lastWanted != null && _lastWanted.SequenceEqual(wanted);
+        bool stable = force || sameAsBefore;
         _lastWanted = wanted;
-        if (!stable) return;
+        if (!stable) { _changeSeenLap = null; return; }
+        if (slots.Select(s => s.DriverNumber).SequenceEqual(wanted.Select(w => (int?)w))) { _changeSeenLap = null; return; }
+
+        var timing = force ? null : await MultiViewer.TimingAsync();
+        var lines = timing?["TimingData"]?["Lines"] as System.Text.Json.Nodes.JsonObject;
+        if (!force && Kind == "race")
+        {
+            // Calm in the race: the new order must hold for a full lap, at most one swap per lap,
+            // and nothing under a safety car or red flag (the order is frozen or meaningless then).
+            int lap = int.TryParse(timing?["LapCount"]?["CurrentLap"]?.ToString(), out var l) ? l : 0;
+            var status = timing?["TrackStatus"]?["Status"]?.ToString() ?? "1";
+            if (status is "4" or "5" or "6" or "7") return;
+            if (_changeSeenLap == null) { _changeSeenLap = lap; return; }
+            if (lap < _changeSeenLap + 1 || lap == _lastSwapLap) return;
+            _lastSwapLap = lap;
+        }
+        _changeSeenLap = null;
 
         // Slot i (top-left first) shows the i-th best; this also reorders when two of them swap places.
         bool swapped = false;
         for (int i = 0; i < slots.Count; i++)
         {
             if (slots[i].DriverNumber == wanted[i]) continue;
+            // Qualifying: never during a lap; only when the driver in that slot is back in the pits.
+            if (!force && Kind == "quali" && lines?[slots[i].DriverNumber?.ToString() ?? ""]?["InPit"]?.ToString() != "true") continue;
             Store.Log($"best of the rest: vak {i + 1} {slots[i].Tla} -> #{wanted[i]}");
             await MultiViewer.SwapDriverAsync(slots[i], wanted[i]);
             swapped = true;

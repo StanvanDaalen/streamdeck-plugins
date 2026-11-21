@@ -141,17 +141,17 @@ internal sealed class Plugin
             {
                 if (run == "close" || pend == "close") { Store.Log($"{kind}: genegeerd, F1 wordt gesloten"); return; }
                 if (run == kind || pend == kind) { Store.Log($"{kind}: is al bezig"); return; }
-                if (kind == "mode" && (run is "race" or "quali" || pend is "race" or "quali"))
+                if (kind == "mode" && (run is "race" or "quali" or "practice" || pend is "race" or "quali" or "practice"))
                 { Store.Log($"F1 Mode: zit al in {pend ?? run}"); return; }
                 if (_busy)
                 {
                     _pending = (c, kind, job);
-                    if (run is "race" or "quali") { _jobCts?.Cancel(); Store.Log($"{kind}: {run} stopt, {kind} komt ervoor in de plaats"); }
+                    if (run is "race" or "quali" or "practice") { _jobCts?.Cancel(); Store.Log($"{kind}: {run} stopt, {kind} komt ervoor in de plaats"); }
                     else Store.Log($"{kind}: na {run}");
                     return;
                 }
                 // Already done and still there: no second round of windows, just to F1's desktop.
-                if (kind is "race" or "quali" && _layoutOpen == kind && _f1ModeOn && _f1Running)
+                if (kind is "race" or "quali" or "practice" && _layoutOpen == kind && _f1ModeOn && _f1Running)
                 {
                     Store.Log($"{kind}: staat al open");
                     _ = Task.Run(async () =>
@@ -206,7 +206,7 @@ internal sealed class Plugin
     /// <summary>Race or Quali waits for the running F1 Mode: that then leaves the layout to it.</summary>
     private bool LayoutWaiting
     {
-        get { lock (_jobLock) return _pending?.Kind is "race" or "quali"; }
+        get { lock (_jobLock) return _pending?.Kind is "race" or "quali" or "practice"; }
     }
 
     /// <summary>The key's job is running or waiting: show "…" on it.</summary>
@@ -348,7 +348,12 @@ internal sealed class Plugin
 
         switch (c.Action)
         {
-            case Session: _sessionView = (_sessionView + 1) % 2; break;
+            case Session:
+                // A session on track: open it with its own layout (practice, qualifying or race).
+                // Nothing on track: switch between the clock and the weather, as before.
+                if (Schedule.OnTrackNow() is { } onTrack) { Request(c, Schedule.KindOf(onTrack.Type, onTrack.Name)); break; }
+                _sessionView = (_sessionView + 1) % 2;
+                break;
             case Flags: await ToggleFlags(); break;
             case Live: await GoLive(c); break;
             case Sync:
@@ -540,8 +545,7 @@ internal sealed class Plugin
             // Automatic: the live session decides; without one no layout is opened.
             var (live, type) = await Uf1.WaitLiveSessionAsync();
             if (!live) { Store.Log("F1 Mode: geen live sessie, geen layout geopend"); return true; }
-            kind = (type ?? "").Contains("qual", StringComparison.OrdinalIgnoreCase) ||
-                   (type ?? "").Contains("shootout", StringComparison.OrdinalIgnoreCase) ? "quali" : "race";
+            kind = Schedule.KindOf(type); // practice, quali (incl. sprint) or race (incl. sprint)
             Store.Log($"F1 Mode: live {type} -> layout {kind}");
         }
         if (LayoutWaiting) return true;
@@ -622,10 +626,13 @@ internal sealed class Plugin
             try
             {
                 MvSetups.Active = false; // slots of a previous setup no longer count
-                var rest = S.RestEnabled ? await MvSetups.BestOfRestAsync() : new List<int>();
+                MvSetups.Kind = kind;
+                // Practice: no best of the rest, the slots keep the drivers saved in the setup.
+                bool restOn = S.RestEnabled && kind != "practice";
+                var rest = restOn ? await MvSetups.BestOfRestAsync() : new List<int>();
                 // No timing yet (a session just opened): use the grid / last practice, so the slots
                 // open with the right drivers instead of being swapped later.
-                if (S.RestEnabled && rest.Count == 0 && _sessionMeeting is { } meeting)
+                if (restOn && rest.Count == 0 && _sessionMeeting is { } meeting)
                 {
                     rest = await Replays.ExpectedRestAsync(kind, meeting);
                     Store.Log($"best of the rest vooraf ({(kind == "race" ? "startopstelling" : "laatste training")}): {string.Join(",", rest.Take(4))}");
@@ -710,9 +717,12 @@ internal sealed class Plugin
     /// </summary>
     private async Task OpenSessionAsync(string kind)
     {
-        bool wanted(string? type) => kind == "quali"
-            ? (type ?? "").Contains("Qualifying", StringComparison.OrdinalIgnoreCase)
-            : string.Equals(type, "Race", StringComparison.OrdinalIgnoreCase);
+        bool wanted(string? type) => kind switch
+        {
+            "quali" => (type ?? "").Contains("Qualifying", StringComparison.OrdinalIgnoreCase),
+            "practice" => (type ?? "").Contains("Practice", StringComparison.OrdinalIgnoreCase),
+            _ => string.Equals(type, "Race", StringComparison.OrdinalIgnoreCase),
+        };
 
         var openNow = await MvSetups.OpenContentAsync();
         _sessionMeeting = int.TryParse(_mv.Timing?["SessionInfo"]?["Meeting"]?["Key"]?.ToString(), out var mk) ? mk : null;
@@ -725,7 +735,8 @@ internal sealed class Plugin
         string? contentId = null, what = null;
         var (live, type) = Uf1Available ? await Uf1.WaitLiveSessionAsync(5) : (false, (string?)null);
         if (live && wanted(type) && await Uf1.LiveContentIdAsync() is { } liveId) { contentId = liveId; what = $"live {type}"; }
-        else if (S.OpenLatestReplay && await Replays.LatestAsync(kind) is { } latest)
+        // Practice is only opened live (or as it is already open): there is no "latest practice" replay to look for.
+        else if (kind != "practice" && S.OpenLatestReplay && await Replays.LatestAsync(kind) is { } latest)
         {
             contentId = latest.Id; what = latest.Title;
             _sessionMeeting = Replays.LastMeetingKey;

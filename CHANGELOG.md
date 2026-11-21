@@ -8,9 +8,17 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
+- **F1 Race Control**: free practice gets its own layout. F1 Mode (automatic) and the Session key open the session that is on track with its own MultiViewer setup and Ultimate F1 Viewer layout: practice, qualifying or race (sprints included). The setup and layout are found by name ("Practice" or "Training") unless chosen in the settings.
+- **F1 Race Control**: the Session key opens the session that is on track when you press it; with nothing on track it still switches between clock and weather.
+
 ### Improved
 
+- **F1 Race Control**: best of the rest swaps more calmly. In the race a new order has to hold for a full lap, with at most one swap per lap and none under a safety car or red flag; in qualifying a slot only changes once its driver is back in the pits; in practice the slots keep their drivers.
+- **F1 Race Control**: every stream opens with the whole picture (no cropping).
+
 ### Fixed
+
+- **F1 Race Control**: F1 Mode on automatic opened the race layout during a practice session.
 
 ## 1.1.24 (2026-11-21)
 

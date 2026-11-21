@@ -128,9 +128,11 @@ public static class Uf1
     public static string? FindLayout(string kind)
     {
         var all = Layouts();
-        var chosen = kind == "quali" ? Store.Current.QualiLayout : Store.Current.RaceLayout;
+        var chosen = kind switch { "quali" => Store.Current.QualiLayout, "practice" => Store.Current.PracticeLayout, _ => Store.Current.RaceLayout };
         if (chosen != null && all.Any(l => l.Id == chosen)) return chosen;
         var named = all.Select(l => (l.Id, Name: l.Name.ToLowerInvariant())).ToList();
+        if (kind == "practice")
+            return named.FirstOrDefault(l => l.Name.Contains("practice") || l.Name.Contains("training")).Id;
         return kind == "quali"
             ? named.FirstOrDefault(l => l.Name.Contains("qual")).Id
             : (named.FirstOrDefault(l => l.Name == "race").Id ?? named.FirstOrDefault(l => l.Name.Contains("race")).Id);

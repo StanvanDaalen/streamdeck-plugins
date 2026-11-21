@@ -64,6 +64,22 @@ public static class Schedule
         return _sessions.FirstOrDefault(s => IsKind(s, kind) && s.Start <= now && now <= s.End.AddMinutes(30));
     }
 
+    /// <summary>Any F1 session on track right now (practice, qualifying, sprint, race), or null.</summary>
+    public static CalSession? OnTrackNow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return _sessions.FirstOrDefault(s => s.Start <= now && now <= s.End.AddMinutes(15));
+    }
+
+    /// <summary>"practice", "quali" or "race" for a session type or name ("Practice 2", "Sprint Qualifying", "Race").</summary>
+    public static string KindOf(string? type, string? name = null)
+    {
+        var t = (type ?? "") + " " + (name ?? "");
+        if (t.Contains("Practice", StringComparison.OrdinalIgnoreCase)) return "practice";
+        if (t.Contains("Qualifying", StringComparison.OrdinalIgnoreCase) || t.Contains("Shootout", StringComparison.OrdinalIgnoreCase)) return "quali";
+        return "race";
+    }
+
     /// <summary>The last race or qualifying that has finished (what the key opens as a replay).</summary>
     public static CalSession? LatestDone(string kind) =>
         _sessions.LastOrDefault(s => IsKind(s, kind) && s.End < DateTimeOffset.UtcNow);
