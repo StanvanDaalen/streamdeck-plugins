@@ -3,7 +3,7 @@
     "Name":  "F1 Race Control",
     "Author":  "Stan",
     "Description":  "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.15.3.0",
+    "Version": "1.16.0.0",
     "SDKVersion":  2,
     "Icon":  "images/plugin",
     "Category":  "F1 Race Control",
@@ -181,7 +181,7 @@
                     {
                         "UUID":  "com.stan.f1.pause",
                         "Name":  "Pause / play",
-                        "Tooltip":  "Pauses or resumes the streams; time spent paused counts as delay behind live.",
+                        "Tooltip":  "Press: pause or play. In an F1 Party it pauses everyone (setting: or just you).",
                         "Icon":  "images/action-pause",
                         "Controllers":  [
                                             "Keypad"

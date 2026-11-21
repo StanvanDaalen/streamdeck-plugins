@@ -35,6 +35,19 @@ public static class F1Party
         catch (Exception e) { Store.Log("f1party sync: " + e.Message); return false; }
     }
 
+    /// <summary>Pause key in a party: the whole party (everyone) or just this computer.</summary>
+    public static async Task PauseAsync(bool paused, bool everyone)
+    {
+        try
+        {
+            var body = new StringContent(new JsonObject { ["paused"] = paused, ["everyone"] = everyone }.ToJsonString(),
+                System.Text.Encoding.UTF8, "application/json");
+            var res = await Http.PostAsync(Control + "pause", body);
+            Store.Log($"F1 Party pauze ({(everyone ? "hele party" : "alleen ik")}, {(paused ? "pauze" : "verder")}): {(int)res.StatusCode}");
+        }
+        catch (Exception e) { Store.Log("f1party pause: " + e.Message); }
+    }
+
     /// <summary>Hosts a party (or keeps the one hosted now) and posts the Discord invite; starts F1 Party first when needed.</summary>
     public static async Task<bool> HostAsync()
     {

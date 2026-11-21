@@ -905,7 +905,10 @@ internal sealed class Plugin
     private async Task TogglePause(Ctx c)
     {
         if (_mv.Main is not { } main) { await Alert(c); return; }
-        await SetPaused(main, !main.Paused);
+        bool paused = !main.Paused;
+        // In an F1 Party: tell the app first, so it pauses the whole party or lets it play on without you.
+        if (await F1Party.ModeAsync() is "host" or "guest") await F1Party.PauseAsync(paused, S.PauseParty);
+        await SetPaused(main, paused);
     }
 
     private async Task SetPaused(PlayerInfo main, bool paused)
@@ -1017,6 +1020,7 @@ internal sealed class Plugin
                 case "LatencyPush": S.LatencyPush = v.ToString(); break;
                 case "LiveSyncAll": S.LiveSyncAll = B(v); break;
                 case "PauseAll": S.PauseAll = B(v); break;
+                case "PauseParty": S.PauseParty = B(v); break;
                 case "RaceMvSetup": S.RaceMvSetup = Id(v); break;
                 case "QualiMvSetup": S.QualiMvSetup = Id(v); break;
                 case "RestEnabled": S.RestEnabled = B(v); break;

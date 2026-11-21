@@ -112,6 +112,7 @@
   <div class="box" data-for="pause">
     <h4>Settings</h4>
     <div class="row"><label class="check"><input type="checkbox" data-key="PauseAll">Pause all players (off = main screen only)</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="PauseParty">F1 Party: pause everyone (off = just you)</label></div>
   </div>
 
   <!-- Race / Quali -->
@@ -176,7 +177,10 @@ const HELP = {
     <li><b>No party yet</b>: starts one and sends the invite to Discord</li>
     <li><b>You're the host</b>: everyone syncs to you, and the invite is sent again</li></ul>
     Needs the F1 Party app (it opens by itself). For Discord, set a webhook in F1 Party once.`,
-  pause: `Pauses or resumes the streams. Time spent paused counts as delay behind live.`,
+  pause: `<b>Press</b> → pause or play. Time spent paused counts as delay behind live.
+    <br><br><b>In an F1 Party</b>, with <b>pause everyone</b>:<ul>
+    <li><b>On</b>: the whole party pauses and plays with you</li>
+    <li><b>Off</b>: only you pause; the party plays on and you catch up when you play again</li></ul>`,
   race: `Opens your whole race setup at once, for the live session or the replay open in MultiViewer:<ul>
     <li>your <b>MultiViewer setup</b> Race: all onboards, F1 LIVE and the timing windows in place</li>
     <li>then the <b>Ultimate F1 Viewer</b> layout Race on top (flag bars, battle mode, statuses), with the top 4 on the left of battle mode and the championship top 3 on the right</li>

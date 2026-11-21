@@ -62,6 +62,8 @@ public sealed class F1Settings
     public string LatencyPush { get; set; } = "live";
     public bool LiveSyncAll { get; set; } = true;
     public bool PauseAll { get; set; } = true;
+    /// <summary>In an F1 Party, the Pause key pauses the whole party (off: just you, the party plays on).</summary>
+    public bool PauseParty { get; set; } = true;
 
     // ---- Race / Quali layouts (Ultimate F1 Viewer layout ids; null = by name)
     public string? RaceLayout { get; set; }
