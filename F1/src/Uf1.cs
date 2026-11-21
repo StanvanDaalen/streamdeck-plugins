@@ -220,7 +220,7 @@ public static class Uf1
             var side = i == placed.Count - 1 && placed.Count > 1 ? "rechts" : "links";
             try
             {
-                var r = (string?)await Cdp.EvalAsync(placed[i].Page, js) ?? "js-fout";
+                var r = (string?)await Cdp.EvalAsync(placed[i].Page, js) ?? "js-error";
                 if (r != "ok") allReady = false;
                 if (r != _lastBattle.GetValueOrDefault(side)) Store.Log($"battle mode {side}: {r} [{string.Join(",", want)}]");
                 _lastBattle[side] = r;

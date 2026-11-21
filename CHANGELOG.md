@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.21 (2026-11-21)
+
+### Improved
+
+- **F1**: menus, tooltips and messages are in English.
+
 ## 1.1.20 (2026-11-21)
 
 ### Improved

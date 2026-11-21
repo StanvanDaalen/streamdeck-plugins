@@ -14,7 +14,7 @@ public sealed class AppPlace
     public int Height { get; set; }
     public bool Maximized { get; set; }
 
-    public override string ToString() => Maximized ? $"gemaximaliseerd op {X},{Y}" : $"{Width}×{Height} op {X},{Y}";
+    public override string ToString() => Maximized ? $"maximised at {X},{Y}" : $"{Width}×{Height} at {X},{Y}";
 }
 
 /// <summary>
@@ -100,8 +100,8 @@ public static class Apps
             return;
         }
         var answer = MessageBox(IntPtr.Zero,
-            $"{app} is niet geïnstalleerd.\n\n{why}\n\nDownloadpagina openen?",
-            "F1 voor Stream Deck", MB_YESNO | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST);
+            $"{app} is not installed.\n\n{why}\n\nOpen the download page?",
+            "F1 for Stream Deck", MB_YESNO | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST);
         if (answer == IDYES)
         {
             try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }

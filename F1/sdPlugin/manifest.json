@@ -2,7 +2,7 @@
     "UUID":  "com.stan.f1",
     "Name":  "F1",
     "Author":  "Stan",
-    "Description":  "F1 kijken met MultiViewer en Ultimate F1 Viewer: vlaggen op je Hue-lampen, latency, volume, race- en quali-layouts en een F1 Mode die alles op een eigen bureaublad klaarzet.",
+    "Description":  "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
     "Version": "1.13.9.0",
     "SDKVersion":  2,
     "Icon":  "images/plugin",
@@ -23,7 +23,7 @@
                     {
                         "UUID":  "com.stan.f1.mode",
                         "Name":  "F1 Mode",
-                        "Tooltip":  "Drukken = F1 starten op het bureaublad F1 (MultiViewer en Ultimate F1 Viewer op hun plek, vlaggen, juiste layout). 1 seconde vasthouden = stoppen met wat bezig is en alles sluiten. Dubbelklikken = alles minimaliseren en dempen, nog eens = terug.",
+                        "Tooltip":  "Press = start F1 on the F1 desktop (MultiViewer and Ultimate F1 Viewer in place, flags, the right layout). Hold 1 second = stop what is running and close everything. Double-press = minimise and mute everything, again = bring it back.",
                         "Icon":  "images/action-mode",
                         "Controllers":  [
                                             "Keypad"
@@ -38,7 +38,7 @@
                     {
                         "UUID":  "com.stan.f1.session",
                         "Name":  "Session",
-                        "Tooltip":  "Sessie-info: resterende tijd (kwalificatie, training) of ronden (race). Drukken = wisselen naar het weer (baan- en luchttemperatuur, regen).",
+                        "Tooltip":  "Session info: time remaining (qualifying, practice) or laps (race). Press = switch to the weather (track and air temperature, rain).",
                         "Icon":  "images/action-session",
                         "Controllers":  [
                                             "Keypad"
@@ -53,8 +53,8 @@
                     },
                     {
                         "UUID":  "com.stan.f1.flags",
-                        "Name":  "Vlaggen",
-                        "Tooltip":  "Baanstatus op je Hue-lampen: geel, Safety Car/VSC, rood en finish. Knop = aan/uit. Dial: draaien = helderheid, indrukken = aan/uit, tikken = test.",
+                        "Name":  "Flags",
+                        "Tooltip":  "Track status on your Hue lights: yellow, Safety Car/VSC, red and chequered. Key = on/off. Dial: turn = brightness, push = on/off, touch = test.",
                         "Icon":  "images/action-flags",
                         "Controllers":  [
                                             "Keypad",
@@ -71,16 +71,16 @@
                                         "layout":  "layouts/f1.json",
                                         "Icon":  "images/action-flags",
                                         "TriggerDescription":  {
-                                                                   "Rotate":  "Helderheid",
-                                                                   "Push":  "Vlaggen aan/uit",
+                                                                   "Rotate":  "Brightness",
+                                                                   "Push":  "Flags on/off",
                                                                    "Touch":  "Test"
                                                                }
                                     }
                     },
                     {
                         "UUID":  "com.stan.f1.zone",
-                        "Name":  "Lampen voor vlaggen",
-                        "Tooltip":  "Kies welke Hue-ruimte of -zone de vlaggen toont.",
+                        "Name":  "Flag lights",
+                        "Tooltip":  "Choose which Hue room or zone shows the flags.",
                         "Icon":  "images/action-zone",
                         "Controllers":  [
                                             "Encoder"
@@ -95,14 +95,14 @@
                                         "layout":  "layouts/f1.json",
                                         "Icon":  "images/action-zone",
                                         "TriggerDescription":  {
-                                                                   "Rotate":  "Ruimte / zone kiezen"
+                                                                   "Rotate":  "Choose room / zone"
                                                                }
                                     }
                     },
                     {
                         "UUID":  "com.stan.f1.volume",
                         "Name":  "Volume",
-                        "Tooltip":  "Volume van alleen de F1 LIVE-hoofdstream in MultiViewer (nooit een onboard). Draaien = harder/zachter, indrukken = dempen.",
+                        "Tooltip":  "Volume of only the main F1 LIVE stream in MultiViewer (never an onboard). Turn = louder/quieter, push = mute.",
                         "Icon":  "images/action-volume",
                         "Controllers":  [
                                             "Encoder"
@@ -118,15 +118,15 @@
                                         "Icon":  "images/action-volume",
                                         "TriggerDescription":  {
                                                                    "Rotate":  "Volume",
-                                                                   "Push":  "Dempen",
-                                                                   "Touch":  "Dempen"
+                                                                   "Push":  "Mute",
+                                                                   "Touch":  "Mute"
                                                                }
                                     }
                     },
                     {
                         "UUID":  "com.stan.f1.latency",
-                        "Name":  "Achter live",
-                        "Tooltip":  "Achterstand op live (of verschuiving van een replay) als 0s, -40s of +3s. Draaien = verschuiven, indrukken = naar live, tikken = pauze.",
+                        "Name":  "Live delay",
+                        "Tooltip":  "Delay behind live (or offset of a replay) as 0s, -40s or +3s. Turn = shift, push = go live, touch = pause.",
                         "Icon":  "images/action-latency",
                         "Controllers":  [
                                             "Encoder"
@@ -141,16 +141,16 @@
                                         "layout":  "layouts/f1.json",
                                         "Icon":  "images/action-latency",
                                         "TriggerDescription":  {
-                                                                   "Rotate":  "1 s per klik",
-                                                                   "Push":  "Naar live",
-                                                                   "Touch":  "Pauze / play"
+                                                                   "Rotate":  "1 s per click",
+                                                                   "Push":  "Go live",
+                                                                   "Touch":  "Pause / play"
                                                                }
                                     }
                     },
                     {
                         "UUID":  "com.stan.f1.live",
-                        "Name":  "Naar live",
-                        "Tooltip":  "Toont waar je bent (YOU\u0027RE LIVE, -40s, REPLAY). Indrukken = naar live, bij een replay terug naar 0s.",
+                        "Name":  "Go live",
+                        "Tooltip":  "Shows where you are (YOU\u0027RE LIVE, -40s, REPLAY). Press = go live, or back to 0s in a replay.",
                         "Icon":  "images/action-live",
                         "Controllers":  [
                                             "Keypad"
@@ -166,7 +166,7 @@
                     {
                         "UUID":  "com.stan.f1.sync",
                         "Name":  "Sync",
-                        "Tooltip":  "Zet alle spelers (onboards, extra feeds) gelijk met het hoofdscherm.",
+                        "Tooltip":  "Syncs all players (onboards, extra feeds) with the main screen.",
                         "Icon":  "images/action-sync",
                         "Controllers":  [
                                             "Keypad"
@@ -180,8 +180,8 @@
                     },
                     {
                         "UUID":  "com.stan.f1.pause",
-                        "Name":  "Pauze / play",
-                        "Tooltip":  "Pauzeert of hervat de streams; pauzetijd telt mee als achterstand op live.",
+                        "Name":  "Pause / play",
+                        "Tooltip":  "Pauses or resumes the streams; time spent paused counts as delay behind live.",
                         "Icon":  "images/action-pause",
                         "Controllers":  [
                                             "Keypad"
@@ -197,7 +197,7 @@
                     {
                         "UUID":  "com.stan.f1.fullscreen",
                         "Name":  "Fullscreen",
-                        "Tooltip":  "Hoofdscherm van MultiViewer schermvullend aan/uit.",
+                        "Tooltip":  "Main MultiViewer screen fullscreen on/off.",
                         "Icon":  "images/action-fullscreen",
                         "Controllers":  [
                                             "Keypad"
@@ -213,7 +213,7 @@
                     {
                         "UUID":  "com.stan.f1.race",
                         "Name":  "Race",
-                        "Tooltip":  "Opent je MultiViewer-setup Race en de Ultimate F1 Viewer-layout Race, met de twee beste coureurs van de rest in de vrije onboard-vakken. Nog eens drukken terwijl hij bezig is of al open staat doet niets. 1 seconde vasthouden = stoppen met wat bezig is en alles sluiten, net als F1 Mode.",
+                        "Tooltip":  "Opens your MultiViewer setup Race and the Ultimate F1 Viewer layout Race, with the two best drivers of the rest in the free onboard slots. Pressing again while it is busy or already open does nothing. Hold 1 second = stop what is running and close everything, like F1 Mode.",
                         "Icon":  "images/action-race",
                         "Controllers":  [
                                             "Keypad"
@@ -228,7 +228,7 @@
                     {
                         "UUID":  "com.stan.f1.quali",
                         "Name":  "Quali",
-                        "Tooltip":  "Opent je MultiViewer-setup Qualifying en de Ultimate F1 Viewer-layout Qualifying, met de twee beste coureurs van de rest in de vrije onboard-vakken. Nog eens drukken terwijl hij bezig is of al open staat doet niets. 1 seconde vasthouden = stoppen met wat bezig is en alles sluiten, net als F1 Mode.",
+                        "Tooltip":  "Opens your MultiViewer setup Qualifying and the Ultimate F1 Viewer layout Qualifying, with the two best drivers of the rest in the free onboard slots. Pressing again while it is busy or already open does nothing. Hold 1 second = stop what is running and close everything, like F1 Mode.",
                         "Icon":  "images/action-quali",
                         "Controllers":  [
                                             "Keypad"

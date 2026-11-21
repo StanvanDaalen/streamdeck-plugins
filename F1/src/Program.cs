@@ -43,11 +43,11 @@ internal static class Program
             string result;
             try
             {
-                if (deskNo >= 1 && deskNo <= ids.Count) { Desktops.SetName(ids[deskNo - 1], deskName); result = "SetName aangeroepen"; }
-                else result = $"geen bureaublad {deskNo} (er zijn er {ids.Count})";
+                if (deskNo >= 1 && deskNo <= ids.Count) { Desktops.SetName(ids[deskNo - 1], deskName); result = "SetName called"; }
+                else result = $"no desktop {deskNo} (there are {ids.Count})";
             }
-            catch (Exception e) { result = "fout: " + e; }
-            File.WriteAllText(Path.Combine(Store.Dir, "name-test.txt"), $"{result}\ngevonden als '{deskName}': {Desktops.FindByName(deskName)}");
+            catch (Exception e) { result = "error: " + e; }
+            File.WriteAllText(Path.Combine(Store.Dir, "name-test.txt"), $"{result}\nfound as '{deskName}': {Desktops.FindByName(deskName)}");
             return 0;
         }
 
@@ -77,7 +77,7 @@ internal static class Program
                 $"multiviewer: online={mv.Online} session={mv.Session ?? "-"} track={mv.TrackStatus} players={mv.Players.Count} main={mv.Main?.Title ?? "-"}",
                 $"desktops: {ids.Count}, current={cur + 1}, {string.Join(' ', empty)}",
                 $"uf1: ready={await Uf1.ReadyAsync()} live={live} type={type ?? "-"} race={Uf1.FindLayout("race") ?? "-"} quali={Uf1.FindLayout("quali") ?? "-"}",
-                $"mv setups: {string.Join(", ", MvSetups.List().Select(s => $"{s.Name} ({s.Players} spelers)"))} · race={MvSetups.Find("race") ?? "-"} quali={MvSetups.Find("quali") ?? "-"} · koppeling={await MvSetups.ReadyAsync()}",
+                $"mv setups: {string.Join(", ", MvSetups.List().Select(s => $"{s.Name} ({s.Players} players)"))} · race={MvSetups.Find("race") ?? "-"} quali={MvSetups.Find("quali") ?? "-"} · connection={await MvSetups.ReadyAsync()}",
                 $"best of the rest: {string.Join(", ", await MvSetups.BestOfRestAsync())}",
                 $"laatste race: {await Replays.LatestAsync("race")} · laatste quali: {await Replays.LatestAsync("quali")}",
                 $"vooraf (weekend {Replays.LastMeetingKey}): race {string.Join(",", await Replays.ExpectedRestAsync("race", Replays.LastMeetingKey ?? 0))} · quali {string.Join(",", await Replays.ExpectedRestAsync("quali", Replays.LastMeetingKey ?? 0))}",

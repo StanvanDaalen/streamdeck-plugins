@@ -123,14 +123,14 @@ public static class LinuxApps
     /// </summary>
     public static void OfferDownload(string app, string why, string url)
     {
-        const string title = "F1 voor Stream Deck";
-        var text = $"{app} is niet geïnstalleerd.\n\n{why}\n\nDownloadpagina openen?";
+        const string title = "F1 for Stream Deck";
+        var text = $"{app} is not installed.\n\n{why}\n\nOpen the download page?";
         bool yes;
         if (Run("zenity", "--question", "--title", title, "--text", text) is { } z) yes = z == 0;
         else if (Run("kdialog", "--title", title, "--yesno", text) is { } k) yes = k == 0;
         else
         {
-            Run("notify-send", title, $"{app} is niet geïnstalleerd. {why}");
+            Run("notify-send", title, $"{app} is not installed. {why}");
             lock (_opened) yes = _opened.Add(app);
         }
         if (yes && Run("xdg-open", url) is null) Store.Log("downloadpagina: xdg-open niet gevonden");

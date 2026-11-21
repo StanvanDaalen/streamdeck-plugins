@@ -494,12 +494,12 @@ internal sealed class Plugin
     {
         if (!Apps.MultiViewerInstalled)
         {
-            Apps.OfferDownload("MultiViewer", "Deze plugin werkt met MultiViewer om F1 TV te kijken: vlaggen, latency, volume en de race- en quali-opstellingen.",
+            Apps.OfferDownload("MultiViewer", "This plugin uses MultiViewer to watch F1 TV: flags, latency, volume and the race and quali setups.",
                 Apps.MultiViewerDownload, oncePerRun: false);
             return false;
         }
         if (Apps.Uf1Exe == null && !Desktops.IsRunning(Uf1.Process))
-            Apps.OfferDownload("Ultimate F1 Viewer", "Die is optioneel: hij geeft vlaggenbalken, battle mode en overlays. Zonder werkt de rest van de plugin gewoon.",
+            Apps.OfferDownload("Ultimate F1 Viewer", "It is optional: it adds flag bars, battle mode and overlays. Without it the rest of the plugin works fine.",
                 Apps.Uf1Download, oncePerRun: true);
         return true;
     }
@@ -848,7 +848,7 @@ internal sealed class Plugin
 
     /// <summary>
     /// A new live main stream starts at MultiViewer's own start delay (its setting, e.g. 40 s), so the
-    /// dial shows that and "naar live" removes it too. Replays have no distance to live.
+    /// dial shows that and "go live" removes it too. Replays have no distance to live.
     /// </summary>
     private void TrackNewStream(PlayerInfo? main)
     {
@@ -892,8 +892,8 @@ internal sealed class Plugin
                 ["mvReady"] = await MvSetups.ReadyAsync(),
                 ["uf1Ready"] = await Uf1.ReadyAsync(),
                 ["uf1Running"] = Desktops.IsRunning(Uf1.Process),
-                ["placeMv"] = S.PlaceMultiViewer?.ToString() ?? "niet ingesteld",
-                ["placeUf1"] = S.PlaceUf1?.ToString() ?? "niet ingesteld",
+                ["placeMv"] = S.PlaceMultiViewer?.ToString() ?? "not set",
+                ["placeUf1"] = S.PlaceUf1?.ToString() ?? "not set",
                 ["mvOnline"] = _mv.Online,
                 ["status"] = _pairStatus ?? "",
             },
@@ -921,7 +921,7 @@ internal sealed class Plugin
                     var (mvPlace, uf1Place) = Apps.Capture(_mv.Players.Select(x => x.Title ?? "").Where(t => t.Length > 0).ToList());
                     if (mvPlace != null) S.PlaceMultiViewer = mvPlace;
                     if (uf1Place != null) S.PlaceUf1 = uf1Place;
-                    _pairStatus = mvPlace == null && uf1Place == null ? "Geen F1-vensters gevonden om op te slaan." : "Posities opgeslagen.";
+                    _pairStatus = mvPlace == null && uf1Place == null ? "No F1 windows found to save." : "Positions saved.";
                     break;
                 case "ModeDesktop": S.ModeDesktop = v.ToString(); break;
                 case "ModeLayout": S.ModeLayout = v.ToString(); break;
@@ -973,8 +973,8 @@ internal sealed class Plugin
         {
             var kind = LayoutKind(c);
             _pairStatus = await SaveLayoutAsync(kind)
-                ? $"Huidige vensters opgeslagen als layout {(kind == "race" ? "Race" : "Qualifying")}."
-                : "Opslaan lukte niet: Ultimate F1 Viewer is niet bereikbaar.";
+                ? $"Current windows saved as layout {(kind == "race" ? "Race" : "Qualifying")}."
+                : "Saving failed: Ultimate F1 Viewer cannot be reached.";
         }
         if (p["pair"] != null && !_pairing)
         {
@@ -989,10 +989,10 @@ internal sealed class Plugin
         async Task Status(string s) => await WithGate(async () => { _pairStatus = s; await SendPi(c); });
         try
         {
-            await Status("Bridges zoeken…");
+            await Status("Searching for bridges…");
             var bridges = await Hue.DiscoverAsync();
-            if (bridges.Count == 0) { await Status("Geen bridge gevonden."); return; }
-            await Status("Druk nu op de ronde knop van je Hue Bridge…");
+            if (bridges.Count == 0) { await Status("No bridge found."); return; }
+            await Status("Press the round button on your Hue Bridge now…");
             string? key = null, ip = null;
             for (int i = 0; i < 30 && key == null; i++)
             {
@@ -1000,14 +1000,14 @@ internal sealed class Plugin
                     if ((key = await Hue.TryPairAsync(b)) != null) { ip = b; break; }
                 if (key == null) await Task.Delay(2000);
             }
-            if (key == null) { await Status("Niet gekoppeld: knop niet op tijd ingedrukt."); return; }
+            if (key == null) { await Status("Not paired: button not pressed in time."); return; }
             await WithGate(async () =>
             {
                 if (_flags.Active) await _flags.BackToNormalAsync();
                 S.BridgeIp = ip; S.AppKey = key; Store.Save();
                 await LoadZonesAsync();
                 _flags.InvalidateLights();
-                _pairStatus = $"Gekoppeld met {ip}.";
+                _pairStatus = $"Paired with {ip}.";
                 await SendPi(c);
                 await RenderAllAsync();
             });

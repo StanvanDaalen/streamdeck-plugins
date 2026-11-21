@@ -171,9 +171,9 @@ public sealed class FlagEngine
         await StopFxAsync();
         try
         {
-            foreach (var (name, xy, ms) in new[] { ("Geel", "yellow", 1500), ("SC", "orange", 1500), ("Rood", "red", 1500), ("Groen", "green", 1200) })
+            foreach (var (name, xy, ms) in new[] { ("Yellow", "yellow", 1500), ("SC", "orange", 1500), ("Red", "red", 1500), ("Green", "green", 1200) })
             {
-                Current = name switch { "Geel" => Flag.Yellow, "SC" => Flag.SafetyCar, "Rood" => Flag.Red, _ => Flag.Green };
+                Current = name switch { "Yellow" => Flag.Yellow, "SC" => Flag.SafetyCar, "Red" => Flag.Red, _ => Flag.Green };
                 await render();
                 await Hue.SetAllAsync(lights, ColorState(xy));
                 await Task.Delay(ms);
