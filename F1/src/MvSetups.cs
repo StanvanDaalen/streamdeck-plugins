@@ -187,6 +187,8 @@ public static class MvSetups
           for (const w of copy.windows) {
             const ps = w.state && w.state.playerState;
             if (ps && ps.videoQuality !== undefined && typeof ps.videoQuality !== 'string') delete ps.videoQuality;
+            // Always the whole stream: the stream windows are 16:9, so 'cover' would only crop it.
+            if (w.type === 'f1tv.player' && w.state) w.state.videoSizing = 'contain';
           }
           if (rest.length) {
             const slots = copy.windows
