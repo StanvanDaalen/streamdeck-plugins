@@ -10,6 +10,7 @@ $plugins = @(
     @{ Project = 'Launcher'; Id = 'com.stan.launcher'; File = 'Launcher' },
     @{ Project = 'Monitor'; Id = 'com.stan.monitor'; File = 'Monitor' },
     @{ Project = 'Spotify'; Id = 'com.stan.spotify'; File = 'BetterSpotifyDial' },
+    @{ Project = 'PS5'; Id = 'com.stan.ps5'; File = 'PlayStation5-OBS' },
     # F1 also runs on Linux under OpenDeck: its package carries a linux-x64 build in bin-linux as well
     # (sdPlugin\manifest.linux.json points OpenDeck there; Stream Deck itself only reads manifest.json).
     @{ Project = 'F1'; Id = 'com.stan.f1'; File = 'F1'; Linux = $true }

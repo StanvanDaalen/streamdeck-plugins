@@ -5,7 +5,7 @@ Eigen plugins voor de Elgato Stream Deck op Windows. De F1-plugin werkt ook op L
 ## Installeren
 
 1. Open de [nieuwste release](https://github.com/StanvanDaalen/streamdeck-plugins/releases/latest).
-2. Download `Audio.streamDeckPlugin`, `Launcher.streamDeckPlugin`, `Monitor.streamDeckPlugin`, `BetterSpotifyDial.streamDeckPlugin` en/of `F1.streamDeckPlugin`. Launcher gebruikt de gamebibliotheek van Audio voor eigen namen en afbeeldingen, maar werkt ook los.
+2. Download `Audio.streamDeckPlugin`, `Launcher.streamDeckPlugin`, `Monitor.streamDeckPlugin`, `BetterSpotifyDial.streamDeckPlugin`, `PlayStation5-OBS.streamDeckPlugin` en/of `F1.streamDeckPlugin`. Launcher gebruikt de gamebibliotheek van Audio voor eigen namen en afbeeldingen, maar werkt ook los.
 3. Dubbelklik op het bestand en bevestig de installatie in Stream Deck.
 
 Op Linux (alleen F1): installeer [OpenDeck](https://github.com/nekename/OpenDeck), open daarin het tabblad **Plugins** en kies het gedownloade `F1.streamDeckPlugin`.
@@ -54,6 +54,16 @@ Spotify op een dial van de Stream Deck +, met hetzelfde scherm als de officiële
 
 Werkt met de Spotify-app voor Windows, zonder Spotify-account of inlog in de plugin: alles gaat via de mediabediening van Windows. Is de officiële Spotify-plugin van Elgato ook geïnstalleerd, dan gebruikt de dial diens icoontjes, zodat hij er precies zo uitziet.
 
+## PlayStation 5 for OBS
+
+Voor wie een PlayStation 5 via een capturekaart met pass-through in OBS hoort.
+
+- **PS5 Volume** (dial): draaien regelt hoe hard je de PlayStation hoort, ingedrukt draaien per 1%. Drukken of tikken zet mute aan of uit, of start OBS als die uit staat. Vasthouden zet het volume terug naar je standaard.
+- De dial ziet eruit als de Spotify-dial: naam met **On** of **Off** eronder, linksonder Volume of Muted, rechtsonder het percentage en een PlayStation-blauwe balk. Staat de PlayStation uit, dan wordt alles grijs.
+- Aan of uit leest de plugin af aan het geluid van de capturekaart. Staat obs-websocket aan (Extra > WebSocket-serverinstellingen), dan kijkt hij ook naar het beeld en herkent hij het "NO SIGNAL"-scherm van de kaart. Het wachtwoord leest de plugin zelf uit de OBS-instellingen op deze pc.
+
+Het volume is OBS in de Windows-volumemixer: het verandert alleen wat jij hoort, niet je stream of opname. De bronnen heten standaard "PS5 beeld" en "PS5 geluid"; andere namen kies je in de instellingen van de dial.
+
 ## F1
 
 Voor F1 kijken met [MultiViewer](https://multiviewer.app/download) (nodig) en [Ultimate F1 Viewer](https://github.com/MRAJEKO/UF1-Viewer-with-F1MV/releases/latest) (optioneel). Ontbreekt een van de twee, dan meldt de plugin dat en biedt de downloadpagina aan.
@@ -85,4 +95,4 @@ Op Linux vindt de plugin MultiViewer als .deb/.rpm (`multiviewer`), als Flatpak 
 
 ## Zelf bouwen
 
-Vereist de .NET 10 SDK. Met `install.ps1` in `GameVolume`, `Launcher`, `Monitor`, `Spotify` of `F1` bouw en installeer je een plugin op deze pc. Elke `install.ps1` zet de update daarna ook op GitHub met een nieuwe release, via `publish.ps1`. Met `package.ps1` maak je alleen de installatiebestanden in `dist\`.
+Vereist de .NET 10 SDK. Met `install.ps1` in `GameVolume`, `Launcher`, `Monitor`, `Spotify`, `PS5` of `F1` bouw en installeer je een plugin op deze pc. Elke `install.ps1` zet de update daarna ook op GitHub met een nieuwe release, via `publish.ps1` (bij `PS5` alleen met `-Publish`). Met `package.ps1` maak je alleen de installatiebestanden in `dist\`.

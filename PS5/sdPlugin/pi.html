@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  h4.first { margin-top: 2px; border-top: 0; padding-top: 0; }
+  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
+  .row > label:first-child, .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  .row select, .row input[type=text], .row input[type=number] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  .btn, button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; flex: none; }
+  .btn:hover, button:hover { background: #474747; }
+  .file { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
+  .file span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8a; }
+  .file input { display: none; }
+  .status { flex: 1; padding: 3px 8px; border-radius: 4px; background: #3a3a3a; color: #bbb; }
+  .status.ok { background: #1f3a2a; color: #7fe3a8; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+</style>
+</head>
+<body>
+  <h4 class="first">Status</h4>
+  <div class="row"><span class="lbl">OBS</span><span id="obsStatus" class="status">…</span></div>
+  <div class="row"><span class="lbl">PlayStation</span><span id="ps5Status" class="status">…</span></div>
+
+  <h4>Display</h4>
+  <div class="row"><label for="title">Title</label><input type="text" id="title" placeholder="PlayStation 5"></div>
+  <div class="row"><span class="lbl">Icon</span><div class="file">
+    <span id="iconName">Default</span>
+    <label class="btn" for="iconFile">File</label><button id="iconClear">Clear</button>
+    <input type="file" id="iconFile" accept="image/png,image/jpeg"></div></div>
+
+  <h4>Controls</h4>
+  <div class="row"><label for="step">Volume step</label>
+    <select id="step"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
+  <div class="row"><label for="defaultVolume">Default</label><input type="number" id="defaultVolume" min="0" max="100" step="5"><span style="margin-left:6px">%</span></div>
+  <p class="muted">Turn: volume. Turn while pressed: 1% steps. Press or tap: mute on/off, or start OBS when it is closed. Hold: back to the default volume.<br>
+  This only changes what you hear (OBS in the Windows volume mixer), not your stream or recording.</p>
+
+  <h4>OBS sources</h4>
+  <div class="row"><label for="videoSource">Video</label><select id="videoSource"></select></div>
+  <div class="row"><label for="audioSource">Audio</label><select id="audioSource"></select></div>
+  <p class="muted">On or off is read from the picture and sound of these sources. Without the OBS WebSocket only the sound counts.</p>
+
+<script>
+let ws, uuid, actionId;
+const $ = id => document.getElementById(id);
+const send = payload => ws && ws.readyState === 1 &&
+  ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
+const filePath = v => {
+  const raw = v.replace(/^C:\\fakepath\\/, '');
+  let decoded = raw;
+  try { decoded = decodeURIComponent(raw); } catch {}
+  return decoded.replace(/\//g, '\\');
+};
+const focused = el => document.activeElement === el;
+
+function fillSources(sel, list, value) {
+  const names = list.length ? [...list] : [];
+  if (value && !names.includes(value)) names.unshift(value);
+  const key = names.join('\n') + '|' + value;
+  if (sel.dataset.key === key) return;
+  sel.dataset.key = key;
+  sel.innerHTML = '';
+  for (const n of names) { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); }
+  sel.value = value;
+}
+
+function apply(p) {
+  $('obsStatus').textContent = p.obsStatus; $('obsStatus').classList.toggle('ok', !!p.obsOk);
+  $('ps5Status').textContent = p.ps5Status; $('ps5Status').classList.toggle('ok', !!p.ps5On);
+  if (!focused($('title'))) $('title').value = p.title;
+  if (!focused($('defaultVolume'))) $('defaultVolume').value = p.defaultVolume;
+  if (!focused($('step'))) $('step').value = p.step;
+  $('iconName').textContent = p.icon ? p.icon.split('\\').pop() : 'Default';
+  $('iconName').title = p.icon || '';
+  if (!focused($('videoSource'))) fillSources($('videoSource'), p.sources || [], p.videoSource);
+  if (!focused($('audioSource'))) fillSources($('audioSource'), p.sources || [], p.audioSource);
+}
+
+$('title').addEventListener('change', e => send({ title: e.target.value }));
+$('step').addEventListener('change', e => send({ step: e.target.value }));
+$('defaultVolume').addEventListener('change', e => send({ defaultVolume: Math.max(0, Math.min(100, parseInt(e.target.value || '70', 10))) }));
+$('videoSource').addEventListener('change', e => send({ videoSource: e.target.value }));
+$('audioSource').addEventListener('change', e => send({ audioSource: e.target.value }));
+$('iconFile').addEventListener('change', e => { if (e.target.value) send({ icon: filePath(e.target.value) }); e.target.value = ''; });
+$('iconClear').addEventListener('click', () => send({ icon: ' ' }));
+
+function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+  uuid = inUuid;
+  try { actionId = JSON.parse(actionInfo).action; } catch {}
+  ws = new WebSocket('ws://127.0.0.1:' + port);
+  ws.onopen = () => ws.send(JSON.stringify({ event: registerEvent, uuid }));
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.event === 'sendToPropertyInspector') apply(m.payload);
+  };
+}
+</script>
+</body>
+</html>
