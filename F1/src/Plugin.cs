@@ -69,7 +69,14 @@ internal sealed class Plugin
         _ = Task.Run(PollLoop);
         _ = Task.Run(HandleLoop);
         _ = Task.Run(RestLoop);
-        Remote.Start(RequestRemote, () => { lock (_jobLock) return _busy; });
+        Remote.Start(RequestRemote, () => { lock (_jobLock) return _busy; }, async () =>
+        {
+            // Only for a setup Race/Quali opened, and not while a job (opening, closing) runs.
+            lock (_jobLock) if (_busy) return false;
+            if (!MvSetups.Active) return false;
+            await MvSetups.UpdateRestSlotsAsync(force: true);
+            return true;
+        });
 
         var buffer = new byte[1 << 16];
         using var ms = new MemoryStream();
@@ -219,6 +226,8 @@ internal sealed class Plugin
     private CancellationTokenSource? _jobCts;
     /// <summary>Race or Quali whose layout opened completely (since the last Close F1).</summary>
     private volatile string? _layoutOpen;
+    /// <summary>F1 TV session (content id) the open layout belongs to.</summary>
+    private volatile string? _layoutContent;
 
     /// <summary>Race or Quali waits for the running F1 Mode: that then leaves the layout to it.</summary>
     private bool LayoutWaiting
@@ -616,6 +625,14 @@ internal sealed class Plugin
     /// </summary>
     private async Task<bool> OpenLayoutAsync(string kind, bool closeCurrent, string? onlyContent = null)
     {
+        // F1 Party asking for the session whose layout is already fully open: just to F1's desktop.
+        if (onlyContent != null && _layoutOpen == kind && _layoutContent == onlyContent && _f1ModeOn && _f1Running
+            && await MvSetups.OpenContentAsync() == onlyContent)
+        {
+            Store.Log($"{kind}: staat al open voor {onlyContent}");
+            if (S.ModeDesktop != "current") await Desktops.GoToNamedAsync(S.DesktopName);
+            return true;
+        }
         bool any = false;
         _layoutOpen = null;
         if (!CheckApps()) return false;
@@ -685,7 +702,7 @@ internal sealed class Plugin
 
         // Only now the viewer's layout: battle mode and crash detection read the driver list once,
         // when their window opens, so they must open after the timing is there.
-        if (!Uf1Available) { if (any) _layoutOpen = kind; return any; } // optional app not installed: the MultiViewer part is all there is
+        if (!Uf1Available) { if (any) { _layoutOpen = kind; _layoutContent = await MvSetups.OpenContentAsync(); } return any; } // optional app not installed: the MultiViewer part is all there is
         var id = Uf1.FindLayout(kind);
         if (id == null) { Store.Log($"layout {kind}: geen layout gevonden in Ultimate F1 Viewer"); return any; }
         var replayContent = await MultiViewer.ContentIdAsync();
@@ -727,7 +744,7 @@ internal sealed class Plugin
         }
         // Once more now that the viewer's windows are there too (its main window joins F1 Live and MultiViewer).
         Store.Log($"naden dicht (na layout): {Seams.Close()} vensters bijgezet");
-        if (any | ok) _layoutOpen = kind;
+        if (any | ok) { _layoutOpen = kind; _layoutContent = await MvSetups.OpenContentAsync(); }
         return any | ok;
     }
 

@@ -243,8 +243,8 @@ public static class MvSetups
         if (Kind == "practice") return; // positions mean little in practice: the slots keep their drivers
         // A swap opens a new player window, and Windows puts it on the desktop that is showing. So swap
         // only while F1's own desktop shows; elsewhere the slot waits until you are back on it.
-        if (!OnF1Desktop()) return;
-        if (!await Lock.WaitAsync(force ? 5000 : 0)) return; // a setup is being opened right now
+        if (!OnF1Desktop()) { if (force) Store.Log("best of the rest: niet op het F1-bureaublad, later"); return; }
+        if (!await Lock.WaitAsync(force ? 5000 : 0)) { if (force) Store.Log("best of the rest: setup wordt nog geopend"); return; }
         try { await UpdateRestSlotsCoreAsync(force); }
         finally { Lock.Release(); }
     }
@@ -262,10 +262,14 @@ public static class MvSetups
         var players = await MultiViewer.SlotPlayersAsync();
         var top = new HashSet<string>(Store.Current.TopTeams, StringComparer.OrdinalIgnoreCase);
         var slots = players.Where(p => p.DriverNumber != null && !top.Contains(p.TeamName ?? "")).OrderBy(p => p.Y).ThenBy(p => p.X).ToList();
-        if (slots.Count == 0) return;
+        if (slots.Count == 0) { if (force) Store.Log("best of the rest: geen vakken in deze setup"); return; }
 
         var wanted = (await BestOfRestAsync()).Take(slots.Count).ToList();
-        if (wanted.Count < slots.Count) { _lastWanted = null; _changeSeenLap = null; return; }
+        if (wanted.Count < slots.Count)
+        {
+            if (force) Store.Log($"best of the rest: nog geen posities ({wanted.Count} van {slots.Count})");
+            _lastWanted = null; _changeSeenLap = null; return;
+        }
         bool sameAsBefore = _lastWanted != null && _lastWanted.SequenceEqual(wanted);
         bool stable = force || sameAsBefore;
         _lastWanted = wanted;

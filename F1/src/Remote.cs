@@ -10,12 +10,13 @@ namespace F1;
 /// refuses requests from web pages (those carry an Origin header).
 ///   GET  /f1/status → { "plugin": "F1 Race Control", "version": "…", "busy": bool }
 ///   POST /f1/open   { "kind": "race" | "quali" | "practice", "contentId": "1000010439" (optional) }
+///   POST /f1/rest   → fill the best-of-the-rest onboards now (after the caller moved the replay in time)
 /// </summary>
 public static class Remote
 {
     public const int Port = 9335;
 
-    public static void Start(Func<string, string?, bool> open, Func<bool> busy)
+    public static void Start(Func<string, string?, bool> open, Func<bool> busy, Func<Task<bool>> refreshRest)
     {
         var listener = new HttpListener();
         listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
@@ -29,12 +30,12 @@ public static class Remote
                 HttpListenerContext ctx;
                 try { ctx = await listener.GetContextAsync(); }
                 catch { break; }
-                _ = Task.Run(() => Handle(ctx, open, busy));
+                _ = Task.Run(() => Handle(ctx, open, busy, refreshRest));
             }
         });
     }
 
-    private static async Task Handle(HttpListenerContext ctx, Func<string, string?, bool> open, Func<bool> busy)
+    private static async Task Handle(HttpListenerContext ctx, Func<string, string?, bool> open, Func<bool> busy, Func<Task<bool>> refreshRest)
     {
         var req = ctx.Request;
         int code = 200;
@@ -57,6 +58,11 @@ public static class Remote
                     Store.Log($"remote: {kind} gevraagd{(content != null ? " voor " + content : "")}");
                     body = new JsonObject { ["started"] = open(kind, content) };
                 }
+            }
+            else if (req.HttpMethod == "POST" && req.Url?.AbsolutePath == "/f1/rest")
+            {
+                Store.Log("remote: best of the rest verversen");
+                body = new JsonObject { ["done"] = await refreshRest() };
             }
             else { code = 404; body = Error("not found"); }
         }
