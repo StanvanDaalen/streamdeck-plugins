@@ -213,10 +213,13 @@ public static class Art
             {
                 Color accent = active ? Accent(device) : Color.FromArgb(71, 85, 105);
                 using var tile = RoundedRect(new RectangleF(0, 0, 144, 144), 26);
-                using var gradient = new LinearGradientBrush(new PointF(72, 0), new PointF(72, 144), Mix(TileBase, accent, .38f), Mix(TileBase, accent, .12f));
+                // Same rule as the rest of the Stream page: bright = ready, dark = off. Online the tile is bright,
+                // offline it stays dark grey.
+                float top = active ? .95f : .38f, bottom = active ? .6f : .12f;
+                using var gradient = new LinearGradientBrush(new PointF(72, 0), new PointF(72, 144), Mix(TileBase, accent, top), Mix(TileBase, accent, bottom));
                 g.FillPath(gradient, tile);
                 using var borderPath = RoundedRect(new RectangleF(2.5f, 2.5f, 139, 139), 24);
-                using var border = new Pen(Mix(accent, Color.White, .35f, 153), 3f);
+                using var border = new Pen(Mix(accent, Color.White, .35f, active ? 255 : 153), 3f);
                 g.DrawPath(border, borderPath);
                 DrawIcon(g, icon, new RectangleF(40, 13, 64, 64), active, custom != null);
                 DrawFittedText(g, inputName, new RectangleF(6, 99, 132, 35), foreground, 21);
