@@ -8,6 +8,14 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
+### Improved
+
+### Fixed
+
+## 1.1.25 (2026-11-21)
+
+### New
+
 - **F1 Race Control**: free practice gets its own layout. F1 Mode (automatic) and the Session key open the session that is on track with its own MultiViewer setup and Ultimate F1 Viewer layout: practice, qualifying or race (sprints included). The setup and layout are found by name ("Practice" or "Training") unless chosen in the settings.
 - **F1 Race Control**: the Session key opens the session that is on track when you press it; with nothing on track it still switches between clock and weather.
 
