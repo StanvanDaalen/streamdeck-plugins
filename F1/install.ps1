@@ -21,6 +21,10 @@ if (Test-Path $target) { Remove-Item $target -Recurse -Force }
 New-Item -ItemType Directory -Force "$target\bin" | Out-Null
 Copy-Item "$root\sdPlugin\*" $target -Recurse -Force
 Copy-Item "$root\out\*" "$target\bin" -Recurse -Force
+# Own logo (optional, this PC only): %APPDATA%\StanF1\f1-logo.svg or .png replaces the plugin, category
+# and F1 Mode icons in the installed copy. The repo and the release packages keep the standard icons.
+$brand = Start-Process "$root\out\F1.exe" -ArgumentList '--brand', "`"$target\images`"" -Wait -PassThru
+if ($brand.ExitCode -ne 0) { Write-Warning 'Own logo could not be applied; standard icons kept.' }
 
 # Started through Explorer so Stream Deck never inherits the environment of whatever ran this script:
 # a Store app (such as Claude) redirects new %APPDATA% folders into its own private copy, and Stream

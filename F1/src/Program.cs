@@ -18,6 +18,18 @@ internal static class Program
             return 0;
         }
 
+        // Install step: put the user's own logo (settings folder) on the installed plugin's icons.
+        if (Arg("--brand") is { } brandDir)
+        {
+            try
+            {
+                int n = Art.WriteBrandAssets(brandDir);
+                Console.WriteLine(n > 0 ? $"Own logo used for {n} icons." : "No own logo found, standard icons kept.");
+                return 0;
+            }
+            catch (Exception e) { Console.Error.WriteLine("Own logo failed: " + e.Message); return 1; }
+        }
+
         // Build check: the dial icons as the touch strip gets them (PNG).
         if (Arg("--png-test") is { } pngDir)
         {

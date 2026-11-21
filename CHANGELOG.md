@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.22 (2026-11-21)
+
+### New
+
+- **F1**: your own logo in `%APPDATA%\StanF1` (`f1-logo.svg` or `.png`) now also replaces the plugin, category and F1 Mode icons when you install on your own PC.
+
 ## 1.1.21 (2026-11-21)
 
 ### Improved

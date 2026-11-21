@@ -95,40 +95,78 @@ public static class Art
             {
                 canvas.Clear(SKColors.Transparent);
                 DrawSvg(canvas, tile, 144, 144);
-                // Fit inside 104×56 above the label, centred.
-                if (file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
-                {
-                    using var logo = new SKSvg();
-                    logo.Load(file);
-                    var r = logo.Picture?.CullRect ?? SKRect.Empty;
-                    if (r.Width > 0 && r.Height > 0)
-                    {
-                        float s = Math.Min(104f / r.Width, 56f / r.Height);
-                        canvas.Save();
-                        canvas.Translate(72 - r.Width * s / 2, 62 - r.Height * s / 2);
-                        canvas.Scale(s);
-                        canvas.Translate(-r.Left, -r.Top);
-                        canvas.DrawPicture(logo.Picture);
-                        canvas.Restore();
-                    }
-                }
-                else
-                {
-                    using var logo = SKBitmap.Decode(file);
-                    if (logo != null)
-                    {
-                        double s = Math.Min(104.0 / logo.Width, 56.0 / logo.Height);
-                        float w = (float)(logo.Width * s), h = (float)(logo.Height * s);
-                        using var img = SKImage.FromBitmap(logo);
-                        using var paint = new SKPaint { IsAntialias = true };
-                        canvas.DrawImage(img, SKRect.Create(72 - w / 2, 62 - h / 2, w, h), new SKSamplingOptions(SKCubicResampler.Mitchell), paint);
-                    }
-                }
+                // Fit inside 104×56 above the label, centred; without a label the logo is larger and in the middle.
+                if (label.Length > 0) DrawLogo(canvas, file, 72, 62, 104, 56);
+                else DrawLogo(canvas, file, 72, 74, 112, 64);
             }
             var ms = EncodePng(bmp);
             return PngCache[key] = "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
         }
         catch (Exception e) { Store.Log("logo: " + e.Message); return null; }
+    }
+
+    /// <summary>Draws the logo file (SVG or bitmap) centred on (cx, cy), fitted inside maxW × maxH.</summary>
+    private static void DrawLogo(SKCanvas canvas, string file, float cx, float cy, float maxW, float maxH)
+    {
+        if (file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+        {
+            using var logo = new SKSvg();
+            logo.Load(file);
+            var r = logo.Picture?.CullRect ?? SKRect.Empty;
+            if (r.Width <= 0 || r.Height <= 0) return;
+            float s = Math.Min(maxW / r.Width, maxH / r.Height);
+            canvas.Save();
+            canvas.Translate(cx - r.Width * s / 2, cy - r.Height * s / 2);
+            canvas.Scale(s);
+            canvas.Translate(-r.Left, -r.Top);
+            canvas.DrawPicture(logo.Picture);
+            canvas.Restore();
+        }
+        else
+        {
+            using var logo = SKBitmap.Decode(file);
+            if (logo == null) return;
+            float s = Math.Min(maxW / logo.Width, maxH / logo.Height);
+            float w = logo.Width * s, h = logo.Height * s;
+            using var img = SKImage.FromBitmap(logo);
+            using var paint = new SKPaint { IsAntialias = true };
+            canvas.DrawImage(img, SKRect.Create(cx - w / 2, cy - h / 2, w, h), new SKSamplingOptions(SKCubicResampler.Mitchell), paint);
+        }
+    }
+
+    /// <summary>Only the logo on a transparent square of <paramref name="size"/> pixels, as PNG bytes.</summary>
+    private static byte[] LogoIcon(string file, int size)
+    {
+        using var bmp = new SKBitmap(size, size);
+        using (var canvas = new SKCanvas(bmp))
+        {
+            canvas.Clear(SKColors.Transparent);
+            DrawLogo(canvas, file, size / 2f, size / 2f, size * 0.94f, size * 0.94f);
+        }
+        return EncodePng(bmp).ToArray();
+    }
+
+    /// <summary>
+    /// Local branding: when the user has their own logo in the settings folder, writes PNG versions of the
+    /// plugin, category, F1 Mode action and F1 Mode key images into an installed images folder and removes the
+    /// matching SVGs, so Stream Deck shows that logo. Only for the installed copy; the repo keeps its own icons.
+    /// </summary>
+    public static int WriteBrandAssets(string dir)
+    {
+        var file = LogoFile;
+        if (file == null) return 0;
+        void Png(string name, byte[] png) => File.WriteAllBytes(Path.Combine(dir, name), png);
+        byte[] Url(string? dataUrl) => dataUrl == null ? throw new InvalidOperationException("logo could not be drawn") : Convert.FromBase64String(dataUrl[(dataUrl.IndexOf(',') + 1)..]);
+
+        Png("category.png", LogoIcon(file, 28)); Png("category@2x.png", LogoIcon(file, 56));
+        Png("action-mode.png", LogoIcon(file, 20)); Png("action-mode@2x.png", LogoIcon(file, 40));
+        var plugin = Url(KeyWithLogo(""));   // the logo already says F1, so no label
+        Png("plugin.png", plugin); Png("plugin@2x.png", plugin);
+        var mode = Url(KeyWithLogo("F1 Mode"));
+        Png("key-mode.png", mode); Png("key-mode@2x.png", mode);
+        foreach (var n in new[] { "category", "action-mode", "plugin", "key-mode" })
+            File.Delete(Path.Combine(dir, n + ".svg"));
+        return 4;
     }
 
     /// <summary>"F1" in heavy italic with speed lines, in the spirit of F1 graphics (not the trademarked logo).</summary>
