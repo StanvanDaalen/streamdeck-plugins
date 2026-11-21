@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
+  .row > label:not(.check):first-child, .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  .row select, .row input[type=text], .row input[type=number] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  .opts { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+  .opts label, .check { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+  .opts input, .check input { margin: 0; flex: none; }
+  .check { flex: 1; min-width: 0; }
+  .hint { color: #8a8a8a; margin-left: auto; padding-left: 8px; font-size: 11px; }
+  button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  .btn { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; cursor: pointer; flex: none; }
+  button:hover, .btn:hover { background: #474747; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .file { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
+  .file span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8a; }
+  .file input { display: none; }
+  .seg { flex: 1; min-width: 0; display: flex; border: 1px solid #4a4a4a; border-radius: 4px; overflow: hidden; }
+  .seg button { flex: 1; min-width: 0; border: 0; border-radius: 0; background: #3d3d3d; color: #b8b8b8; padding: 4px 6px; white-space: nowrap; }
+  .seg button + button { border-left: 1px solid #4a4a4a; }
+  .seg button.on { background: #e6e6e6; color: #1e1e1e; font-weight: 600; }
+  h4.first, #gameRow.hide + #appRow.hide + h4 { margin-top: 2px; border-top: 0; padding-top: 0; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+  <div id="dialOnly">
+    <div id="gameRow" class="hide">
+      <h4 class="first">Game</h4>
+      <div class="row"><label>Game</label><select id="gameId"></select></div>
+    </div>
+    <div id="appRow">
+      <h4 class="first">App</h4>
+      <div class="row"><label>App</label><select id="app"></select></div>
+    </div>
+    <h4 id="viewTitle">Display</h4>
+    <div class="row hide" id="idleRow"><span class="lbl">Style</span><div class="seg" data-group="idleStyle">
+      <button value="player">Player</button><button value="classic">Classic</button></div></div>
+    <p class="muted hide" id="idleHint">How the dial looks while the app plays nothing. Player matches the media and Spotify dials; Classic is the original App Volume look.</p>
+    <div class="row" id="titleRow"><span class="lbl">Title</span><div class="seg" data-group="titleMode">
+      <button value="app">App name</button><button value="custom">Custom text</button></div></div>
+    <div class="row hide" id="customTitleRow"><label>Custom title</label><input type="text" id="customTitle" placeholder="e.g. Game"></div>
+    <div class="row" id="displayRow"><span class="lbl">Logo</span><div class="seg" data-group="display">
+      <button value="icon">Icon</button><button value="background">Background</button></div></div>
+    <div class="row" id="themeRow"><span class="lbl">Slider</span><div class="seg" data-group="theme">
+      <button value="standard">White</button><button value="game">Game color</button></div></div>
+
+    <div id="mediaSection" class="hide">
+      <h4>While playing</h4>
+      <div class="row"><span class="lbl">Style</span><div class="seg" data-group="mediaStyle">
+        <button value="player">Player</button><button value="background">Picture</button><button value="compact">Compact</button><button value="off">Off</button></div></div>
+      <p class="muted">When the app plays something, the dial shows the title, picture, play/pause and a timeline. Turning briefly shows the volume. Off keeps the normal display.</p>
+
+      <h4>App indicator</h4>
+      <div class="row"><label class="check"><input type="checkbox" id="accentPlay">Play button in app colour</label></div>
+      <div class="row"><label class="check"><input type="checkbox" id="accentTimeline">Timeline in app colour</label></div>
+      <div class="row"><label class="check"><input type="checkbox" id="accentLogo">Small black-and-white logo</label></div>
+      <p class="muted">So you can tell this dial apart from Spotify: browsers show YouTube red, Spotify green. Logo adds a small black-and-white logo (Player and Picture). Other apps stay white.</p>
+    </div>
+
+    <div id="gestureSection">
+      <h4>Controls</h4>
+      <div class="row" id="stepRow"><label>Volume step</label>
+        <select id="step"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
+      <div class="row"><label>Click</label><select id="singleAction" class="gesture"></select></div>
+      <div class="row"><label>Double-click</label><select id="doubleAction" class="gesture"></select></div>
+      <div class="row"><label>Triple-click</label><select id="tripleAction" class="gesture"></select></div>
+      <div class="row"><label>Hold</label><select id="holdAction" class="gesture"></select></div>
+      <p class="muted hide" id="seekHint">Hold and turn: rewind or fast-forward 5 seconds per step while the app plays something.</p>
+      <h4>Favorite volume</h4>
+      <div class="row"><span class="lbl" id="favoriteFor">—</span><input type="number" id="favorite" min="0" max="100" placeholder="Not set"></div>
+      <div class="row"><span class="lbl"></span><button id="favoriteCurrent">Use current volume</button></div>
+      <div class="row" id="startFavRow"><label class="check"><input type="checkbox" id="startFavorite">Start games at favorite volume</label></div>
+    </div>
+  </div>
+
+  <div id="gameSections">
+    <h4>Game options</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="rememberVolume">Remember volume per game</label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="balance">Game/Discord balance<span class="hint">press + rotate</span></label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="duck">Lower Spotify while gaming</label></div>
+    <div class="row hide" id="duckRow"><label>Spotify volume</label>
+      <select id="duckPercent"><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option></select></div>
+
+    <h4>Game library</h4>
+    <p class="muted" id="libCount"></p>
+    <div class="row"><label>Game</label><select id="editId"></select></div>
+    <div class="row"><label>Custom name</label><input type="text" id="customName" placeholder="Name from the launcher"></div>
+    <div class="row"><span class="lbl">Image</span><div class="file">
+      <span id="imageName">Automatic</span>
+      <label class="btn" for="imageFile">Choose</label><button id="imageClear">Clear</button>
+      <input type="file" id="imageFile" accept="image/png,image/jpeg"></div></div>
+    <div class="row"><label class="check"><input type="checkbox" id="hidden">Not a game</label></div>
+    <div class="row hide" id="removeRow"><button id="remove">Remove from library</button></div>
+
+    <h4>Add game</h4>
+    <div class="row"><label>Name</label><input type="text" id="addName" placeholder="e.g. Overwatch"></div>
+    <div class="row"><span class="lbl">Program</span><div class="file">
+      <span id="exeName">Choose an .exe</span><label class="btn" for="exeFile">Choose</label>
+      <input type="file" id="exeFile" accept=".exe"></div></div>
+    <div class="row"><span class="lbl"></span><button id="add">Add</button></div>
+  </div>
+
+<script>
+let ws, uuid, actionId = '', lib = [], selected = null, addExe = '', lastCurrent = null;
+const $ = id => document.getElementById(id);
+const send = payload => ws && ws.readyState === 1 &&
+  ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
+const edit = fields => send({ editId: $('editId').value, ...fields });
+const filePath = v => {
+  const raw = v.replace(/^C:\\fakepath\\/, '');
+  let decoded = raw;
+  try { decoded = decodeURIComponent(raw); } catch {}
+  send({ piLog: v });
+  return decoded.replace(/\//g, '\\');
+};
+const baseName = p => p.split('\\').pop();
+
+function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+  uuid = inUuid;
+  try { actionId = JSON.parse(actionInfo).action; } catch {}
+  const isApp = actionId.endsWith('.app');
+  window.isAppDial = isApp;
+  $('idleRow').classList.toggle('hide', !isApp);
+  $('idleHint').classList.toggle('hide', !isApp);
+  $('appRow').classList.toggle('hide', !isApp);
+  $('mediaSection').classList.toggle('hide', !isApp);
+  $('seekHint').classList.toggle('hide', !isApp);
+  $('gameRow').classList.toggle('hide', !actionId.endsWith('.game'));
+  fillGestures(isApp);
+  $('gameSections').classList.toggle('hide', isApp);
+  $('startFavRow').classList.toggle('hide', actionId.endsWith('.app'));
+  ws = new WebSocket('ws://127.0.0.1:' + port);
+  ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.event !== 'sendToPropertyInspector') return;
+    apply(m.payload);
+  };
+}
+
+function apply(p) {
+  document.querySelectorAll('.seg').forEach(s =>
+    s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === p[s.dataset.group])));
+  for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo']) $(k).checked = !!p[k];
+  // Logo and slider colour only apply to the Classic look.
+  if (window.isAppDial) for (const r of ['displayRow', 'themeRow']) $(r).classList.toggle('hide', p.idleStyle !== 'classic');
+  $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
+  $('duckRow').classList.toggle('hide', !p.duck);
+  if (document.activeElement !== $('customTitle')) $('customTitle').value = p.customTitle;
+  for (const k of ['singleAction', 'doubleAction', 'tripleAction', 'holdAction']) $(k).value = p[k];
+  $('startFavorite').checked = !!p.startFavorite;
+  $('favoriteFor').textContent = p.favoriteFor || 'No game open';
+  $('favorite').disabled = $('favoriteCurrent').disabled = !p.favoriteFor;
+  if (document.activeElement !== $('favorite')) $('favorite').value = p.favorite == null ? '' : p.favorite;
+  $('step').value = p.step;
+  $('duckPercent').value = String(p.duckPercent);
+
+  const apps = [...new Set([...(p.apps || []), ...(p.app ? [p.app] : [])])];
+  $('app').innerHTML = '<option value="">Choose an app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
+  $('app').value = p.app;
+
+  const games = (p.library || []).filter(g => !g.hidden || g.id === p.gameId);
+  const sameName = {};
+  games.forEach(g => { const n = g.customName || g.name; sameName[n] = (sameName[n] || 0) + 1; });
+  $('gameId').innerHTML = '<option value="">Current game</option>' + games.map(g => {
+    const n = g.customName || g.name;
+    return `<option value="${esc(g.id)}">${esc(n)}${sameName[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}</option>`;
+  }).join('');
+  $('gameId').value = p.gameId || '';
+
+  lib = p.library || [];
+  $('libCount').textContent = `${lib.length} games found automatically and manually.`;
+  // The game that is running now comes first and is selected whenever a new game starts.
+  if (p.currentId && p.currentId !== lastCurrent) selected = p.currentId;
+  lastCurrent = p.currentId || null;
+  selected = selected && lib.some(g => g.id === selected) ? selected : (p.currentId || (lib[0] && lib[0].id));
+  const count = {};
+  lib.forEach(g => { const n = g.customName || g.name; count[n] = (count[n] || 0) + 1; });
+  const ordered = [...lib.filter(g => g.id === p.currentId), ...lib.filter(g => g.id !== p.currentId)];
+  $('editId').innerHTML = ordered.map(g => {
+    const n = g.customName || g.name;
+    return `<option value="${esc(g.id)}">${esc(n)}${count[n] > 1 ? ' (' + esc(g.id.split(':')[0]) + ')' : ''}${g.id === p.currentId ? ' (playing now)' : ''}${g.hidden ? ' (hidden)' : ''}</option>`;
+  }).join('');
+  if (selected) $('editId').value = selected;
+  showGame();
+}
+
+function showGame() {
+  const g = lib.find(x => x.id === selected);
+  if (!g) return;
+  if (document.activeElement !== $('customName')) $('customName').value = g.customName;
+  $('customName').placeholder = g.name;
+  $('imageName').textContent = g.customImage ? baseName(g.customImage) : 'Automatic';
+  $('hidden').checked = g.hidden;
+  $('removeRow').classList.toggle('hide', !g.exe);
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+document.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  send({ [s.dataset.group]: b.value });
+})));
+for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo'])
+  $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
+$('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
+const GESTURES = [['mute', 'Mute'], ['window', 'Minimize / open'], ['close', 'Close'], ['favorite', 'Favorite volume'], ['none', 'Nothing']];
+const MEDIA = [['playpause', 'Play / pause'], ['next', 'Next track'], ['previous', 'Previous track']];
+function fillGestures(withMedia) {
+  document.querySelectorAll('.gesture').forEach(s => {
+    s.innerHTML = (withMedia ? MEDIA.concat(GESTURES) : GESTURES).map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  });
+}
+fillGestures(false);
+document.querySelectorAll('.gesture').forEach(s => s.addEventListener('change', () => send({ [s.id]: s.value })));
+$('favorite').addEventListener('change', () => send({ favorite: $('favorite').value }));
+$('favoriteCurrent').addEventListener('click', () => send({ favoriteCurrent: true }));
+$('startFavorite').addEventListener('change', () => send({ startFavorite: $('startFavorite').checked }));
+$('step').addEventListener('change', () => send({ step: $('step').value }));
+$('app').addEventListener('change', () => send({ app: $('app').value }));
+$('gameId').addEventListener('change', () => send({ gameId: $('gameId').value }));
+$('duckPercent').addEventListener('change', () => send({ duckPercent: Number($('duckPercent').value) }));
+
+
+$('editId').addEventListener('change', () => { selected = $('editId').value; showGame(); });
+$('customName').addEventListener('change', () => edit({ customName: $('customName').value.trim() }));
+$('hidden').addEventListener('change', () => edit({ hidden: $('hidden').checked }));
+$('imageClear').addEventListener('click', () => edit({ customImage: '' }));
+$('imageFile').addEventListener('change', () => { if ($('imageFile').value) edit({ customImage: filePath($('imageFile').value) }); $('imageFile').value = ''; });
+$('remove').addEventListener('click', () => { const g = lib.find(x => x.id === selected); if (g) send({ removeGame: g.exe }); });
+$('exeFile').addEventListener('change', () => {
+  if (!$('exeFile').value) return;
+  addExe = filePath($('exeFile').value);
+  $('exeName').textContent = baseName(addExe);
+  if (!$('addName').value) $('addName').value = baseName(addExe).replace(/\.exe$/i, '');
+  $('exeFile').value = '';
+});
+$('add').addEventListener('click', () => {
+  if (!addExe || !$('addName').value.trim()) return;
+  send({ addExe, addName: $('addName').value.trim() });
+  addExe = ''; $('addName').value = ''; $('exeName').textContent = 'Choose an .exe';
+});
+</script>
+</body>
+</html>

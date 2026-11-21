@@ -1,0 +1,9 @@
+{
+  "id": "gv-icon",
+  "items": [
+    { "key": "icon", "type": "pixmap", "rect": [12, 18, 64, 64], "zOrder": 1 },
+    { "key": "title", "type": "text", "rect": [86, 14, 106, 24], "font": { "size": 16, "weight": 600 }, "alignment": "left", "text-overflow": "ellipsis", "zOrder": 2 },
+    { "key": "value", "type": "text", "rect": [86, 38, 106, 28], "font": { "size": 20, "weight": 600 }, "alignment": "left", "zOrder": 3 },
+    { "key": "indicator", "type": "bar", "rect": [86, 72, 102, 8], "subtype": 4, "border_w": 0, "bar_h": 8, "bar_bg_c": "#333333", "bar_fill_c": "#FFFFFF", "value": 0, "range": { "min": 0, "max": 100 }, "zOrder": 4 }
+  ]
+}

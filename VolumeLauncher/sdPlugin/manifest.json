@@ -1,0 +1,63 @@
+{
+  "UUID": "com.stan.gamevolume",
+  "Name": "Volume & Launcher",
+  "Author": "Stan",
+  "Description": "Volume dials for the game that is open and for any app (with a media screen), and keys that start, minimize and close games and apps with their logo and playtime. Games are found automatically via Steam, Epic, Xbox and Lunar Client.",
+  "Version": "3.0.0.0",
+  "SDKVersion": 2,
+  "Icon": "images/plugin",
+  "Category": "Volume & Launcher",
+  "CategoryIcon": "images/category",
+  "CodePathWin": "bin/VolumeLauncher.exe",
+  "PropertyInspectorPath": "pi.html",
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Software": { "MinimumVersion": "6.5" },
+  "Actions": [
+    {
+      "UUID": "com.stan.gamevolume.game",
+      "Name": "Game Volume",
+      "Tooltip": "Dial for the volume of the game that is open right now, or of one game you choose, with its name and logo. Turn: volume. Click, double-click, triple-click and hold: mute, minimize/open, close or favorite volume (your choice).",
+      "Icon": "images/action-game",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "images/key-game", "ShowTitle": true }],
+      "Encoder": {
+        "layout": "layouts/icon.json",
+        "Icon": "images/action-game",
+        "TriggerDescription": { "Rotate": "Volume (pressed: game/Discord balance)", "Push": "Click, double-click or hold", "Touch": "Click, double-click or hold", "LongTouch": "Hold" }
+      }
+    },
+    {
+      "UUID": "com.stan.gamevolume.app",
+      "Name": "App Volume",
+      "Tooltip": "Dial for the volume of one app, such as Discord or Chrome. When the app plays something it shows title, picture, play/pause and a timeline. Turn: volume, pressed turn: seek 5 seconds. Click, double-click, triple-click and hold: your choice.",
+      "Icon": "images/action-app",
+      "Controllers": ["Encoder"],
+      "States": [{ "Image": "images/key-app", "ShowTitle": true }],
+      "Encoder": {
+        "layout": "layouts/icon.json",
+        "Icon": "images/action-app",
+        "TriggerDescription": { "Rotate": "Volume (pressed: seek)", "Push": "Click, double-click or hold", "Touch": "Click, double-click or hold", "LongTouch": "Hold" }
+      }
+    },
+    {
+      "UUID": "com.stan.gamevolume.gamekey",
+      "Name": "Game Key",
+      "Tooltip": "Key with the logo, name and playtime of the game that is open, or of one game you choose. Click: start, minimize or show. Hold 1 second: close.",
+      "Icon": "images/action-gamekey",
+      "PropertyInspectorPath": "launcher.html",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-game", "ShowTitle": false }]
+    },
+    {
+      "UUID": "com.stan.gamevolume.appkey",
+      "Name": "App Key",
+      "Tooltip": "Key with the icon and name of one app. Click: minimize, show or open. Hold 1 second: close, also from the system tray.",
+      "Icon": "images/action-appkey",
+      "PropertyInspectorPath": "launcher.html",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [{ "Image": "images/key-appkey", "ShowTitle": false }]
+    }
+  ]
+}

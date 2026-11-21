@@ -6,8 +6,8 @@ if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
 New-Item -ItemType Directory $dist | Out-Null
 
 $plugins = @(
-    @{ Project = 'GameVolume'; Id = 'com.stan.gamevolume'; File = 'Audio' },
-    @{ Project = 'Launcher'; Id = 'com.stan.launcher'; File = 'Launcher' },
+    @{ Project = 'VolumeLauncher'; Id = 'com.stan.gamevolume'; File = 'VolumeLauncher' },
+    @{ Project = 'Scarlett'; Id = 'com.stan.scarlett'; File = 'ScarlettSwitch' },
     @{ Project = 'Monitor'; Id = 'com.stan.monitor'; File = 'Monitor' },
     @{ Project = 'Spotify'; Id = 'com.stan.spotify'; File = 'BetterSpotifyDial' },
     @{ Project = 'PS5'; Id = 'com.stan.ps5'; File = 'PlayStation5-OBS' },

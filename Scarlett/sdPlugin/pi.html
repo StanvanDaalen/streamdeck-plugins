@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 8px 12px; font: 12px "Segoe UI", sans-serif; color: #d8d8d8; background: #2d2d2d; }
+  h4 { margin: 14px 0 4px; font-size: 11px; font-weight: 600; color: #9a9a9a; text-transform: uppercase; letter-spacing: .04em; border-top: 1px solid #3f3f3f; padding-top: 10px; }
+  h4.first { margin-top: 2px; border-top: 0; padding-top: 0; }
+  .row { display: flex; align-items: center; margin: 6px 0; min-height: 22px; }
+  .row > label:not(.check):first-child, .lbl { flex: 0 0 96px; color: #9a9a9a; }
+  .row select, .row input[type=text] { flex: 1; min-width: 0; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; font: inherit; cursor: pointer; }
+  .btn { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; cursor: pointer; flex: none; }
+  button:hover, .btn:hover { background: #474747; }
+  .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .file { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
+  .file span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8a; }
+  .file input { display: none; }
+  .status { padding: 6px 8px; border-radius: 4px; background: #3a2626; color: #ff9a9a; margin: 2px 0 8px; }
+  .status.ok { background: #333; color: #fff; }
+  #libPanel iframe { width: 100%; height: 440px; border: 1px solid #4a4a4a; border-radius: 3px; margin-top: 6px; }
+  .seg { flex: 1; min-width: 0; display: flex; border: 1px solid #4a4a4a; border-radius: 4px; overflow: hidden; }
+  .seg button { flex: 1; min-width: 0; border: 0; border-radius: 0; background: #3d3d3d; color: #b8b8b8; padding: 4px 6px; white-space: nowrap; }
+  .seg button + button { border-left: 1px solid #4a4a4a; }
+  .seg button.on { background: #e6e6e6; color: #1e1e1e; font-weight: 600; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+  <h4 class="first">Status</h4>
+  <div id="status" class="status">Connecting…</div>
+  <div class="row"><span class="lbl">Device</span><span id="device">—</span></div>
+  <div class="row"><span class="lbl">MIDI port</span><span id="port">—</span></div>
+
+  <div id="deviceSection" class="hide">
+    <h4>Dial</h4>
+    <div class="row"><span class="lbl">Look</span><div class="seg" data-group="look">
+      <button value="player">Player</button><button value="classic">Classic</button></div></div>
+    <p class="muted">Player matches the media and Spotify dials, with the device name as title. Classic shows an icon, a title and a volume bar.</p>
+    <div class="row"><label>Speakers</label><input type="text" id="speakersName" placeholder="e.g. Yamaha HS5"></div>
+    <div class="row"><label>Headphones</label><input type="text" id="headphonesName" placeholder="e.g. DT 1990 Pro"></div>
+    <div id="classicTitle" class="hide">
+      <div class="row"><span class="lbl">Title</span><div class="seg" data-group="titleMode">
+        <button value="app">Device</button><button value="custom">Custom text</button></div></div>
+      <div class="row hide" id="customTitleRow"><label>Custom title</label><input type="text" id="customTitle" placeholder="e.g. Audio"></div>
+    </div>
+  </div>
+
+  <div id="iconSection" class="hide">
+    <h4>Custom icons</h4>
+    <div class="row"><span class="lbl">Speakers</span><div class="file">
+      <span id="iconSpeakersName">Default</span>
+      <button data-lib="iconSpeakers">Library</button><label class="btn" for="iconSpeakersFile">File</label><button data-clear="iconSpeakers">Clear</button>
+      <input type="file" id="iconSpeakersFile" accept="image/png,image/jpeg"></div></div>
+    <div class="row"><span class="lbl">Headphones</span><div class="file">
+      <span id="iconHeadphonesName">Default</span>
+      <button data-lib="iconHeadphones">Library</button><label class="btn" for="iconHeadphonesFile">File</label><button data-clear="iconHeadphones">Clear</button>
+      <input type="file" id="iconHeadphonesFile" accept="image/png,image/jpeg"></div></div>
+    <div id="libPanel" class="hide"></div>
+  </div>
+
+  <h4>Switching</h4>
+  <div class="row"><label>Speaker mix</label>
+    <select id="speakerMix"><option value="0">Mix A</option><option value="1">Mix B</option><option value="2">Mix C</option></select></div>
+  <div class="row"><label>Headphone mix</label>
+    <select id="headphoneMix"><option value="0">Mix A</option><option value="1">Mix B</option><option value="2">Mix C</option></select></div>
+  <div class="row"><label>Focusrite</label>
+    <select id="focusriteMode">
+      <option value="0">Start hidden, close afterwards</option>
+      <option value="1">Start hidden, keep running</option>
+      <option value="2">Never start automatically</option>
+    </select></div>
+
+  <div id="volumeSection" class="hide">
+    <h4>Volume</h4>
+    <div class="row"><label>Volume step</label>
+      <select id="volumeStep"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select></div>
+    <p class="muted">Turning the dial changes the Windows volume. Long touch on the screen: mute.</p>
+  </div>
+
+  <h4>MIDI</h4>
+  <div class="row"><label>Port name</label><input type="text" id="midiPort" list="ports"><datalist id="ports"></datalist></div>
+  <div class="row"><span class="lbl"></span><button id="reapply">Apply again</button></div>
+
+<script>
+let ws, uuid, actionId = '';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const send = payload => ws && ws.readyState === 1 &&
+  ws.send(JSON.stringify({ event: 'sendToPlugin', context: uuid, action: actionId, payload }));
+const filePath = v => {
+  const raw = v.replace(/^C:\\fakepath\\/, '');
+  let decoded = raw;
+  try { decoded = decodeURIComponent(raw); } catch {}
+  return decoded.replace(/\//g, '\\');
+};
+const baseName = p => p.split('\\').pop();
+
+function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, actionInfo) {
+  uuid = inUuid;
+  try { actionId = JSON.parse(actionInfo).action; } catch {}
+  // Only the switch has custom icons; the single-device keys show their device.
+  $('iconSection').classList.toggle('hide', !actionId.endsWith('.switch'));
+  ws = new WebSocket('ws://127.0.0.1:' + port);
+  ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.event !== 'sendToPropertyInspector') return;
+    if (m.payload.iconLibrary) { packs = m.payload.iconLibrary; deliverLibrary(); } else apply(m.payload);
+  };
+}
+
+let packs = null, libTarget = '', libWindow = null, libSource = null, libTimer = 0;
+
+function deliverLibrary() {
+  if (libSource && packs)
+    libSource.postMessage({ type: 'packs', packs, label: libTarget === 'iconSpeakers' ? 'Speakers' : 'Headphones' }, '*');
+}
+
+function closeLibrary() {
+  clearTimeout(libTimer);
+  try { if (libWindow) libWindow.close(); } catch {}
+  libWindow = libSource = null;
+  $('libPanel').innerHTML = '';
+  $('libPanel').classList.add('hide');
+}
+
+function openLibrary(target) {
+  closeLibrary();
+  libTarget = target;
+  if (!packs) send({ iconLib: true });
+  try { libWindow = window.open('icons.html', 'scarlettIconLibrary', 'width=640,height=720'); } catch { libWindow = null; }
+  // No answer from a pop-up means it was blocked: show the same page inside the menu instead.
+  libTimer = setTimeout(() => {
+    if (libSource) return;
+    $('libPanel').innerHTML = '<iframe src="icons.html"></iframe>';
+    $('libPanel').classList.remove('hide');
+  }, 1500);
+}
+
+window.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.type === 'ready') { clearTimeout(libTimer); libSource = e.source; deliverLibrary(); }
+  else if (d.type === 'pick') { send({ [libTarget]: d.path }); closeLibrary(); }
+  else if (d.type === 'close') closeLibrary();
+});
+
+function apply(p) {
+  $('status').textContent = p.status;
+  $('status').className = 'status' + (p.ready ? ' ok' : '');
+  $('device').textContent = p.device;
+  $('port').textContent = p.port;
+  // Device names, the look and the volume only exist on a dial; keys show icons only.
+  $('deviceSection').classList.toggle('hide', !p.encoder);
+  $('volumeSection').classList.toggle('hide', !p.encoder);
+  $('classicTitle').classList.toggle('hide', p.look !== 'classic');
+  $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
+  document.querySelectorAll('.seg').forEach(s =>
+    s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === p[s.dataset.group])));
+  for (const k of ['speakersName', 'headphonesName', 'customTitle'])
+    if (document.activeElement !== $(k)) $(k).value = p[k] || '';
+  for (const k of ['iconSpeakers', 'iconHeadphones']) $(k + 'Name').textContent = p[k] ? baseName(p[k]) : 'Default';
+  for (const k of ['speakerMix', 'headphoneMix', 'volumeStep', 'focusriteMode'])
+    if (document.activeElement !== $(k)) $(k).value = String(p[k]);
+  if (document.activeElement !== $('midiPort')) $('midiPort').value = p.midiPort;
+  $('ports').innerHTML = (p.ports || []).map(n => `<option value="${esc(n)}">`).join('');
+}
+
+document.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  send({ [s.dataset.group]: b.value });
+})));
+for (const k of ['speakersName', 'headphonesName'])
+  $(k).addEventListener('change', () => send({ [k]: $(k).value.trim() }));
+$('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
+for (const k of ['speakerMix', 'headphoneMix', 'volumeStep', 'focusriteMode'])
+  $(k).addEventListener('change', () => send({ [k]: Number($(k).value) }));
+$('midiPort').addEventListener('change', () => send({ midiPort: $('midiPort').value }));
+$('reapply').addEventListener('click', () => send({ reapply: true }));
+document.querySelectorAll('[data-lib]').forEach(b => b.addEventListener('click', () => openLibrary(b.dataset.lib)));
+document.querySelectorAll('[data-clear]').forEach(b => b.addEventListener('click', () => send({ [b.dataset.clear]: '' })));
+for (const k of ['iconSpeakers', 'iconHeadphones'])
+  $(k + 'File').addEventListener('change', e => { if (e.target.value) send({ [k]: filePath(e.target.value) }); e.target.value = ''; });
+</script>
+</body>
+</html>
