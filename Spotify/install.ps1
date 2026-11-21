@@ -1,5 +1,5 @@
 # Builds the Better Spotify Dial plugin, installs it into Stream Deck and publishes the update to GitHub.
-param([string]$Message = 'Better Spotify Dial bijgewerkt')
+param([string]$Message = 'Better Spotify Dial updated')
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.spotify.sdPlugin"

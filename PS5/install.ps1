@@ -1,6 +1,6 @@
 # Builds the PlayStation 5 for OBS plugin and installs it into Stream Deck on this PC.
 # Use -Publish to also put the update on GitHub through publish.ps1.
-param([string]$Message = 'PlayStation 5 for OBS bijgewerkt', [switch]$Publish)
+param([string]$Message = 'PlayStation 5 for OBS updated', [switch]$Publish)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.ps5.sdPlugin"

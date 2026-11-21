@@ -1,180 +1,180 @@
-# Stream Deck-plugins
+# Stream Deck plugins
 
-Eigen plugins voor de Elgato Stream Deck op Windows. De F1-plugin werkt ook op Linux met OpenDeck.
+Plugins for the Elgato Stream Deck on Windows. The F1 plugin also runs on Linux with OpenDeck.
 
-## Wat zit erin
+## What's included
 
-| Plugin | Bestand | Waarvoor |
+| Plugin | File | What it's for |
 |---|---|---|
-| [Volume & Launcher](#volume--launcher) | `VolumeLauncher.streamDeckPlugin` | Volume-dials voor games en apps, en knoppen die games en apps starten, verbergen en sluiten |
-| [Scarlett Switch](#scarlett-switch) | `ScarlettSwitch.streamDeckPlugin` | Wisselen tussen speakers en koptelefoon op een Focusrite Scarlett |
-| [Monitor](#monitor) | `Monitor.streamDeckPlugin` | Wisselen tussen de inputs van een monitor |
-| [Better Spotify Dial](#better-spotify-dial) | `BetterSpotifyDial.streamDeckPlugin` | Spotify op een dial, met eigen acties per klik |
-| [PlayStation 5 for OBS](#playstation-5-for-obs) | `PlayStation5-OBS.streamDeckPlugin` | Volume van een PS5 die je via OBS en een capturekaart hoort |
-| [F1](#f1) | `F1.streamDeckPlugin` | F1 kijken met MultiViewer, ook op Linux |
+| [Volume & Launcher](#volume--launcher) | `VolumeLauncher.streamDeckPlugin` | Volume dials for games and apps, and keys that start, hide and close games and apps |
+| [Scarlett Switch](#scarlett-switch) | `ScarlettSwitch.streamDeckPlugin` | Switch a Focusrite Scarlett between speakers and headphones |
+| [Monitor](#monitor) | `Monitor.streamDeckPlugin` | Switch between the inputs of a monitor |
+| [Better Spotify Dial](#better-spotify-dial) | `BetterSpotifyDial.streamDeckPlugin` | Spotify on a dial, with your own action for every click |
+| [PlayStation 5 for OBS](#playstation-5-for-obs) | `PlayStation5-OBS.streamDeckPlugin` | Volume of a PS5 you hear through OBS and a capture card |
+| [F1](#f1) | `F1.streamDeckPlugin` | Watching F1 with MultiViewer, also on Linux |
 
-Wat er per versie nieuw of verbeterd is, staat in [CHANGELOG.md](CHANGELOG.md) en bij elke [release](https://github.com/StanvanDaalen/streamdeck-plugins/releases).
+What is new or improved in each version is listed in [CHANGELOG.md](CHANGELOG.md) and with every [release](https://github.com/StanvanDaalen/streamdeck-plugins/releases).
 
-## Installeren
+## Installing
 
-1. Open de [nieuwste release](https://github.com/StanvanDaalen/streamdeck-plugins/releases/latest).
-2. Download de plugins die je wilt (zie de tabel hierboven).
-3. Dubbelklik op het bestand en bevestig de installatie in Stream Deck.
+1. Open the [latest release](https://github.com/StanvanDaalen/streamdeck-plugins/releases/latest).
+2. Download the plugins you want (see the table above).
+3. Double-click the file and confirm the installation in Stream Deck.
 
-Op Linux (alleen F1): installeer [OpenDeck](https://github.com/nekename/OpenDeck), open daarin het tabblad **Plugins** en kies het gedownloade `F1.streamDeckPlugin`.
+On Linux (F1 only): install [OpenDeck](https://github.com/nekename/OpenDeck), open its **Plugins** tab and choose the downloaded `F1.streamDeckPlugin`.
 
-.NET hoeft niet geïnstalleerd te zijn. De plugins zijn niet gesigneerd, dus Windows of Stream Deck kan een waarschuwing tonen.
+.NET does not need to be installed. The plugins are not signed, so Windows or Stream Deck may show a warning.
 
-**Van een oudere versie?** Audio en Launcher zijn samen nu **Volume & Launcher**, en de Scarlett-knoppen zitten in de losse plugin **Scarlett Switch**. Installeer Volume & Launcher over Audio heen: je Game Volume- en App Volume-dials blijven gewoon werken. Verwijder daarna de oude Launcher-plugin in Stream Deck en zet je Game- en App-knoppen opnieuw neer uit de categorie Volume & Launcher. Gebruik je de Scarlett-knoppen, installeer dan ook Scarlett Switch en zet die knoppen opnieuw neer.
+**Coming from an older version?** Audio and Launcher are now one plugin, **Volume & Launcher**, and the Scarlett keys are in the separate **Scarlett Switch** plugin. Install Volume & Launcher over Audio: your Game Volume and App Volume dials keep working. Then remove the old Launcher plugin in Stream Deck and place your Game and App keys again from the Volume & Launcher category. If you use the Scarlett keys, also install Scarlett Switch and place those keys again.
 
 ## Volume & Launcher
 
-Volume-dials voor de game die je speelt en voor elke app, en knoppen om games en apps te starten, te verbergen en te sluiten. Alles deelt één gamebibliotheek: een eigen naam of logo voor een game zie je meteen op alle dials en knoppen van die game.
+Volume dials for the game you are playing and for any app, and keys to start, hide and close games and apps. Everything shares one game library: a custom name or logo for a game shows up right away on every dial and key of that game.
 
-Games worden automatisch gevonden via Steam, Epic, Xbox en Lunar Client. Andere games voeg je zelf toe in de Gamebibliotheek.
+Games are found automatically through Steam, Epic, Xbox and Lunar Client. You can add other games yourself in the Game library.
 
 ### Game Volume (dial)
 
-Regelt het volume van de game die nu open staat, met de naam en het logo van die game. Kies je onder **Game** één vaste game, dan hoort de dial altijd bij die game; staat die dicht, dan toont de dial hem grijs.
+Controls the volume of the game that is open right now, with that game's name and logo. Choose one game under **Game** and the dial always belongs to that game; while it is closed, the dial shows it greyed out.
 
-- **Draaien**: volume, in stappen van 1, 2, 3, 5 of 10% (**Volume step**).
-- **Klik, dubbelklik, driemaal klikken en vasthouden** (ook tikken en lang tikken op het scherm): per gebaar te kiezen uit dempen, minimaliseren/openen, sluiten, favoriet volume of niets. Standaard: klik = dempen, dubbelklik = minimaliseren/openen, vasthouden = sluiten.
-- **Ingedrukt draaien**: met **Game/Discord balance** aan schuif je het volume tussen game en Discord: de game harder en Discord zachter, of andersom.
-- **Weergave**: als titel de gamenaam of een eigen tekst; het logo klein als icoon of groot als achtergrond; de volumebalk wit of in de kleur van de game.
-- **Favoriet volume**: stel per game een vast volume in, of neem het huidige over. Met **Start games at favorite volume** begint de game altijd op dat volume.
-- **Game options** (gelden voor alle Game Volume-dials):
-  - **Remember volume per game**: elke game start op het volume van de vorige keer.
-  - **Game/Discord balance**: zie hierboven.
-  - **Lower Spotify while gaming**: Spotify gaat zachter (naar 10 tot 80%) zolang een game open staat, en daarna weer terug.
-- **Gamebibliotheek**: kies een game en geef hem een eigen naam of afbeelding, markeer iets als **Not a game** zodat het niet meer als game telt, of verwijder een zelf toegevoegde game. Onder **Add game** voeg je een game toe met een naam en zijn .exe. De game die nu speelt staat bovenaan en is al gekozen.
+- **Turn**: volume, in steps of 1, 2, 3, 5 or 10% (**Volume step**).
+- **Click, double-click, triple-click and hold** (also tap and long touch on the screen): for each gesture choose mute, minimize/open, close, favorite volume or nothing. Default: click = mute, double-click = minimize/open, hold = close.
+- **Pressed turn**: with **Game/Discord balance** on, you shift the volume between the game and Discord: the game louder and Discord quieter, or the other way round.
+- **Display**: the game name or your own text as title; the logo as a small icon or as the background; the volume bar in white or in the game's colour.
+- **Favorite volume**: set a fixed volume per game, or take the current one. With **Start games at favorite volume** the game always starts at that volume.
+- **Game options** (apply to all Game Volume dials):
+  - **Remember volume per game**: every game starts at the volume it had last time.
+  - **Game/Discord balance**: see above.
+  - **Lower Spotify while gaming**: Spotify goes down (to 10 to 80%) while a game is open, and back up afterwards.
+- **Game library**: pick a game and give it your own name or image, mark something as **Not a game** so it no longer counts as a game, or remove a game you added yourself. Under **Add game** you add a game with a name and its .exe. The game you are playing is at the top and already selected.
 
 ### App Volume (dial)
 
-Regelt het volume van één app, zoals Discord, Chrome of Spotify.
+Controls the volume of one app, such as Discord, Chrome or Spotify.
 
-- **Draaien**: volume. Speelt de app iets af, dan spoelt **ingedrukt draaien** 5 seconden per stap.
-- **Klik, dubbelklik, driemaal klikken en vasthouden**: dezelfde keuzes als bij Game Volume, plus afspelen/pauze, volgend nummer en vorig nummer. Standaard: klik = dempen, dubbelklik = minimaliseren/openen, driemaal klikken = vorig nummer, vasthouden = sluiten.
-- **Tijdens afspelen** (**While playing**): speelt de app iets af, bijvoorbeeld een YouTube-video, dan toont de dial titel, kanaal, plaatje, afspelen/pauze en een tijdlijn. Stijlen: **Player**, **Picture** (het plaatje over het hele scherm), **Compact** of **Off** (gewone weergave). Kort draaien toont even het volume.
-- **App-kenmerk**: zodat je de dial naast de Spotify-dial herkent, krijgt een browser YouTube-rood en Spotify groen. Aan te vinken: op de play-knop, op de tijdlijn en/of als klein zwart-wit logo.
-- **Als de app niets afspeelt**: **Player** toont de app in dezelfde stijl met het volume; **Classic** is de oude weergave met icoon, titel en volumebalk (dan zijn ook het logo als achtergrond en de balkkleur te kiezen). Het volume is al in te stellen voordat de app geluid maakt en geldt zodra hij dat doet.
-- **App dicht**: de dial toont "Open" met de naam van de app, en een klik start hem.
-- **Titel**: de naam van de app of een eigen tekst.
+- **Turn**: volume. While the app plays something, a **pressed turn** seeks 5 seconds per step.
+- **Click, double-click, triple-click and hold**: the same choices as Game Volume, plus play/pause, next track and previous track. Default: click = mute, double-click = minimize/open, triple-click = previous track, hold = close.
+- **While playing**: when the app plays something, for example a YouTube video, the dial shows the title, channel, picture, play/pause and a timeline. Styles: **Player**, **Picture** (the picture across the whole screen), **Compact** or **Off** (normal display). A short turn briefly shows the volume.
+- **App indicator**: so you can tell the dial apart from the Spotify dial, a browser gets YouTube red and Spotify gets green. Tick any of: on the play button, on the timeline and as a small black-and-white logo.
+- **When the app plays nothing**: **Player** shows the app in the same style, with the volume; **Classic** is the original look with icon, title and volume bar (where the logo as background and the bar colour can also be chosen). You can set the volume before the app makes a sound; it applies as soon as it does.
+- **App closed**: the dial shows "Open" with the app's name, and a click starts it.
+- **Title**: the app name or your own text.
 
-### Game Key (knop)
+### Game Key (key)
 
-Een knop met het logo, de naam en de speeltijd van een game.
+A key with the logo, name and playtime of a game.
 
-- Zonder gekozen game volgt de knop **de game die nu open staat**. Kies je onder **Game** één game, dan hoort de knop vast bij die game en kan hij hem ook **starten** (via Steam, Epic, Lunar Client of de .exe).
-- **Klik**: starten, minimaliseren of weer tonen. **1 seconde vasthouden**: de game sluiten.
-- **Weergave**: de naam tonen terwijl je speelt, de speeltijd tonen terwijl je speelt, en bij een vaste game de naam tonen als hij dicht is.
-- **Logo**: kies een eigen afbeelding (PNG, JPG of SVG). Bij een knop die de open game volgt, geldt dat logo voor de game die nu open staat. De plugin bewaart een kopie in `%APPDATA%\StanGameVolume\logos`, dus het logo blijft staan als je het bestand verplaatst. Het logo geldt voor alle knoppen en dials van die game.
+- Without a chosen game the key **follows the game that is open**. Choose one game under **Game** and the key belongs to that game and can also **start** it (through Steam, Epic, Lunar Client or its .exe).
+- **Click**: start, minimize or show again. **Hold for 1 second**: close the game.
+- **Display**: show the name while playing, show the playtime while playing, and for a chosen game show its name while it is closed.
+- **Logo**: pick your own image (PNG, JPG or SVG). On a key that follows the open game, the logo applies to the game that is open right now. The plugin keeps a copy in `%APPDATA%\StanGameVolume\logos`, so the logo stays when you move the file. The logo applies to every key and dial of that game.
 
-### App Key (knop)
+### App Key (key)
 
-Een knop met het icoon en de naam van één app.
+A key with the icon and name of one app.
 
-- **Klik**: minimaliseren, weer tonen, of openen als de app dicht is.
-- **1 seconde vasthouden**: de app sluiten. Blijft hij in het systeemvak draaien, zoals Discord, dan wordt hij na 3 seconden helemaal afgesloten, behalve als er nog een venster open staat (bijvoorbeeld een vraag om op te slaan).
-- **Weergave**: met of zonder naam.
+- **Click**: minimize, show again, or open the app if it is closed.
+- **Hold for 1 second**: close the app. If it keeps running in the system tray, like Discord, it is shut down completely after 3 seconds, unless a window is still open (for example a save prompt).
+- **Display**: with or without the name.
 
 ## Scarlett Switch
 
-Wisselt een Focusrite Scarlett tussen speakers en koptelefoon, met een knop of met een dial van de Stream Deck +. Nodig: een Focusrite Scarlett, Focusrite Control 2 en een MIDI-loopbackpoort (bijvoorbeeld via MIDI Loopback Setup van Windows). De plugin stuurt het wisselcommando via die poort naar Focusrite Control 2.
+Switches a Focusrite Scarlett between speakers and headphones, from a key or a Stream Deck + dial. Requires a Focusrite Scarlett, Focusrite Control 2 and a MIDI loopback port (for example through Windows' MIDI Loopback Setup). The plugin sends the switch command to Focusrite Control 2 through that port.
 
-- **Scarlett Switch** (knop of dial): wisselt tussen speakers en koptelefoon en toont welke aan staat. Op een dial: drukken of tikken = wisselen, draaien = Windows-volume, lang tikken = dempen.
-- **Speakers** en **Headphones** (knoppen): zetten de Scarlett direct op dat apparaat en lichten op zolang het aan staat.
+- **Scarlett Switch** (key or dial): switches between speakers and headphones and shows which one is on. On a dial: press or tap = switch, turn = Windows volume, long touch = mute.
+- **Speakers** and **Headphones** (keys): set the Scarlett straight to that device and light up while it is on.
 
-Opties:
+Options:
 
-- **Status**: of de Scarlett, Focusrite Control 2 en de MIDI-poort gevonden zijn. Rood betekent dat er iets ontbreekt, met de reden erbij.
-- **Look** (dial): **Player**, in de stijl van de media- en Spotify-dials met de apparaatnaam als titel, of **Classic** met icoon, titel en volumebalk. Bij Classic kies je als titel het apparaat of een eigen tekst.
-- **Speakers** / **Headphones** (dial): eigen namen, zoals "Yamaha HS5" of "DT 1990 Pro".
-- **Custom icons** (Scarlett Switch): een eigen icoon voor speakers en voor koptelefoon, uit een bestand of uit de iconen die in Stream Deck geïnstalleerd zijn (**Library**).
-- **Speaker mix** / **Headphone mix**: welke mix (A, B of C) van Focusrite Control 2 bij elk apparaat hoort.
-- **Focusrite**: Focusrite Control 2 verborgen starten en daarna sluiten, verborgen starten en laten draaien, of nooit zelf starten.
-- **Volume step** (dial): 1, 2, 3, 5 of 10% per stap.
-- **MIDI**: de naam van de loopbackpoort, en **Apply again** om de instellingen opnieuw naar Focusrite Control 2 te sturen.
+- **Status**: whether the Scarlett, Focusrite Control 2 and the MIDI port were found. Red means something is missing, with the reason.
+- **Look** (dial): **Player**, in the style of the media and Spotify dials with the device name as title, or **Classic** with icon, title and volume bar. With Classic you choose the device or your own text as title.
+- **Speakers** / **Headphones** (dial): your own names, such as "Yamaha HS5" or "DT 1990 Pro".
+- **Custom icons** (Scarlett Switch): your own icon for speakers and for headphones, from a file or from the icons installed in Stream Deck (**Library**).
+- **Speaker mix** / **Headphone mix**: which Focusrite Control 2 mix (A, B or C) belongs to each device.
+- **Focusrite**: start Focusrite Control 2 hidden and close it afterwards, start it hidden and keep it running, or never start it.
+- **Volume step** (dial): 1, 2, 3, 5 or 10% per step.
+- **MIDI**: the name of the loopback port, and **Apply again** to send the settings to Focusrite Control 2 again.
 
-Instellingen staan in `%APPDATA%\ScarlettSwitch`.
+Settings are stored in `%APPDATA%\ScarlettSwitch`.
 
 ## Monitor
 
-- **Monitor Input**: wissel met een knop tussen de inputs van een monitor. De monitor moet DDC/CI ondersteunen. Klik = volgende input; vorige input op dubbelklik, lang drukken of uit (**Previous input**).
+- **Monitor Input**: switch between the inputs of a monitor with a key. The monitor must support DDC/CI. Click = next input; previous input on double-click, long press or off (**Previous input**).
 
-Vink in het menu alleen inputs aan waar iets op is aangesloten (**Inputs in use**). Een monitor geeft niet door welke inputs signaal hebben.
+In the menu, tick only the inputs that have something connected (**Inputs in use**). A monitor does not report which inputs have a signal.
 
-Opties:
+Options:
 
-- **Monitor**: welke monitor de knop bedient, met een eigen naam.
-- **Edit input**: per input een eigen naam, het apparaat dat erop zit (automatisch, pc, PlayStation 5 Pro of geen) en een eigen icoon uit een bestand of de Bibliotheek.
-- **Style**: **Basic**, **Tile** (fel zolang het scherm verbonden is) of **Icon only**, en of er tekst op de knop staat.
-- **PlayStation**: houd de pc en de andere schermen wakker zolang de PS5 in beeld is, zodat OBS en Discord blijven draaien, en kies welk scherm dan het hoofdscherm wordt.
-- **Disconnect while not on this PC**: zie hieronder.
+- **Monitor**: which monitor the key controls, with your own name.
+- **Edit input**: per input your own name, the device connected to it (automatic, PC, PlayStation 5 Pro or none) and your own icon from a file or the Library.
+- **Style**: **Basic**, **Tile** (bright while the display is connected) or **Icon only**, and whether text is shown on the key.
+- **PlayStation**: keep the PC and the other displays awake while the PS5 is on screen, so OBS and Discord keep running, and choose which display becomes the main display meanwhile.
+- **Disconnect while not on this PC**: see below.
 
-LG-monitors negeren het standaardcommando voor inputs. Op een pc met een NVIDIA-videokaart stuurt de plugin daarom LG's eigen commando via de videokaart. Een LG-monitor meldt niet welke input actief is; de knop toont de input waar hij zelf het laatst naartoe wisselde. Andere merken, zoals Alienware, werken zoals altijd. De modelnaam komt uit de EDID van de monitor, omdat sommige monitors (waaronder LG) via DDC/CI een verkeerde modelnaam doorgeven.
+LG monitors ignore the standard input command. On a PC with an NVIDIA graphics card the plugin therefore sends LG's own command through the graphics card. An LG monitor does not report which input is active; the key shows the input it last switched to itself. Other brands, such as Alienware, work as usual. The model name comes from the monitor's EDID, because some monitors (including LG) report a wrong model name over DDC/CI.
 
-Optie "Loskoppelen als het niet op deze pc staat" (standaard uit, per knop): wisselt de monitor naar een andere input dan die van deze pc, zoals een console, dan haalt Windows hem uit de schermindeling, zodat de muis direct naar het volgende scherm gaat. Terug naar de pc zet de indeling terug. Lukt dat ooit niet, dan zet Windows + P → Uitbreiden alles terug.
+**Disconnect while not on this PC** (off by default, per key): when the monitor switches to an input other than this PC's, such as a console, Windows removes it from the display layout, so the mouse moves straight to the next display. Switching back to the PC restores the layout. If that ever fails, Windows + P → Extend restores everything.
 
-Per input kun je een eigen icoon kiezen. De plugin levert een PC- en een PS5-icoon mee; die staan in de Bibliotheek onder "Monitor".
+You can choose your own icon per input. The plugin ships a PC and a PS5 icon; they are in the Library under "Monitor".
 
 ## Better Spotify Dial
 
-Spotify op een dial van de Stream Deck +, met hetzelfde scherm als de officiële Spotify-plugin: hoes, titel, artiest, tijd, voortgang, shuffle, afspelen en herhalen. Het verschil: je kiest zelf wat de dial doet.
+Spotify on a Stream Deck + dial, with the same screen as the official Spotify plugin: cover, title, artist, time, progress, shuffle, play and repeat. The difference: you choose what the dial does.
 
-- **1x, 2x en 3x klikken, vasthouden en tikken op het scherm**: kies per gebaar afspelen/pauze, volgend of vorig nummer, volume, dempen, shuffle, herhalen, het Spotify-venster tonen of een playlist openen. Standaard: klik = afspelen/pauze, dubbelklik = volgend nummer, 3x klikken = vorig nummer, vasthouden = Spotify tonen of verbergen.
-- **Draaien**: volume van Spotify of vorige/volgende. Ingedrukt draaien spoelt 5 seconden per stap, of doet het andere.
-- **Stijlen**: Player (zoals de officiële dial), Picture (de hoes over het hele scherm) of Compact. Spotify-groen op de play-knop, de tijdlijn en/of als klein logo (aan te vinken) maakt de dial herkenbaar naast andere mediadials.
-- **Lang tikken op het scherm**: links vorig nummer, rechts volgend nummer.
-- Staat Spotify uit, dan start elke actie Spotify.
+- **Click 1x, 2x and 3x, hold and tap the screen**: per gesture choose play/pause, next or previous track, volume, mute, shuffle, repeat, show the Spotify window or open a playlist. Default: click = play/pause, double-click = next track, triple-click = previous track, hold = show or hide Spotify.
+- **Turn**: Spotify volume or previous/next. A pressed turn seeks 5 seconds per step, or does the other one.
+- **Styles**: Player (like the official dial), Picture (the cover across the whole screen) or Compact. Spotify green on the play button, the timeline and/or as a small logo (each can be ticked) makes the dial recognisable next to other media dials.
+- **Long touch on the screen**: left = previous track, right = next track.
+- If Spotify is closed, every action starts Spotify.
 
-Werkt met de Spotify-app voor Windows, zonder Spotify-account of inlog in de plugin: alles gaat via de mediabediening van Windows. Is de officiële Spotify-plugin van Elgato ook geïnstalleerd, dan gebruikt de dial diens icoontjes, zodat hij er precies zo uitziet.
+Works with the Spotify app for Windows, without a Spotify account or sign-in in the plugin: everything goes through Windows' media controls. If Elgato's official Spotify plugin is also installed, the dial uses its icons, so it looks exactly the same.
 
 ## PlayStation 5 for OBS
 
-Voor wie een PlayStation 5 via een capturekaart met pass-through in OBS hoort.
+For anyone who hears a PlayStation 5 in OBS through a capture card with pass-through.
 
-- **PS5 Volume** (dial): draaien regelt hoe hard je de PlayStation hoort, ingedrukt draaien per 1%. Drukken of tikken zet mute aan of uit, of start OBS als die uit staat. Vasthouden zet het volume terug naar je standaard.
-- De dial ziet eruit als de Spotify-dial: naam met **On** of **Off** eronder, linksonder een luidspreker (met kruisje bij mute), rechtsonder het percentage en een balk in PlayStation-blauw. Op de hoek van het vakje staat een klein PlayStation-logo. Staat de PlayStation uit, dan wordt alles grijs.
-- In de instellingen zet je de blauwe balk (anders wit) en het kleine logo elk aan of uit.
-- Aan of uit leest de plugin af aan het geluid van de capturekaart. Staat obs-websocket aan (Extra > WebSocket-serverinstellingen), dan kijkt hij ook naar het beeld en herkent hij het "NO SIGNAL"-scherm van de kaart. Het wachtwoord leest de plugin zelf uit de OBS-instellingen op deze pc.
+- **PS5 Volume** (dial): turn to set how loud you hear the PlayStation, pressed turn in 1% steps. Press or tap toggles mute, or starts OBS if it is closed. Hold sets the volume back to your default.
+- The dial looks like the Spotify dial: the name with **On** or **Off** below it, a speaker icon bottom left (crossed out when muted), the percentage bottom right and a PlayStation-blue bar. A small PlayStation logo sits in the corner of the tile. While the PlayStation is off, everything turns grey.
+- In the settings you turn the blue bar (otherwise white) and the small logo on or off separately.
+- The plugin reads on or off from the capture card's audio. With obs-websocket enabled (Tools > WebSocket Server Settings) it also looks at the picture and recognises the card's "NO SIGNAL" screen. The plugin reads the password itself from the OBS settings on this PC.
 
-Het volume is OBS in de Windows-volumemixer: het verandert alleen wat jij hoort, niet je stream of opname. De bronnen heten standaard "PS5 beeld" en "PS5 geluid"; andere namen kies je in de instellingen van de dial.
+The volume is OBS in the Windows volume mixer: it only changes what you hear, not your stream or recording. The sources are called "PS5 beeld" and "PS5 geluid" by default; choose other names in the dial's settings. The audio source is also found when it is not in the active OBS scene collection.
 
 ## F1
 
-Voor F1 kijken met [MultiViewer](https://multiviewer.app/download) (nodig) en [Ultimate F1 Viewer](https://github.com/MRAJEKO/UF1-Viewer-with-F1MV/releases/latest) (optioneel). Ontbreekt een van de twee, dan meldt de plugin dat en biedt de downloadpagina aan.
+For watching F1 with [MultiViewer](https://multiviewer.app/download) (required) and [Ultimate F1 Viewer](https://github.com/MRAJEKO/UF1-Viewer-with-F1MV/releases/latest) (optional). If either is missing, the plugin says so and offers the download page.
 
-- **F1 Mode**: zet alles klaar op een eigen bureaublad "F1". Dubbelklikken verbergt en dempt alles, 1 seconde vasthouden sluit alles.
-- **Race** / **Quali**: opent je MultiViewer-setup en Ultimate F1 Viewer-layout met die naam, voor de live sessie of anders de laatste replay. Vult onboards van coureurs buiten de topteams met de beste van de rest en kiest de coureurs in de battle mode.
-- **Session**: resterende tijd of ronden, en het weer.
-- **Pause**, **Go live**, **Sync**, **Fullscreen**: bediening van MultiViewer.
-- Dials: **Live delay**, **Volume**, **Track status** (vlaggen op Philips Hue) en **Flag lights** (welke Hue-ruimte).
+- **F1 Mode**: sets everything up on a separate "F1" desktop. Double-click hides and mutes everything, hold for 1 second closes everything.
+- **Race** / **Quali**: opens your MultiViewer setup and Ultimate F1 Viewer layout with that name, for the live session or otherwise the latest replay. Fills onboards of drivers outside the top teams with the best of the rest and picks the drivers in battle mode.
+- **Session**: time or laps remaining, and the weather. Without a running session it shows the next session with a countdown.
+- **Pause**, **Go live**, **Sync**, **Fullscreen**: MultiViewer controls.
+- Dials: **Live delay**, **Volume**, **Track status** (flags on Philips Hue) and **Flag lights** (which Hue room).
 
-Philips Hue is optioneel: koppel je bridge in de instellingen van de Track status-dial. Zonder Hue staan die functies op "Not set up". Een eigen logo voor F1 Mode zet je als `f1-logo.svg` of `f1-logo.png` in `%APPDATA%\StanF1`.
+Philips Hue is optional: pair your bridge in the settings of the Track status dial. Without Hue those functions show "Not set up". A custom logo for F1 Mode goes into `%APPDATA%\StanF1` as `f1-logo.svg` or `f1-logo.png`.
 
-**Privacy:** de plugin bewaart geen F1 TV- of MultiViewer-inlog en stuurt geen gegevens naar de maker. MultiViewer en Ultimate F1 Viewer gebruiken hun eigen inlog op je eigen pc. Instellingen, zoals de sleutel van je Hue Bridge en vensterposities, staan alleen lokaal in `%APPDATA%\StanF1`. Voor replays vraagt de plugin openbare gegevens op bij OpenF1 en F1 TV, zonder inlog. MultiViewer en Ultimate F1 Viewer worden gestart met een debugpoort (9334 en 9333) die alleen vanaf de eigen pc bereikbaar is.
+**Privacy:** the plugin stores no F1 TV or MultiViewer sign-in and sends no data to its author. MultiViewer and Ultimate F1 Viewer use their own sign-in on your own PC. Settings, such as your Hue Bridge key and window positions, are only stored locally in `%APPDATA%\StanF1`. For replays the plugin requests public data from OpenF1 and F1 TV, without signing in. MultiViewer and Ultimate F1 Viewer are started with a debug port (9334 and 9333) that can only be reached from your own PC.
 
-Werkt op Windows met de Stream Deck-app en op Linux (x64) met [OpenDeck](https://github.com/nekename/OpenDeck). Het `F1.streamDeckPlugin`-bestand bevat beide versies; installeer het in OpenDeck via het tabblad Plugins.
+Works on Windows with the Stream Deck app and on Linux (x64) with [OpenDeck](https://github.com/nekename/OpenDeck). The `F1.streamDeckPlugin` file contains both versions; install it in OpenDeck through the Plugins tab.
 
 | | Windows (Stream Deck) | Linux (OpenDeck) |
 |---|---|---|
-| Vlaggen op Hue, latency, volume, pauze, live, sync, fullscreen, Session | ja | ja |
-| Race / Quali: MultiViewer-setups, Ultimate F1 Viewer-layouts, best of the rest, battle mode | ja | ja |
-| Laatste replay zoeken (OpenF1, F1 TV) en openen in MultiViewer | ja | ja |
-| MultiViewer en Ultimate F1 Viewer starten (met debugpoort) en sluiten | ja | ja |
-| Eigen bureaublad "F1" | ja | nee, je blijft op het huidige werkblad |
-| Vensters op hun plek zetten, stapelen op hoogte, battle mode vóór de vlaggenbalk | ja | nee, dat doet je windowmanager |
-| Dubbelklik F1 Mode: alles minimaliseren | ja | nee (dempen werkt wel) |
-| Melding als een app ontbreekt | venster met Ja/Nee | zenity of kdialog, anders een melding en de downloadpagina via `xdg-open` |
+| Flags on Hue, latency, volume, pause, live, sync, fullscreen, Session | yes | yes |
+| Race / Quali: MultiViewer setups, Ultimate F1 Viewer layouts, best of the rest, battle mode | yes | yes |
+| Find the latest replay (OpenF1, F1 TV) and open it in MultiViewer | yes | yes |
+| Start (with debug port) and close MultiViewer and Ultimate F1 Viewer | yes | yes |
+| Separate "F1" desktop | yes | no, you stay on the current workspace |
+| Put windows in place, stack by height, battle mode in front of the flag bar | yes | no, your window manager does that |
+| Double-click F1 Mode: minimize everything | yes | no (muting does work) |
+| Message when an app is missing | window with Yes/No | zenity or kdialog, otherwise a notification and the download page through `xdg-open` |
 
-Op Linux vindt de plugin MultiViewer als .deb/.rpm (`multiviewer`), als Flatpak of als uitgepakte zip, en Ultimate F1 Viewer als AppImage in bijvoorbeeld `~/Applications` of `~/Downloads`, of via een snelkoppeling in `~/.local/share/applications`. Staat een app ergens anders, zet het pad dan als `MultiViewerPath` of `Uf1Path` in `~/.config/StanF1/settings.json`. Instellingen, het log en een eigen logo staan op Linux in `~/.config/StanF1`. De dials van de Stream Deck + hangen af van wat OpenDeck en je apparaat ondersteunen.
+On Linux the plugin finds MultiViewer as .deb/.rpm (`multiviewer`), as Flatpak or as an extracted zip, and Ultimate F1 Viewer as an AppImage in for example `~/Applications` or `~/Downloads`, or through a shortcut in `~/.local/share/applications`. If an app is somewhere else, set its path as `MultiViewerPath` or `Uf1Path` in `~/.config/StanF1/settings.json`. On Linux the settings, the log and a custom logo are in `~/.config/StanF1`. The Stream Deck + dials depend on what OpenDeck and your device support.
 
-## Zelf bouwen
+## Building
 
-Vereist de .NET 10 SDK. Met `install.ps1` in `VolumeLauncher`, `Scarlett`, `Monitor`, `Spotify`, `PS5` of `F1` bouw en installeer je een plugin op deze pc. Elke `install.ps1` zet de update daarna ook op GitHub met een nieuwe release, via `publish.ps1` (bij `PS5` alleen met `-Publish`). Met `package.ps1` maak je alleen de installatiebestanden in `dist\`.
+Requires the .NET 10 SDK. `install.ps1` in `VolumeLauncher`, `Scarlett`, `Monitor`, `Spotify`, `PS5` or `F1` builds a plugin and installs it on this PC. Every `install.ps1` then also puts the update on GitHub as a new release, through `publish.ps1` (for `PS5` only with `-Publish`). `package.ps1` only creates the installers in `dist\`.
 
-`Scarlett` gebruikt een paar bestanden uit `VolumeLauncher\src` (iconen, afbeeldingen laden, het log), zodat beide plugins er hetzelfde uitzien.
+`Scarlett` uses a few files from `VolumeLauncher\src` (icons, image loading, the log), so both plugins look the same.
 
-### Bijhouden wat er nieuw is
+### Keeping track of what's new
 
-Zet bij elke wijziging een regel in [CHANGELOG.md](CHANGELOG.md) onder **Nog niet uitgebracht**, in de groep **Nieuw**, **Verbeterd** of **Opgelost**, met de naam van de plugin vooraan. `publish.ps1` zet die regels als releasenotes bij de nieuwe release en schuift ze in CHANGELOG.md onder het nieuwe versienummer.
+For every change, add a line to [CHANGELOG.md](CHANGELOG.md) under **Unreleased**, in the group **New**, **Improved** or **Fixed**, with the plugin name first. `publish.ps1` uses those lines as the release notes of the new release and moves them in CHANGELOG.md under the new version number.

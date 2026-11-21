@@ -1,5 +1,5 @@
 # Builds the F1 plugin and installs it into Stream Deck. Add -Publish to also push it to GitHub as a release.
-param([string]$Message = 'F1 bijgewerkt', [switch]$Publish)
+param([string]$Message = 'F1 updated', [switch]$Publish)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.f1.sdPlugin"

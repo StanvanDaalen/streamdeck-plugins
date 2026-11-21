@@ -1,5 +1,5 @@
 ﻿# Builds the Monitor plugin, installs it into Stream Deck and publishes the update to GitHub.
-param([string]$Message = 'Monitor bijgewerkt', [switch]$NoPublish)
+param([string]$Message = 'Monitor updated', [switch]$NoPublish)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.monitor.sdPlugin"

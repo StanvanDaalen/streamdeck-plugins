@@ -1,123 +1,125 @@
 # Changelog
 
-Wat er per release nieuw, verbeterd of opgelost is. De nieuwste staat bovenaan.
+What is new, improved or fixed in each release. The newest is at the top.
 
-Zet een wijziging onder **Nog niet uitgebracht**, met de naam van de plugin vooraan. Bij de volgende release zet `publish.ps1` die regels als releasenotes op GitHub en schuift ze hieronder onder het nieuwe versienummer.
+Add a change under **Unreleased**, with the plugin name first. At the next release `publish.ps1` posts those lines as the release notes on GitHub and moves them below under the new version number.
 
-## Nog niet uitgebracht
+## Unreleased
 
-### Nieuw
+### New
 
-### Verbeterd
+### Improved
 
-### Opgelost
+- **GitHub**: README, changelog and release notes are in English.
+
+### Fixed
 
 ## 1.1.17 (2026-11-21)
 
-### Nieuw
+### New
 
-- **PlayStation 5 for OBS**: een klein PlayStation-logo (de console) op de hoek van het vakje, zoals het YouTube- en Spotify-logo op de mediadials. In de instellingen zet je dat logo en de PlayStation-blauwe balk elk aan of uit; staat de balk uit, dan blijft hij wit.
+- **PlayStation 5 for OBS**: a small PlayStation logo (the console) in the corner of the tile, like the YouTube and Spotify logos on the media dials. In the settings you turn that logo and the PlayStation-blue bar on or off separately; with the bar off, it stays white.
 
 ## 1.1.16 (2026-11-21)
 
-**Overstappen**: installeer Volume & Launcher over Audio heen; je dials blijven werken. Verwijder de oude Launcher-plugin en zet je Game- en App-knoppen opnieuw neer. Gebruik je de Scarlett-knoppen, installeer dan ook Scarlett Switch en zet die opnieuw neer.
+**Upgrading**: install Volume & Launcher over Audio; your dials keep working. Remove the old Launcher plugin and place your Game and App keys again. If you use the Scarlett keys, also install Scarlett Switch and place those again.
 
-### Nieuw
+### New
 
-- **Volume & Launcher**: Audio en Launcher zijn één plugin. De Game Volume- en App Volume-dials en de Game Key- en App Key-knoppen delen nu één gamebibliotheek en één gamedetectie, dus een eigen naam of logo zie je meteen overal.
-- **Scarlett Switch**: de Scarlett-knoppen en -dial zijn een eigen plugin, voor wie een Focusrite Scarlett heeft. Met dezelfde opties als voorheen.
-- **App Key**: een eigen icoon (een venster) in plaats van een luidspreker.
+- **Volume & Launcher**: Audio and Launcher are one plugin. The Game Volume and App Volume dials and the Game Key and App Key keys now share one game library and one game detection, so a custom name or logo shows up everywhere right away.
+- **Scarlett Switch**: the Scarlett keys and dial are a plugin of their own, for anyone with a Focusrite Scarlett. Same options as before.
+- **App Key**: its own icon (a window) instead of a speaker.
 
-### Verbeterd
+### Improved
 
-- **Volume & Launcher**: de game wordt nog maar één keer gezocht in plaats van door twee plugins tegelijk.
-- **README**: per plugin een volledige uitleg van wat hij doet en alle opties.
-- **Releases**: elke release krijgt de lijst Nieuw, Verbeterd en Opgelost uit deze changelog.
+- **Volume & Launcher**: the open game is detected once instead of by two plugins at the same time.
+- **README**: a full description of every plugin and all its options.
+- **Releases**: every release lists New, Improved and Fixed from this changelog.
 
-### Opgelost
+### Fixed
 
-- **Volume & Launcher**: een ongebruikt icoon van de oude game-knop is weg.
+- **Volume & Launcher**: an unused icon of the old game key is gone.
 
 ## 1.1.15 (2026-11-21)
 
-- **PlayStation 5 for OBS**: linksonder een luidspreker-icoon (met kruisje bij mute) in plaats van de tekst Volume/Muted. De geluidsbron wordt ook gevonden als die niet in de actieve scèneverzameling van OBS zit.
+- **PlayStation 5 for OBS**: a speaker icon bottom left (crossed out when muted) instead of the text Volume/Muted. The audio source is also found when it is not in the active OBS scene collection.
 
 ## 1.1.14 (2026-11-21)
 
-- **Audio – App Volume**: speelt de app niets af, dan toont de dial de app in dezelfde Player-stijl als de mediadials (Classic blijft kiesbaar). Het volume is dan al in te stellen.
-- **Audio – Scarlett Switch**: Player-weergave met eigen apparaatnamen.
+- **Audio – App Volume**: when the app plays nothing, the dial shows the app in the same Player style as the media dials (Classic can still be chosen). The volume can already be set.
+- **Audio – Scarlett Switch**: Player look with your own device names.
 
 ## 1.1.13 (2026-11-21)
 
-- **Audio – App Volume**: staat de app dicht, dan toont de dial "Open Chrome" met het app-logo; een klik start de app.
-- **App-kenmerk** (Audio en Better Spotify Dial): play-knop, tijdlijn en klein logo zijn losse vinkjes.
+- **Audio – App Volume**: when the app is closed, the dial shows "Open Chrome" with the app logo; a click starts the app.
+- **App indicator** (Audio and Better Spotify Dial): play button, timeline and small logo are separate checkboxes.
 
 ## 1.1.12 (2026-11-21)
 
-- Nieuw: **PlayStation 5 for OBS**, een dial voor het geluid van je PS5 via OBS en een capturekaart: volume, mute, OBS starten en zien of de PS5 aan staat.
+- New: **PlayStation 5 for OBS**, a dial for your PS5's sound through OBS and a capture card: volume, mute, start OBS and see whether the PS5 is on.
 
 ## 1.1.11 (2026-11-20)
 
-- **Audio – App Volume**: titel, kanaal, plaatje, afspelen/pauze en tijdlijn als de app iets afspeelt, in de stijl Player, Picture of Compact. Driemaal klikken = vorig nummer, ingedrukt draaien = spoelen.
-- **Better Spotify Dial**: dezelfde drie stijlen, spoelen en Spotify-groen als herkenning.
+- **Audio – App Volume**: title, channel, picture, play/pause and timeline while the app plays something, in the style Player, Picture or Compact. Triple-click = previous track, pressed turn = seek.
+- **Better Spotify Dial**: the same three styles, seeking and Spotify green as indicator.
 
 ## 1.1.10 (2026-11-20)
 
-- **Better Spotify Dial**: blijft niet meer hangen als de mediabediening van Windows niet reageert.
+- **Better Spotify Dial**: no longer hangs when Windows' media controls do not respond.
 
 ## 1.1.9 (2026-11-20)
 
-- Nieuw: **Better Spotify Dial**, Spotify op een dial met eigen acties voor 1x, 2x en 3x klikken, vasthouden en tikken.
+- New: **Better Spotify Dial**, Spotify on a dial with your own actions for click 1x, 2x and 3x, hold and tap.
 
 ## 1.1.8 (2026-11-20)
 
-- Alle plugins in het Engels.
-- **Audio**: App Volume kan afspelen/pauzeren en een nummer verder of terug; de Game Volume-dial kan bij één game horen.
-- **Launcher**: Game Key en Fixed Game Key zijn één Game Key.
-- **Monitor**: stijlen Basic, Tile en Icon only, PC- en PS5-apparaten, schermen wakker houden en een ander hoofdscherm zolang de PS5 in beeld is.
+- All plugins in English.
+- **Audio**: App Volume can play/pause and skip to the next or previous track; the Game Volume dial can belong to one game.
+- **Launcher**: Game Key and Fixed Game Key are one Game Key.
+- **Monitor**: Basic, Tile and Icon only styles, PC and PS5 devices, keeping the displays awake and a different main display while the PS5 is on screen.
 
 ## 1.1.7 (2026-11-20)
 
-- **F1 1.13.9**: Race en Quali openen weer de juiste sessie met MultiViewer 2.17; alle spelers in een setup starten goed; alleen de timing van de geopende sessie telt; knoppen weten van elkaar of F1 al open staat; taakbalk alleen op het hoofdscherm; geen naden tussen vensters; de volume-dial regelt de stream op het hoofdscherm; de sessieknop toont de volgende sessie.
+- **F1 1.13.9**: Race and Quali open the right session again with MultiViewer 2.17; all players in a setup start correctly; only the timing of the open session counts; keys know whether F1 is already open; taskbar only on the main display; no seams between windows; the volume dial controls the stream on the main display; the session key shows the next session.
 
 ## 1.1.6 (2026-11-14)
 
-- **Monitor**: optie om de monitor in Windows los te koppelen zolang hij op een andere input staat. LG-inputwissel probeert opnieuw als de driver de eerste keer weigert.
+- **Monitor**: option to disconnect the monitor in Windows while it is on another input. LG input switching retries when the driver refuses the first time.
 
 ## 1.1.5 (2026-11-14)
 
-- **Launcher**: logo kiezen ook bij de game-knop, voor de game die nu open staat.
-- **Audio**: de Gamebibliotheek kiest de game die nu speelt; gekozen logo's worden blijvend bewaard.
+- **Launcher**: choose a logo on the game key too, for the game that is open right now.
+- **Audio**: the Game library selects the game you are playing; chosen logos are kept permanently.
 
 ## 1.1.4 (2026-11-14)
 
-- **Launcher**: eigen logo per game, blijvend bewaard.
-- Opgelost: anti-cheatprogramma's (_EAC) worden niet meer als game gezien; Audio en Launcher overschrijven elkaars namen en logo's niet meer.
+- **Launcher**: a custom logo per game, kept permanently.
+- Fixed: anti-cheat programs (_EAC) are no longer seen as a game; Audio and Launcher no longer overwrite each other's names and logos.
 
 ## 1.1.3 (2026-11-14)
 
-- **Monitor**: PC- en PS5-icoon in de icoonbibliotheek.
+- **Monitor**: PC and PS5 icons in the icon library.
 
 ## 1.1.2 (2026-11-14)
 
-- **Monitor**: LG-monitors wisselen van input via NVIDIA; modelnaam uit de EDID.
+- **Monitor**: LG monitors switch input through NVIDIA; model name from the EDID.
 
 ## 1.1.1 (2026-11-12)
 
-- **F1 1.13**: de Session-knop toont de eerstvolgende sessie met afteller; Race en Quali tonen welke sessie ze openen.
+- **F1 1.13**: the Session key shows the next session with a countdown; Race and Quali show which session they open.
 
 ## 1.1.0 (2026-11-11)
 
-- Nieuw: de **F1**-plugin voor MultiViewer en Ultimate F1 Viewer, ook op Linux met OpenDeck.
+- New: the **F1** plugin for MultiViewer and Ultimate F1 Viewer, also on Linux with OpenDeck.
 
 ## 1.0.2 (2026-11-09)
 
-- Rustige gamenamen, schakelaars voor naam en speeltijd, menu's geordend.
+- Calmer game names, switches for name and playtime, tidier menus.
 
 ## 1.0.1 (2026-11-09)
 
-- Lange gamenamen schuiven af en toe opzij; updates gaan automatisch naar GitHub.
+- Long game names scroll now and then; updates go to GitHub automatically.
 
 ## 1.0.0 (2026-11-09)
 
-- Eerste release: **Audio** (volume per game en app, Scarlett Switch), **Launcher** (knoppen voor games en apps, met speeltijd) en **Monitor** (wisselen tussen monitorinputs).
+- First release: **Audio** (volume per game and app, Scarlett Switch), **Launcher** (keys for games and apps, with playtime) and **Monitor** (switch between monitor inputs).

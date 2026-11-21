@@ -1,5 +1,5 @@
 # Builds Scarlett Switch, installs it into Stream Deck and publishes the update to GitHub.
-param([string]$Message = 'Scarlett Switch bijgewerkt', [switch]$NoPublish)
+param([string]$Message = 'Scarlett Switch updated', [switch]$NoPublish)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.scarlett.sdPlugin"

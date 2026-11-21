@@ -1,5 +1,5 @@
 ﻿# Builds Volume & Launcher, installs it into Stream Deck and publishes the update to GitHub.
-param([string]$Message = 'Volume & Launcher bijgewerkt', [switch]$NoPublish)
+param([string]$Message = 'Volume & Launcher updated', [switch]$NoPublish)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $target = "$env:APPDATA\Elgato\StreamDeck\Plugins\com.stan.gamevolume.sdPlugin"
