@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.39 (2026-11-22)
+
+### Improved
+
+- **F1 Race Control**: the Back arrow is all white.
+
 ## 1.1.38 (2026-11-22)
 
 ### New

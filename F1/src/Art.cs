@@ -327,10 +327,9 @@ public static class Art
                $"<path d='{arrow}' fill='none' stroke='{Red}' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>";
     }
 
-    /// <summary>Arrow back to the left (Stream Deck's Go to Page, back to page 1).</summary>
+    /// <summary>Arrow back to the left (Back, Page 1), all white: the key's red corner is the accent.</summary>
     public static string Back() =>
-        $"<path d='M-8 -24 L-30 0 L-8 24' fill='none' stroke='{White}' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/>" +
-        $"<path d='M-28 0 H30' stroke='{Red}' stroke-width='7' stroke-linecap='round'/>";
+        $"<path d='M-8 -24 L-30 0 L-8 24 M-28 0 H30' fill='none' stroke='{White}' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/>";
 
     /// <summary>A circular arrow going back (anticlockwise) with the seconds inside (Replay).</summary>
     public static string Rewind(int seconds) =>
