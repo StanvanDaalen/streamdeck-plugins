@@ -15,6 +15,7 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 ### Fixed
 
 - **F1 Race Control**: the key settings showed every option as off: a quote in a help text broke the settings panel (since 1.16.3). `install.ps1` now checks the panel script before installing.
+
 ## 1.1.30 (2026-11-22)
 
 ### New
