@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.34 (2026-11-22)
+
+### New
+
+- **F1 Race Control**: choose what happens to the Windows taskbar while F1 runs (F1 Mode settings): on the main screen only, hide automatically, or leave it as it is. When F1 closes it goes back to how it was. The old checkbox carries over: on becomes main screen only, off becomes leave as it is.
+
 ## 1.1.33 (2026-11-22)
 
 ### New

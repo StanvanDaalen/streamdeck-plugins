@@ -43,10 +43,18 @@ public sealed class F1Settings
     public bool CloseUf1 { get; set; } = true;
     public bool CloseDesktop { get; set; } = false;
 
-    /// <summary>Taskbar on the main monitor only while F1 runs (back on all displays when F1 closes).</summary>
-    public bool TaskbarMainOnly { get; set; } = true;
+    /// <summary>
+    /// The taskbar while F1 runs: "main" = main monitor only, "autohide" = hide automatically,
+    /// "none" = as it is. Put back when F1 closes.
+    /// </summary>
+    public string TaskbarMode { get; set; } = "main";
+    /// <summary>Old on/off setting (before TaskbarMode); read once to migrate, then dropped.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public bool? TaskbarMainOnly { get; set; }
     /// <summary>F1 took the taskbar off the other displays, so closing F1 puts it back.</summary>
     public bool TaskbarRestore { get; set; }
+    /// <summary>F1 turned on auto-hide, so closing F1 turns it off again.</summary>
+    public bool TaskbarRestoreAutoHide { get; set; }
 
     // ---- Flags
     public bool ShowYellow { get; set; } = true;
@@ -142,6 +150,13 @@ public static class Store
                 Current.ModeDesktop = "f1";
                 Current.CloseDesktop = false;
                 Current.SettingsVersion = 2;
+                Save();
+            }
+            // The taskbar checkbox became a choice: off meant leave the taskbar alone.
+            if (Current.TaskbarMainOnly is { } mainOnly)
+            {
+                Current.TaskbarMode = mainOnly ? "main" : "none";
+                Current.TaskbarMainOnly = null;
                 Save();
             }
             // Window places come from the old PowerToys workspace once, so it can be deleted afterwards.

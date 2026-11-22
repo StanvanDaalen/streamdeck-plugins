@@ -66,8 +66,13 @@
       </select></div>
     <p class="note lblnote">Automatic: the session on track opens with its own layout (practice, qualifying or race); without a live session, no layout.</p>
     <div class="row"><label class="check"><input type="checkbox" data-key="ModeFlagsOn">Turn on the flags on your lights</label></div>
-    <div class="row"><label class="check"><input type="checkbox" data-key="TaskbarMainOnly">Taskbar on the main screen only</label></div>
-    <p class="note">While F1 runs (also from Race and Quali). Back on all screens when F1 closes.</p>
+    <div class="row"><span class="lbl">Taskbar</span>
+      <select data-key="TaskbarMode">
+        <option value="main">Main screen only</option>
+        <option value="autohide">Hide automatically</option>
+        <option value="none">Leave as it is</option>
+      </select></div>
+    <p class="note lblnote">While F1 runs (also from Race and Quali). Put back as it was when F1 closes.</p>
 
     <h4>Window positions</h4>
     <div class="row"><span class="lbl">MultiViewer</span><span class="muted" id="placeMv">–</span></div>

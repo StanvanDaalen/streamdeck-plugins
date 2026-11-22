@@ -144,7 +144,7 @@ The volume is OBS in the Windows volume mixer: it only changes what you hear, no
 
 For watching F1 with [MultiViewer](https://multiviewer.app/download) (required) and [Ultimate F1 Viewer](https://github.com/MRAJEKO/UF1-Viewer-with-F1MV/releases/latest) (optional). If either is missing, the plugin says so and offers the download page.
 
-- **F1 Mode**: sets everything up on a separate "F1" desktop. Double-click hides and mutes everything, hold for 1 second closes everything.
+- **F1 Mode**: sets everything up on a separate "F1" desktop. Double-click hides and mutes everything, hold for 1 second closes everything. The taskbar setting chooses what happens to the Windows taskbar meanwhile: main screen only, hide automatically or leave as it is (put back when F1 closes).
 - **Race** / **Quali**: opens your MultiViewer setup and Ultimate F1 Viewer layout with that name, for the live session or otherwise the latest replay. Fills onboards of drivers outside the top teams with the best of the rest and picks the drivers in battle mode.
 - **Your own setup**: the **Copy setup prompt** button in the Race and Quali key settings (also in [F1/sdPlugin/setup-prompt.md](F1/sdPlugin/setup-prompt.md)) gives a prompt for an AI assistant that can see your screen (such as Claude Code). It builds a MultiViewer setup and an Ultimate F1 Viewer layout per session type for your monitors, without gaps or overlap, checked with a bright yellow desktop, and names them so Race and Quali find them.
 - **Session**: time or laps remaining; press for more pages (weather, wind, chance of rain, leader, fastest lap, safety cars and red flags). Without a running session it shows the next session with a countdown.

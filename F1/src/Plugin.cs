@@ -576,7 +576,7 @@ internal sealed class Plugin
     private async Task<bool> StartF1Async(bool openLayout)
     {
         if (!CheckApps()) return false;
-        Taskbar.MainOnlyForF1(); // straight away and silently: the other taskbars just disappear
+        Taskbar.ApplyForF1(); // straight away and silently: no settings window
         Guid? desk = S.ModeDesktop == "current" ? null : await Desktops.GoToNamedAsync(S.DesktopName);
         await WithGate(async () =>
         {
@@ -670,7 +670,7 @@ internal sealed class Plugin
         bool any = false;
         _layoutOpen = null;
         if (!CheckApps()) return false;
-        Taskbar.MainOnlyForF1();
+        Taskbar.ApplyForF1();
 
         // Race/Quali include F1 Mode: run all its steps when it has not been started yet (even when an
         // app was already open by hand); otherwise just make sure we are on the F1 desktop.
@@ -1031,9 +1031,11 @@ internal sealed class Plugin
                 case "CloseMultiViewer": S.CloseMultiViewer = B(v); break;
                 case "CloseUf1": S.CloseUf1 = B(v); break;
                 case "CloseDesktop": S.CloseDesktop = B(v); break;
-                case "TaskbarMainOnly":
-                    S.TaskbarMainOnly = B(v);
-                    if (!S.TaskbarMainOnly) Taskbar.RestoreAfterF1(); // switched off mid-session: show it again
+                case "TaskbarMode":
+                    S.TaskbarMode = v.ToString();
+                    // Changed mid-session: undo what F1 did and apply the new choice straight away.
+                    Taskbar.RestoreAfterF1();
+                    if (_f1ModeOn) Taskbar.ApplyForF1();
                     break;
                 case "ShowYellow": S.ShowYellow = B(v); break;
                 case "ShowSafetyCar": S.ShowSafetyCar = B(v); break;
