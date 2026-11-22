@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.40 (2026-11-22)
+
+### Improved
+
+- **F1 Race Control**: Stream Deck doesn't let a plugin open a page of your own profile, so the Back key's settings explain the way that works: Stream Deck's own Go to Page key, with the plugin's back arrow as its image (in the middle of the key, without text) and its title (such as PAGE 1) on or off.
+
 ## 1.1.39 (2026-11-22)
 
 ### Improved

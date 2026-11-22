@@ -30,7 +30,8 @@ public static class Art
         string? caption = null, string captionColor = Grey)
     {
         // With a tag the icon is a little smaller and lower, so the tag top left keeps clear of it.
-        double y = caption == null ? 62 : 57, scale = caption == null ? 1 : 0.92;
+        // No text at all: the icon in the middle of the key.
+        double y = caption == null ? (label.Length == 0 && pill == null ? 72 : 62) : 57, scale = caption == null ? 1 : 0.92;
         if (pill != null) { y += 5; scale *= 0.82; }
         var icon = $"<g transform='translate(72 {N(y)}) scale({N(scale)})'>{glyph}</g>";
         var text = E(upper ? label.ToUpperInvariant() : label);
@@ -442,6 +443,7 @@ public static class Art
         yield return ("key-hide", Key(Screen(false), "Hide"));
         yield return ("key-invite", Key(Plane(), "Invite"));
         yield return ("key-page1", Key(Back(), "Page 1"));
+        yield return ("key-page", Key(Back(), "")); // without text, the arrow in the middle: for Stream Deck's own Go to Page
         yield return ("key-back", Key(Back(), "Back"));
         yield return ("key-profile", Key(F1Mark(), "F1"));
         yield return ("key-pause", Key(Pause(), "Pause"));

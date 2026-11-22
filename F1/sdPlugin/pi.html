@@ -31,6 +31,9 @@
   .ctl { display: grid; grid-template-columns: 84px 1fr; gap: 6px; margin: 4px 0; color: #c8c8c8; }
   .ctl b { color: #fff; font-weight: 600; }
   .shows { color: #9a9a9a; margin: 2px 0 6px; }
+  .tip { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; color: #c8c8c8; line-height: 1.45; }
+  .tip img { width: 48px; height: 48px; flex: none; border-radius: 8px; }
+  .tip code { font-size: 11px; word-break: break-all; color: #9a9a9a; }
   .help ul { margin: 2px 0 0; padding-left: 16px; }
   .warn { color: #ffb800; font-size: 11px; line-height: 1.45; margin: 4px 0; }
   .status { margin: 8px 0 2px; }
@@ -212,7 +215,11 @@ const HELP = {
     shows('A tick when the invite went out.'),
   back:
     ctl('Press', 'Back to the profile you came from.') +
-    shows('Part of the F1 Race Control profile; take it off if you don’t need it.'),
+    shows('Part of the F1 Race Control profile; take it off if you don’t need it.') +
+    `<div class="tip"><img src="images/key-page.svg" alt=""><span><b>Pages in one profile instead?</b> Stream Deck lets only its own
+    <b>Navigation → Go to Page</b> key open a page of your profile; a plugin can’t. Give that key this image:
+    <b>Set from file</b>, then <code>%APPDATA%\\Elgato\\StreamDeck\\Plugins\\com.stan.f1.sdPlugin\\images\\key-page.svg</code>.
+    Its title (such as PAGE 1) you show or hide with Stream Deck’s own T button.</span></div>`,
   profile:
     ctl('Press', 'Opens the F1 Race Control profile on this Stream Deck. The first time, Stream Deck asks to install it.') +
     shows('Put this key on your own main page.'),
