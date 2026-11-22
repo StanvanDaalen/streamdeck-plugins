@@ -270,36 +270,42 @@ public static class MvSetups
             if (force) Store.Log($"best of the rest: nog geen posities ({wanted.Count} van {slots.Count})");
             _lastWanted = null; _changeSeenLap = null; return;
         }
-        bool sameAsBefore = _lastWanted != null && _lastWanted.SequenceEqual(wanted);
+        // Who, not in which order: two of them changing places is no reason to reopen their onboards.
+        bool sameAsBefore = _lastWanted != null && _lastWanted.ToHashSet().SetEquals(wanted);
         bool stable = force || sameAsBefore;
         _lastWanted = wanted;
         if (!stable) { _changeSeenLap = null; return; }
-        if (slots.Select(s => s.DriverNumber).SequenceEqual(wanted.Select(w => (int?)w))) { _changeSeenLap = null; return; }
+        var shown = slots.Select(s => s.DriverNumber ?? 0).ToHashSet();
+        if (shown.SetEquals(wanted)) { _changeSeenLap = null; return; }
 
         var timing = force ? null : await MultiViewer.TimingAsync();
         var lines = timing?["TimingData"]?["Lines"] as System.Text.Json.Nodes.JsonObject;
         if (!force && Kind == "race")
         {
-            // Calm in the race: the new order must hold for a full lap, at most one swap per lap,
-            // and nothing under a safety car or red flag (the order is frozen or meaningless then).
+            // Calm in the race: the new pair must hold for 3 laps, at most one swap every 5 laps, and
+            // nothing under a safety car or red flag (the order is frozen or meaningless then). Every swap
+            // opens a new onboard, which takes a moment to load.
             int lap = int.TryParse(timing?["LapCount"]?["CurrentLap"]?.ToString(), out var l) ? l : 0;
             var status = timing?["TrackStatus"]?["Status"]?.ToString() ?? "1";
             if (status is "4" or "5" or "6" or "7") return;
             if (_changeSeenLap == null) { _changeSeenLap = lap; return; }
-            if (lap < _changeSeenLap + 1 || lap == _lastSwapLap) return;
+            if (lap < _changeSeenLap + 3 || (_lastSwapLap >= 0 && lap < _lastSwapLap + 5)) return;
             _lastSwapLap = lap;
         }
         _changeSeenLap = null;
 
-        // Slot i (top-left first) shows the i-th best; this also reorders when two of them swap places.
+        // A driver still wanted keeps their slot; only a slot whose driver dropped out gets a newcomer.
+        var newcomers = new Queue<int>(wanted.Where(w => !shown.Contains(w)));
+        var target = slots.Select(s => s.DriverNumber is { } n && wanted.Contains(n) ? n : (newcomers.Count > 0 ? newcomers.Dequeue() : n0(s))).ToList();
+        static int n0(MultiViewer.SlotPlayer s) => s.DriverNumber ?? 0;
         bool swapped = false;
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i].DriverNumber == wanted[i]) continue;
+            if (slots[i].DriverNumber == target[i]) continue;
             // Qualifying: never during a lap; only when the driver in that slot is back in the pits.
             if (!force && Kind == "quali" && lines?[slots[i].DriverNumber?.ToString() ?? ""]?["InPit"]?.ToString() != "true") continue;
-            Store.Log($"best of the rest: vak {i + 1} {slots[i].Tla} -> #{wanted[i]}");
-            await MultiViewer.SwapDriverAsync(slots[i], wanted[i]);
+            Store.Log($"best of the rest: vak {i + 1} {slots[i].Tla} -> #{target[i]}");
+            await MultiViewer.SwapDriverAsync(slots[i], target[i]);
             swapped = true;
         }
         // A new player opens on top of everything; put the stacking right again.

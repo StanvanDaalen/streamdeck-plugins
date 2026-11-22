@@ -258,11 +258,27 @@ public static class MultiViewer
                 $"bounds: {{ x: {old.X}, y: {old.Y}, width: {old.Width}, height: {old.Height} }}, maintainAspectRatio: true }}) }}");
             if ((string?)d?["playerCreate"] is not { } id) { Store.Log("swap: nieuwe speler niet gemaakt, oude blijft"); return; }
             await Task.Delay(1500);
+            // A new player starts at the beginning of the broadcast (where onboards show "no video"), not where
+            // you are: put it on the old onboard's moment. A seek of its own, no MultiViewer sync, which would
+            // also move the live timing.
+            if (await PositionAsync(old.Id) is { } at) await MutateAsync($"playerSeekTo(id: {Id(id)}, absolute: {Num(at)})");
             if (!await SetMutedAsync(id, old.Muted) || !await SetVolumeAsync(id, old.Volume))
                 Store.Log("swap: geluid van de nieuwe speler niet overgezet");
             if (!await MutateAsync($"playerDelete(id: {Id(old.Id)})")) Store.Log("swap: oude speler niet gesloten");
         }
         catch (Exception e) { Store.Log("swap: " + e.Message); }
+    }
+
+    /// <summary>Where a player is (seconds into the broadcast), or null.</summary>
+    private static async Task<double?> PositionAsync(string id)
+    {
+        try
+        {
+            var d = await QueryAsync($"{{ player(id: {Id(id)}) {{ state {{ interpolatedCurrentTime currentTime }} }} }}");
+            var st = d?["player"]?["state"];
+            return (double?)st?["interpolatedCurrentTime"] ?? (double?)st?["currentTime"];
+        }
+        catch { return null; }
     }
 
     /// <summary>Content id of the session the open players show (a replay or live), or null.</summary>

@@ -14,6 +14,8 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+- **F1 Race Control**: best of the rest no longer reopens two onboards when their drivers only change places; a new onboard starts at the moment you are watching instead of the start of the broadcast ("no video"); during the race at most one swap every 5 laps, after the change has held for 3 laps.
+
 ## 1.1.29 (2026-11-22)
 
 ### New
