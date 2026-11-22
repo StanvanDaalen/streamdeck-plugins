@@ -4,11 +4,13 @@ using System.Text.Json.Nodes;
 namespace F1;
 
 /// <summary>One F1 session from the calendar.</summary>
-public sealed record CalSession(string Name, string Type, string Location, DateTimeOffset Start, DateTimeOffset End, int Meeting);
+public sealed record CalSession(string Name, string Type, string Location, DateTimeOffset Start, DateTimeOffset End, int Meeting, int Key = 0);
 
 /// <summary>
-/// The F1 calendar from OpenF1 (public), refreshed every half hour: the next session for the Session key
-/// and, for the Race and Quali keys, which race or qualifying they would open.
+/// The F1 calendar from OpenF1 (public): the next session for the Session key and, for the Race and Quali
+/// keys, which race or qualifying they would open (and which replay to look for on F1 TV). Refreshed every 6
+/// hours and kept in %APPDATA%\StanF1\schedule.json: OpenF1 shuts out everyone without a paid key while a
+/// session is live, exactly when the keys need it, so the saved copy carries over (also after a restart).
 /// </summary>
 public static class Schedule
 {
@@ -16,6 +18,28 @@ public static class Schedule
     private static List<CalSession> _sessions = new();
     private static DateTime _loaded = DateTime.MinValue;
     private static readonly SemaphoreSlim Lock = new(1, 1);
+    private static readonly string CachePath = Path.Combine(Store.Dir, "schedule.json");
+    private static readonly TimeSpan Every = TimeSpan.FromHours(6), RetryAfter = TimeSpan.FromMinutes(10);
+    private static bool _cacheRead;
+
+    /// <summary>The saved copy, once, when nothing is loaded yet.</summary>
+    private static void ReadCache()
+    {
+        if (_cacheRead) return;
+        _cacheRead = true;
+        try
+        {
+            if (!File.Exists(CachePath)) return;
+            var list = System.Text.Json.JsonSerializer.Deserialize<List<CalSession>>(File.ReadAllText(CachePath));
+            if (list is { Count: > 0 } && _sessions.Count == 0)
+            {
+                _sessions = list.OrderBy(s => s.Start).ToList();
+                // a copy from less than 6 hours ago needs no update now
+                _loaded = File.GetLastWriteTimeUtc(CachePath);
+            }
+        }
+        catch (Exception e) { Store.Log("kalender (opgeslagen): " + e.Message); }
+    }
 
     private static HttpClient CreateClient()
     {
@@ -24,10 +48,11 @@ public static class Schedule
         return c;
     }
 
-    /// <summary>Loads the calendar when it is older than 30 minutes (quietly keeps the old one on failure).</summary>
+    /// <summary>Loads the calendar when it is older than 6 hours (quietly keeps the one it has on failure).</summary>
     public static async Task RefreshAsync()
     {
-        if (DateTime.UtcNow - _loaded < TimeSpan.FromMinutes(30)) return;
+        ReadCache();
+        if (DateTime.UtcNow - _loaded < Every) return;
         if (!await Lock.WaitAsync(0)) return;
         try
         {
@@ -42,13 +67,23 @@ public static class Schedule
                     if (!DateTimeOffset.TryParse((string?)s["date_start"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) ||
                         !DateTimeOffset.TryParse((string?)s["date_end"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var end)) continue;
                     list.Add(new CalSession((string?)s["session_name"] ?? "", (string?)s["session_type"] ?? "",
-                        (string?)s["location"] ?? (string?)s["circuit_short_name"] ?? "", start, end, (int?)s["meeting_key"] ?? 0));
+                        (string?)s["location"] ?? (string?)s["circuit_short_name"] ?? "", start, end, (int?)s["meeting_key"] ?? 0,
+                        (int?)s["session_key"] ?? 0));
                 }
                 if (y == year + 1 && list.Count == 0) break;
             }
-            if (list.Count > 0) { _sessions = list.OrderBy(s => s.Start).ToList(); _loaded = DateTime.UtcNow; }
+            if (list.Count > 0)
+            {
+                _sessions = list.OrderBy(s => s.Start).ToList(); _loaded = DateTime.UtcNow;
+                try { File.WriteAllText(CachePath, System.Text.Json.JsonSerializer.Serialize(_sessions)); } catch { }
+            }
         }
-        catch (Exception e) { Store.Log("kalender: " + e.Message); _loaded = DateTime.UtcNow.AddMinutes(-25); } // try again in 5 min
+        catch (Exception e)
+        {
+            // OpenF1 answers 401 to everyone while a session is live: keep the calendar we have, try later
+            Store.Log("kalender: " + e.Message + (_sessions.Count > 0 ? " (opgeslagen kalender blijft)" : ""));
+            _loaded = DateTime.UtcNow - Every + RetryAfter;
+        }
         finally { Lock.Release(); }
     }
 

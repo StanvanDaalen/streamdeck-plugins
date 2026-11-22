@@ -65,11 +65,51 @@ public static class Replays
     /// <summary>Meeting key of the latest finished F1 race/qualifying, from the last LatestAsync call.</summary>
     public static int? LastMeetingKey { get; private set; }
 
+    /// <summary>The F1 TV replay of one session (F1 TV's own search on the weekend; F1 TV stays open during live sessions).</summary>
+    private static async Task<(string Id, string Title)?> FindOnF1TvAsync(int meeting, int session, string sessionName)
+    {
+        try
+        {
+            var url = $"https://f1tv.formula1.com/2.0/R/ENG/WEB_DASH/ALL/PAGE/SEARCH/VOD/F1_TV_Pro_Annual/2?filter_MeetingKey={meeting}";
+            var items = JsonNode.Parse(await GetAsync(url))?["resultObj"]?["containers"]?.AsArray();
+            var hit = items?.OfType<JsonObject>().Select(i => i["metadata"]).FirstOrDefault(m =>
+                (string?)m?["emfAttributes"]?["Series"] == "FORMULA 1" &&
+                (string?)m?["titleBrief"] == sessionName &&
+                (string?)m?["contentSubtype"] is null or "REPLAY" &&
+                ((string?)m?["emfAttributes"]?["MeetingSessionKey"] is not { Length: > 0 } sk || session == 0 || sk == session.ToString()));
+            if (hit?["contentId"] is { } id) return (id.ToString(), (string?)hit["title"] ?? sessionName);
+            Store.Log($"replay {sessionName}: geen F1 TV-content voor meeting {meeting}");
+        }
+        catch (Exception e) { Store.Log("f1tv zoeken: " + e.Message); }
+        return null;
+    }
+
     /// <summary>Content id and title of the latest finished F1 race ("race") or qualifying ("quali").</summary>
     public static async Task<(string Id, string Title)?> LatestAsync(string kind)
     {
         string sessionName = kind == "quali" ? "Qualifying" : "Race";
         var now = DateTimeOffset.UtcNow;
+        // The calendar (kept on disk) first: OpenF1 itself is closed while any session is live.
+        await Schedule.RefreshAsync();
+        if (Schedule.LatestDone(kind) is { Key: > 0 } done && await FindOnF1TvAsync(done.Meeting, done.Key, sessionName) is { } hit)
+        {
+            LastMeetingKey = done.Meeting;
+            return hit;
+        }
+        // No calendar at all (never loaded, OpenF1 closed): the weekend MultiViewer's live timing knows, which is
+        // the one that was just live, so right after a race its qualifying and race are there.
+        try
+        {
+            var info = (await MultiViewer.QueryAsync("{ f1LiveTimingState { SessionInfo } }"))?["f1LiveTimingState"]?["SessionInfo"];
+            if (int.TryParse(info?["Meeting"]?["Key"]?.ToString(), out var mvMeeting) && mvMeeting > 0
+                && await FindOnF1TvAsync(mvMeeting, 0, sessionName) is { } mvHit)
+            {
+                Store.Log($"replay {kind}: via het weekend in MultiViewer ({mvMeeting})");
+                LastMeetingKey = mvMeeting;
+                return mvHit;
+            }
+        }
+        catch (Exception e) { Store.Log("replay via MultiViewer: " + e.Message); }
         foreach (var year in new[] { now.Year, now.Year - 1 })
         {
             JsonArray? sessions;
@@ -84,22 +124,10 @@ public static class Replays
                 .FirstOrDefault().S;
             if (latest == null) continue;
 
-            var meeting = (int?)latest["meeting_key"];
-            var session = (int?)latest["session_key"];
+            var meeting = (int?)latest["meeting_key"] ?? 0;
+            var session = (int?)latest["session_key"] ?? 0;
             LastMeetingKey = meeting;
-            try
-            {
-                var url = $"https://f1tv.formula1.com/2.0/R/ENG/WEB_DASH/ALL/PAGE/SEARCH/VOD/F1_TV_Pro_Annual/2?filter_MeetingKey={meeting}";
-                var items = JsonNode.Parse(await GetAsync(url))?["resultObj"]?["containers"]?.AsArray();
-                var hit = items?.OfType<JsonObject>().Select(i => i["metadata"]).FirstOrDefault(m =>
-                    (string?)m?["emfAttributes"]?["Series"] == "FORMULA 1" &&
-                    (string?)m?["titleBrief"] == sessionName &&
-                    ((string?)m?["emfAttributes"]?["MeetingSessionKey"] is not { Length: > 0 } sk || sk == session?.ToString()));
-                if (hit?["contentId"] is { } id) return (id.ToString(), (string?)hit["title"] ?? sessionName);
-                Store.Log($"replay {kind}: geen F1 TV-content voor meeting {meeting}");
-            }
-            catch (Exception e) { Store.Log("f1tv zoeken: " + e.Message); }
-            return null;
+            return await FindOnF1TvAsync(meeting, session, sessionName);
         }
         return null;
     }

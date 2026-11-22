@@ -237,6 +237,8 @@ internal sealed class Plugin
 
     /// <summary>The key's job is running or waiting: show "…" on it.</summary>
     private bool IsBusy { get { lock (_jobLock) return _busy; } }
+    /// <summary>The Race/Quali being opened has its session in MultiViewer (kept or opened).</summary>
+    private bool _sessionOk;
 
     private bool IsWorking(string action)
     {
@@ -714,7 +716,7 @@ internal sealed class Plugin
 
         // Where to start: where you left off, else a minute before the session starts (also when it is already
         // running). Not when F1 Party asked for the session: the party decides where everyone is.
-        if (onlyContent == null && S.StartFromBeginning && kind is "race" or "quali") await StartPoint.ApplyAsync();
+        if (onlyContent == null && S.StartFromBeginning && _sessionOk && kind is "race" or "quali") await StartPoint.ApplyAsync();
 
         // Best of the rest right away (the setup may have opened before positions were known).
         if (timing && MvSetups.Active) await MvSetups.UpdateRestSlotsAsync(force: true);
@@ -786,11 +788,13 @@ internal sealed class Plugin
             _ => string.Equals(type, "Race", StringComparison.OrdinalIgnoreCase),
         };
 
+        _sessionOk = false;
         var openNow = await MvSetups.OpenContentAsync();
         _sessionMeeting = int.TryParse(_mv.Timing?["SessionInfo"]?["Meeting"]?["Key"]?.ToString(), out var mk) ? mk : null;
         if (onlyContent == null && openNow != null && wanted((string?)_mv.Timing?["SessionInfo"]?["Type"]))
         {
             Store.Log($"sessie: al open ({_mv.Session})");
+            _sessionOk = true;
             return;
         }
 
@@ -798,7 +802,7 @@ internal sealed class Plugin
         if (onlyContent != null)
         {
             // Asked for one session (F1 Party: the host's): that one, whatever kind it is.
-            if (openNow == onlyContent) { Store.Log($"sessie: al open ({_mv.Session})"); return; }
+            if (openNow == onlyContent) { Store.Log($"sessie: al open ({_mv.Session})"); _sessionOk = true; return; }
             contentId = onlyContent; what = "gevraagde sessie";
             _sessionMeeting = null;
         }
@@ -825,6 +829,7 @@ internal sealed class Plugin
             opened = await MvSetups.OpenContentAsync() == contentId;
         }
         if (!opened) Store.Log("sessie: pagina niet op tijd geopend");
+        _sessionOk = opened;
         // No waiting for timing here: MultiViewer only loads a replay's timing once a player runs,
         // and the players come with the setup that opens next.
     }
