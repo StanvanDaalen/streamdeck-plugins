@@ -12,7 +12,7 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
-- **F1 Race Control**: the time left on the Session key no longer stands still (for example at 3:09 in qualifying): MultiViewer's timing clock is now counted on between its updates.
+- **F1 Race Control**: the time left on the Session key no longer stands still (for example at 3:09 in qualifying): MultiViewer's timing clock is now counted on between its updates, and whole seconds round up like the F1 clock.
 
 ## 1.1.31 (2026-11-22)
 

@@ -65,6 +65,8 @@ public sealed class MvState
                 DateTimeOffset.TryParse((string?)clock["Utc"], CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at))
                 left -= TimeSpan.FromMilliseconds(now - at.ToUnixTimeMilliseconds());
             if (left < TimeSpan.Zero) left = TimeSpan.Zero;
+            // Whole seconds rounded up, like the F1 clock and MultiViewer's timing (12:34.6 left shows 12:35).
+            left = TimeSpan.FromSeconds(Math.Ceiling(left.TotalSeconds - 0.001));
             return left.TotalHours >= 1 ? left.ToString(@"h\:mm\:ss") : left.ToString(@"mm\:ss");
         }
     }
