@@ -8,6 +8,14 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
+### Improved
+
+### Fixed
+
+## 1.1.30 (2026-11-22)
+
+### New
+
 - **F1 Race Control**: Race and Quali start where you left off in that session, else 1 minute before the start, also when the session is already running (you watch it from the start instead of halfway). Setting "Start where I left off, else 1 minute before the start", on by default.
 
 ### Improved
