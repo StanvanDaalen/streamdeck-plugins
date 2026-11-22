@@ -16,6 +16,7 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
+- **F1 Race Control**: three keys to swap in when you like: **Replay** (10 seconds back; onboards and, as the host, the whole party follow), **Hide** (minimise F1 and mute everything, press again for it all back) and **Invite** (send the F1 Party invite to Discord).
 - **F1 Race Control**: **Start together** key: F1 Party's five start lights for the whole party, then everyone plays at the same moment. The lights on the key come on one by one during the countdown.
 - **F1 Race Control**: the Sync key is now the **Party** key for F1 Party, with its own icon (four people in front of a screen): bright in a party with how many watch, dark with a stroke when you're not in one. Press: start a party, or sync when you're in one (as the host everyone syncs to you). Double-press: copy the party code. Triple-press: send the Discord invite. Hold: leave the party. Without F1 Party a press still syncs your streams.
 

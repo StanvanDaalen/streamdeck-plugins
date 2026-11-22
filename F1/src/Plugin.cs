@@ -22,7 +22,8 @@ internal sealed class Plugin
     private const string P = "com.stan.f1.";
     private const string Mode = P + "mode", Flags = P + "flags", Zone = P + "zone",
         Volume = P + "volume", Latency = P + "latency", Live = P + "live", Sync = P + "sync",
-        Pause = P + "pause", Race = P + "race", Quali = P + "quali", Fullscreen = P + "fullscreen", Session = P + "session", Close = P + "close", Start = P + "start";
+        Pause = P + "pause", Race = P + "race", Quali = P + "quali", Fullscreen = P + "fullscreen", Session = P + "session", Close = P + "close", Start = P + "start",
+        Replay = P + "replay", Hide = P + "hide", Invite = P + "invite";
 
     private readonly int _port;
     private readonly string _uuid, _register;
@@ -418,6 +419,17 @@ internal sealed class Plugin
                 // Start together (F1 Party): the five lights for the whole party, then everyone plays
                 if (!F1Party.Installed) { await Alert(c); break; }
                 _ = Task.Run(async () => await (await F1Party.CommandAsync("start") ? Ok(c) : Alert(c)));
+                break;
+            case Replay:
+                // 10 s back on the main stream; the onboards follow (F1 Party), and as the host the party too
+                if (_mv.Main is not { } rp || !await MultiViewer.SeekRelativeAsync(rp.Id, -10)) { await Alert(c); break; }
+                if (rp.Live) _latency += 10;
+                await MultiViewer.SyncAsync(rp.Id);
+                break;
+            case Hide: await ToggleHiddenAsync(c); break;
+            case Invite:
+                if (!F1Party.Installed) { await Alert(c); break; }
+                _ = Task.Run(async () => await (await F1Party.CommandAsync("invite") ? Ok(c) : Alert(c)));
                 break;
             case Live: await GoLive(c); break;
             case Pause: await TogglePause(c); break;
@@ -1230,6 +1242,9 @@ internal sealed class Plugin
             Quali => Art.Key(Art.Stopwatch(), "Quali", IsWorking(Quali) ? "…" : null, Art.Amber, caption: Opens("quali", out var qc), captionColor: qc),
             Close => Art.Key(Art.Power(), "End session", IsWorking(Close) ? "…" : null, Art.Amber),
             Start => StartKey(),
+            Replay => Art.Key(Art.Rewind(10), "Replay", labelColor: _mv.Main == null ? Art.Grey : Art.White),
+            Hide => _hidden ? Art.Key(Art.Eye(open: false), "Show", labelColor: Art.Grey) : Art.Key(Art.Eye(), "Hide"),
+            Invite => Art.Key(Art.Plane(), "Invite"),
             Mode when !Art.HasLogo => Art.Key(Art.F1Mark(), "F1 Mode", ModePill, ModePillColor),
             _ => null,
         };

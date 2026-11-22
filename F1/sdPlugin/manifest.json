@@ -3,7 +3,7 @@
     "Name": "F1 Race Control",
     "Author": "Stan",
     "Description": "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.20.0.0",
+    "Version": "1.21.0.0",
     "SDKVersion": 2,
     "Icon": "images/plugin",
     "Category": "F1 Race Control",
@@ -255,6 +255,54 @@
             "States": [
                 {
                     "Image": "images/key-start",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.replay",
+            "Name": "Replay",
+            "Tooltip": "Press: the main stream 10 seconds back, to see it again. The onboards follow; as the F1 Party host, the whole party does.",
+            "Icon": "images/action-replay",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-replay",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.hide",
+            "Name": "Hide",
+            "Tooltip": "Press: minimise F1's windows and mute everything. Press again: everything back.",
+            "Icon": "images/action-hide",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-hide",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.invite",
+            "Name": "Invite",
+            "Tooltip": "F1 Party: send the Discord invite (starts a party first when you are not in one).",
+            "Icon": "images/action-invite",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-invite",
                     "ShowTitle": false
                 }
             ]

@@ -39,6 +39,23 @@ internal static class Program
                 var url = Art.Png(Art.Icon(glyph), 72);
                 File.WriteAllBytes(Path.Combine(pngDir, name + ".png"), Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]));
             }
+            // every key as the Stream Deck shows it (144 px), to look at, and Page 1 for the profile
+            foreach (var (name, svg) in Art.Assets().Where(a => a.Name.StartsWith("key-")))
+            {
+                var key = Art.Png(svg, 144);
+                File.WriteAllBytes(Path.Combine(pngDir, name + ".png"), Convert.FromBase64String(key[(key.IndexOf(',') + 1)..]));
+            }
+            foreach (var (name, svg) in new[]
+            {
+                ("party-on", Art.Key(Art.Party(), "Party", "4", Art.Green, caption: "ZGGCW · HOST", captionColor: Art.Grey)),
+                ("party-off", Art.Key(Art.Party(on: false), "Party", labelColor: Art.Grey)),
+                ("start-count", Art.Key(Art.Lights(3), "Start", caption: "lights out soon", captionColor: Art.Red)),
+                ("hide-on", Art.Key(Art.Eye(open: false), "Show", labelColor: Art.Grey)),
+            })
+            {
+                var key = Art.Png(svg, 144);
+                File.WriteAllBytes(Path.Combine(pngDir, name + ".png"), Convert.FromBase64String(key[(key.IndexOf(',') + 1)..]));
+            }
             if (Art.KeyWithLogo("F1 Mode") is { } logo)
                 File.WriteAllBytes(Path.Combine(pngDir, "key-mode-logo.png"), Convert.FromBase64String(logo[(logo.IndexOf(',') + 1)..]));
             return 0;
