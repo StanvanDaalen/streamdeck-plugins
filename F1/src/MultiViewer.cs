@@ -115,7 +115,7 @@ public static class MultiViewer
 
     private const string StateQuery =
         "{ f1LiveTimingState { TrackStatus LapCount SessionInfo RaceControlMessages ExtrapolatedClock WeatherData } " +
-        "f1LiveTimingClock { trackTime } " +
+        "f1LiveTimingClock { paused systemTime trackTime } " +
         "players { id type fullscreen state { volume muted paused live } driverData { tla } streamData { title } } }";
 
     internal static async Task<JsonNode?> QueryAsync(string query)
@@ -141,7 +141,16 @@ public static class MultiViewer
             s.Online = true;
             s.Timing = d?["f1LiveTimingState"] as JsonObject;
             if (!Matches(s.Timing)) s.Timing = null; // another session's timing (see Expect)
-            if (long.TryParse(d?["f1LiveTimingClock"]?["trackTime"]?.ToString(), out var tt)) s.TrackTimeMs = tt;
+            // The clock is an anchor: the session time (trackTime) at a moment of this PC's clock (systemTime).
+            // While it runs, the time since that moment has to be added, or it stands still until MultiViewer
+            // sets a new anchor (the time left in qualifying stood still at a few minutes).
+            var clock = d?["f1LiveTimingClock"];
+            if (long.TryParse(clock?["trackTime"]?.ToString(), out var tt))
+            {
+                if ((bool?)clock?["paused"] != true && long.TryParse(clock?["systemTime"]?.ToString(), out var sys))
+                    tt += Math.Max(0, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - sys);
+                s.TrackTimeMs = tt;
+            }
             if (d?["players"] is JsonArray players)
             {
                 foreach (var p in players)
