@@ -15,6 +15,16 @@ if ($OpenDeck) {
     $defaultExe = 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 }
 
+# The settings panel's script must not break: one stray quote leaves every setting looking off.
+if (Get-Command node -ErrorAction SilentlyContinue) {
+    $html = [IO.File]::ReadAllText("$root\sdPlugin\pi.html")
+    $start = $html.IndexOf('<script>') + 8
+    $js = Join-Path $env:TEMP 'f1-pi-check.js'
+    [IO.File]::WriteAllText($js, $html.Substring($start, $html.IndexOf('</script>', $start) - $start))
+    node --check $js
+    if ($LASTEXITCODE -ne 0) { throw 'pi.html: the settings script has a syntax error (see above)' }
+}
+
 dotnet build "$root\F1.csproj" -c Release -o "$root\out" -v q --nologo
 if ($LASTEXITCODE -ne 0) { throw 'build failed' }
 Start-Process "$root\out\F1.exe" -ArgumentList '--assets', "`"$root\sdPlugin\images`"" -Wait
