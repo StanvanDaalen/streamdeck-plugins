@@ -321,18 +321,27 @@ public static class MvSetups
     /// empty strip below the last driver. This zooms its page until the rows reach the bottom of the
     /// window (at most 40% larger, never smaller). Returns what it did per Live Timing window.
     /// </summary>
-    public static async Task<string> FitLiveTimingAsync()
+    /// <param name="fit">False: undo it (normal size, replay bar back).</param>
+    public static async Task<string> FitLiveTimingAsync(bool fit = true)
     {
         var done = new List<string>();
         foreach (var page in await Cdp.PagesAsync(Store.Current.MvPort))
         {
             var title = (string?)page["title"] ?? "";
             if (!title.StartsWith("Live Timing", StringComparison.Ordinal) && !title.StartsWith("Replay Live Timing", StringComparison.Ordinal)) continue;
-            try { done.Add((string?)await Cdp.EvalAsync(page, FitScript, awaitPromise: false, timeoutSeconds: 5) ?? "?"); }
+            try { done.Add((string?)await Cdp.EvalAsync(page, fit ? FitScript : UnfitScript, awaitPromise: false, timeoutSeconds: 5) ?? "?"); }
             catch (Exception e) { done.Add("fout: " + e.Message); }
         }
         return done.Count == 0 ? "geen Live Timing" : string.Join(", ", done);
     }
+
+    private const string UnfitScript = """
+        (() => {
+          document.documentElement.style.zoom = '1';
+          for (const bar of document.querySelectorAll('.MuiToolbar-root')) bar.style.display = '';
+          return 'normaal';
+        })()
+        """;
 
     private const string FitScript = """
         (() => {

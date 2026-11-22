@@ -22,8 +22,6 @@
   button:hover { background: #4a4a4a; }
   /* the short explanation right under a setting */
   .note { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 2px 40px 4px 0; }
-  .aiprompt { margin-top: 16px; padding-top: 6px; border-top: 1px solid #3a3a3a; }
-  .aiprompt .row > span { color: #9a9a9a; }
   button.small { padding: 2px 8px; font-size: 11px; }
   .row + .note.lblnote, .note.lblnote { margin-left: 118px; }
   .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
@@ -163,6 +161,8 @@
     <div class="row"><label class="check"><input type="checkbox" data-key="LayoutCloseCurrent">Close the open Ultimate F1 Viewer windows first</label></div>
     <div class="row"><label class="check"><input type="checkbox" data-key="StartFromBeginning">Start where I left off, else 1 minute before the start</label></div>
     <p class="note">Also when the session is already running: you watch it from the start instead of halfway. Off: where MultiViewer starts (live: the live edge).</p>
+    <div class="row"><label class="check"><input type="checkbox" data-key="FitLiveTiming">Fit Live Timing to its window</label></div>
+    <p class="note">Zooms the rows until they reach the bottom (at most 40% larger) and hides the replay bar. Off: MultiViewer's own size.</p>
     <div class="row"><span class="lbl"></span><button id="saveLayout">Save current windows</button></div>
     <p class="note lblnote" id="saveStatus">Saves the windows open in Ultimate F1 Viewer as this layout. Save your MultiViewer setup in MultiViewer itself.</p>
 
@@ -183,10 +183,6 @@
     <p class="note">Checks every 30 seconds.</p>
     <div class="row"><span class="lbl">Top teams</span><input type="text" data-key="TopTeams" placeholder="McLaren, Ferrari, Mercedes, Red Bull Racing"></div>
 
-    <div class="aiprompt">
-      <div class="row"><span>Build your own setup with AI:</span><button id="copyPrompt" class="small">Copy setup prompt</button></div>
-      <p class="note" id="promptStatus">Paste it into an AI assistant that can see your screen (such as Claude Code). It builds a setup and layout per session type for your monitors. <a href="#" id="readPrompt">Read it</a></p>
-    </div>
   </div>
 
 <script>
@@ -285,7 +281,6 @@ function apply(p) {
   $('pair').textContent = p.paired ? 'Pair again' : 'Pair bridge';
   $('pairStatus').textContent = p.status || '';
   if ((kind === 'race' || kind === 'quali') && /saved|Saving failed/.test(p.status || '')) $('saveStatus').textContent = p.status;
-  if ((kind === 'race' || kind === 'quali') && /prompt/i.test(p.status || '')) $('promptStatus').firstChild.textContent = p.status + ' ';
   $('placeMv').textContent = p.placeMv || '–';
   $('placeUf1').textContent = p.placeUf1 || '–';
 
@@ -319,11 +314,6 @@ document.addEventListener('change', e => {
 $('pair').addEventListener('click', () => send({ pair: true }));
 $('savePlaces').addEventListener('click', () => send({ SavePlaces: true }));
 $('saveLayout').addEventListener('click', () => send({ saveLayout: true }));
-$('copyPrompt').addEventListener('click', () => send({ copySetupPrompt: true }));
-$('readPrompt').addEventListener('click', e => {
-  e.preventDefault();
-  ws && ws.readyState === 1 && ws.send(JSON.stringify({ event: 'openUrl', payload: { url: 'https://github.com/StanvanDaalen/streamdeck-plugins/blob/main/F1/sdPlugin/setup-prompt.md' } }));
-});
 $('test').addEventListener('click', () => send({ test: true }));
 </script>
 </body>

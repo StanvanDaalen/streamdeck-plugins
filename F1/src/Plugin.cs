@@ -736,7 +736,7 @@ internal sealed class Plugin
         Store.Log($"vensters op hoogte gestapeld: {await MvSetups.StackAsync()}");
         Store.Log($"naden dicht: {Seams.Close()} vensters bijgezet");
         // The rows are there now (timing loaded): let the Live Timing fill its window to the bottom.
-        Store.Log($"live timing passend: {await MvSetups.FitLiveTimingAsync()}");
+        if (S.FitLiveTiming) Store.Log($"live timing passend: {await MvSetups.FitLiveTimingAsync()}");
 
         // Only now the viewer's layout: battle mode and crash detection read the driver list once,
         // when their window opens, so they must open after the timing is there.
@@ -1053,6 +1053,11 @@ internal sealed class Plugin
                 case "QualiMvSetup": S.QualiMvSetup = Id(v); break;
                 case "RestEnabled": S.RestEnabled = B(v); break;
                 case "RestLive": S.RestLive = B(v); break;
+                case "FitLiveTiming":
+                    S.FitLiveTiming = B(v);
+                    // Straight away on the open Live Timing windows (nothing happens when there are none).
+                    _ = Task.Run(async () => Store.Log($"live timing: {await MvSetups.FitLiveTimingAsync(S.FitLiveTiming)}"));
+                    break;
                 case "BattleEnabled": S.BattleEnabled = B(v); break;
                 case "BattleRight": S.BattleRight = v.ToString(); break;
                 case "BattleLive": S.BattleLive = B(v); break;
@@ -1082,11 +1087,6 @@ internal sealed class Plugin
                 ? $"Current windows saved as layout {(kind == "race" ? "Race" : "Qualifying")}."
                 : "Saving failed: Ultimate F1 Viewer cannot be reached.";
         }
-        // Race/Quali settings: the setup prompt (shipped with the plugin) on the clipboard, for an AI assistant.
-        if (p["copySetupPrompt"] != null && c.Action is Race or Quali)
-            _pairStatus = SetupPrompt.CopyToClipboard()
-                ? "Setup prompt copied. Paste it into your AI assistant."
-                : "Copying the prompt failed; use Read it first and copy it from there.";
         if (p["pair"] != null && !_pairing)
         {
             _pairing = true;

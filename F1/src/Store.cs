@@ -92,6 +92,8 @@ public sealed class F1Settings
     public bool RestEnabled { get; set; } = true;
     /// <summary>Keep the best-of-the-rest slots up to date during the session.</summary>
     public bool RestLive { get; set; } = true;
+    /// <summary>After opening a layout, zoom the Live Timing rows to fill their window (replay bar hidden).</summary>
+    public bool FitLiveTiming { get; set; } = true;
 
     // ---- Battle mode (Ultimate F1 Viewer) in the race layout
     public bool BattleEnabled { get; set; } = true;

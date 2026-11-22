@@ -12,6 +12,16 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.35 (2026-11-22)
+
+### New
+
+- **F1 Race Control**: **Fit Live Timing to its window** in the Race and Quali settings (on by default). Turn it off and the Live Timing keeps MultiViewer's own size and replay bar; the change applies to the open window straight away.
+
+### Improved
+
+- **F1 Race Control**: the Copy setup prompt button and its prompt file are gone from the Race and Quali settings.
+
 ## 1.1.34 (2026-11-22)
 
 ### New
