@@ -158,6 +158,10 @@
     <div class="row"><span class="lbl"></span><button id="saveLayout">Save current windows</button></div>
     <p class="note lblnote" id="saveStatus">Saves the windows open in Ultimate F1 Viewer as this layout. Save your MultiViewer setup in MultiViewer itself.</p>
 
+    <h4>Build your setup with AI</h4>
+    <div class="row"><span class="lbl"></span><button id="copyPrompt">Copy setup prompt</button></div>
+    <p class="note lblnote" id="promptStatus">Paste it into an AI assistant that can see your screen (such as Claude Code). It builds a MultiViewer setup and an Ultimate F1 Viewer layout per session type for your monitors, and names them so this key finds them. <a href="#" id="readPrompt">Read it first</a></p>
+
     <div class="race-only">
       <h4>Battle mode (Ultimate F1 Viewer)</h4>
       <div class="row"><label class="check"><input type="checkbox" data-key="BattleEnabled">Pick the drivers automatically</label></div>
@@ -269,6 +273,7 @@ function apply(p) {
   $('pair').textContent = p.paired ? 'Pair again' : 'Pair bridge';
   $('pairStatus').textContent = p.status || '';
   if ((kind === 'race' || kind === 'quali') && /saved|Saving failed/.test(p.status || '')) $('saveStatus').textContent = p.status;
+  if ((kind === 'race' || kind === 'quali') && /prompt/i.test(p.status || '')) $('promptStatus').firstChild.textContent = p.status + ' ';
   $('placeMv').textContent = p.placeMv || '–';
   $('placeUf1').textContent = p.placeUf1 || '–';
 
@@ -302,6 +307,11 @@ document.addEventListener('change', e => {
 $('pair').addEventListener('click', () => send({ pair: true }));
 $('savePlaces').addEventListener('click', () => send({ SavePlaces: true }));
 $('saveLayout').addEventListener('click', () => send({ saveLayout: true }));
+$('copyPrompt').addEventListener('click', () => send({ copySetupPrompt: true }));
+$('readPrompt').addEventListener('click', e => {
+  e.preventDefault();
+  ws && ws.readyState === 1 && ws.send(JSON.stringify({ event: 'openUrl', payload: { url: 'https://github.com/StanvanDaalen/streamdeck-plugins/blob/main/F1/sdPlugin/setup-prompt.md' } }));
+});
 $('test').addEventListener('click', () => send({ test: true }));
 </script>
 </body>

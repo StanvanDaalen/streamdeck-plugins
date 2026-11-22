@@ -1075,6 +1075,11 @@ internal sealed class Plugin
                 ? $"Current windows saved as layout {(kind == "race" ? "Race" : "Qualifying")}."
                 : "Saving failed: Ultimate F1 Viewer cannot be reached.";
         }
+        // Race/Quali settings: the setup prompt (shipped with the plugin) on the clipboard, for an AI assistant.
+        if (p["copySetupPrompt"] != null && c.Action is Race or Quali)
+            _pairStatus = SetupPrompt.CopyToClipboard()
+                ? "Setup prompt copied. Paste it into your AI assistant."
+                : "Copying the prompt failed; use Read it first and copy it from there.";
         if (p["pair"] != null && !_pairing)
         {
             _pairing = true;
