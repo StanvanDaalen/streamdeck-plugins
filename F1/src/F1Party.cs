@@ -16,6 +16,21 @@ public static class F1Party
     private static string AppInfoFile =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "f1party", "app.json");
 
+    /// <summary>The party for the Sync key: mode ("idle", "host", "guest"), code, members and how well they are in sync.</summary>
+    public sealed record Info(string Mode, string Code, int Members, string Sync);
+
+    /// <summary>The party while F1 Party runs, else null.</summary>
+    public static async Task<Info?> InfoAsync()
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            var j = JsonNode.Parse(await Http.GetStringAsync(Control + "status", cts.Token));
+            return new Info((string?)j?["mode"] ?? "idle", (string?)j?["code"] ?? "", (int?)j?["members"] ?? 0, (string?)j?["sync"] ?? "");
+        }
+        catch { return null; }
+    }
+
     /// <summary>"idle", "host" or "guest" while F1 Party runs, else null.</summary>
     public static async Task<string?> ModeAsync()
     {

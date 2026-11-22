@@ -276,6 +276,8 @@ internal sealed class Plugin
                 if (!_f1Running && _hidden) { _hidden = false; _hiddenWindows = new(); _mutedBefore = new(); }
                 await RenderAllAsync();
             });
+            // F1 Party for the Sync key, every 2 s and only with a Sync key on the Stream Deck
+            if (_ticks % 4 == 0 && _contexts.Values.Any(c => c.Action == Sync)) _party = await F1Party.InfoAsync();
             if (++_ticks % 4 == 0 && _f1Running)
             {
                 try { Apps.KeepBattleModeOnTop(); } catch (Exception e) { Store.Log("battle mode voor: " + e.Message); }
@@ -1114,6 +1116,7 @@ internal sealed class Plugin
             Live => LiveKey(),
             Fullscreen => FullscreenKey(),
             Session => SessionKey(),
+            Sync => SyncKey(),
             Race => Art.Key(Art.Chequered(), "Race", IsWorking(Race) ? "…" : null, Art.Amber, caption: Opens("race", out var rc), captionColor: rc),
             Quali => Art.Key(Art.Stopwatch(), "Quali", IsWorking(Quali) ? "…" : null, Art.Amber, caption: Opens("quali", out var qc), captionColor: qc),
             Mode when !Art.HasLogo => Art.Key(Art.F1Mark(), "F1 Mode", ModePill, ModePillColor),
@@ -1209,6 +1212,20 @@ internal sealed class Plugin
             ? Art.InfoKey(name, _mv.LapShort ?? "–", "Laps", Art.White)
             : Art.InfoKey(name, _mv.Remaining ?? "–", "Remaining", Art.White);
     }
+
+    /// <summary>
+    /// Sync key: the plain key, or in an F1 Party the number of people watching in a pill (green: everyone in
+    /// sync, amber: someone isn't yet, red: no connection) and the party code underneath; "HOST" when you host.
+    /// </summary>
+    private string SyncKey()
+    {
+        if (_party is not { Mode: "host" or "guest" } p) return Art.Key(Art.Sync(), "Sync");
+        var color = p.Sync switch { "ok" => Art.Green, "warn" => Art.Amber, _ => Art.Red };
+        return Art.Key(Art.Sync(), p.Mode == "host" ? "Sync all" : "Sync", p.Members.ToString(), color,
+            caption: p.Mode == "host" ? p.Code + " · HOST" : p.Code, captionColor: Art.Grey);
+    }
+
+    private F1Party.Info? _party;
 
     private string FullscreenKey()
     {
