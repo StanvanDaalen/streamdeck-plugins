@@ -99,7 +99,7 @@ public static class StartPoint
 
     /// <summary>
     /// Right after Race/Quali opened a session (players running, timing loaded): to where you left off, else to a
-    /// minute before the start when the stream is past that. Before the start (the pre-race show) nothing moves.
+    /// minute before the start (forward past a pre-session show too).
     /// </summary>
     public static async Task ApplyAsync()
     {
@@ -123,8 +123,8 @@ public static class StartPoint
             else { Store.Log("startpunt: starttijd onbekend"); return; }
 
             var jump = (target - now.TrackMs) / 1000.0;
-            // Only back in time (a live stream can't go ahead of itself), and not for a few seconds.
-            if (jump > -5 && !(spot != null && jump > 5)) { Store.Log($"startpunt ({why}): al goed ({jump:0} s)"); return; }
+            // Back, or ahead (a replay that opens with a pre-session show); a live stream stops at its live edge.
+            if (Math.Abs(jump) <= 5) { Store.Log($"startpunt ({why}): al goed ({jump:0} s)"); return; }
             Store.Log($"startpunt: {why}, {jump:0} s");
             await MultiViewer.SeekRelativeAsync(now.PlayerId, jump);
             await Job.Delay(2500);

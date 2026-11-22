@@ -43,7 +43,8 @@ internal sealed class Plugin
     private List<IntPtr> _hiddenWindows = new();
     private Dictionary<string, bool> _mutedBefore = new();
     /// <summary>Session key: 0 = clock or laps, 1 = weather.</summary>
-    private int _sessionView;
+    private string _sessionPage = SessionPages.Main;
+    private DateTime _sessionPageAt;
 
     private MvState _mv = new();
     private List<string> _zones = new();
@@ -280,6 +281,8 @@ internal sealed class Plugin
                 if (!_f1Running && _hidden) { _hidden = false; _hiddenWindows = new(); _mutedBefore = new(); }
                 await RenderAllAsync();
             });
+            // the Session key's page may need more than the basic state (leader, fastest lap, chance of rain)
+            if (_sessionPage != SessionPages.Main) _ = SessionPages.RefreshAsync(_sessionPage, state);
             // F1 Party for the Sync key, every 2 s and only with a Sync key on the Stream Deck
             if (_ticks % 4 == 0 && _contexts.Values.Any(c => c.Action == Sync)) _party = await F1Party.InfoAsync();
             // where you are in the session, for Race/Quali to pick up there next time (not while a key is opening one)
@@ -387,9 +390,12 @@ internal sealed class Plugin
         {
             case Session:
                 // A session on track: open it with its own layout (practice, qualifying or race).
-                // Nothing on track: switch between the clock and the weather, as before.
+                // Nothing on track: the next page (weather, wind, rain, leader, fastest lap, incidents).
                 if (Schedule.OnTrackNow() is { } onTrack) { Request(c, Schedule.KindOf(onTrack.Type, onTrack.Name)); break; }
-                _sessionView = (_sessionView + 1) % 2;
+                _sessionPage = SessionPages.Next(_sessionPage, _mv);
+                _sessionPageAt = DateTime.UtcNow;
+                await SessionPages.RefreshAsync(_sessionPage, _mv);
+                await RenderAsync(c);
                 break;
             case Flags: await ToggleFlags(); break;
             case Live: await GoLive(c); break;
@@ -1215,12 +1221,9 @@ internal sealed class Plugin
             return Art.NextKey(next.Location, Schedule.Short(next.Name), Schedule.When(next.Start),
                 Schedule.Countdown(next.Start), next.Start - DateTimeOffset.UtcNow < TimeSpan.FromHours(1));
         if (_mv.Timing == null) return Art.InfoKey("Session", "–", _mv.Online ? "No session" : "Offline", Art.Grey);
-        if (_sessionView == 1)
-        {
-            var w = _mv.Weather;
-            return Art.InfoKey(name, w.Track is { } t ? $"{t:0}°" : "–",
-                (w.Air is { } a ? $"Air {a:0}°" : "") + (w.Rain ? " · Rain" : ""), w.Rain ? "#2D9CDB" : Art.White, "Track");
-        }
+        // After 30 seconds on another page, back to laps / time left.
+        if (_sessionPage != SessionPages.Main && DateTime.UtcNow - _sessionPageAt > TimeSpan.FromSeconds(30)) _sessionPage = SessionPages.Main;
+        if (SessionPages.Render(_sessionPage, _mv) is { } page) return page;
         bool race = _mv.IsRace && _mv.Lap != null;
         return race
             ? Art.InfoKey(name, _mv.LapShort ?? "–", "Laps", Art.White)
