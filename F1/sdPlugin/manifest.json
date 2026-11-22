@@ -3,7 +3,7 @@
     "Name": "F1 Race Control",
     "Author": "Stan",
     "Description": "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.21.0.0",
+    "Version": "1.29.1.0",
     "SDKVersion": 2,
     "Icon": "images/plugin",
     "Category": "F1 Race Control",
@@ -278,7 +278,7 @@
         {
             "UUID": "com.stan.f1.hide",
             "Name": "Hide",
-            "Tooltip": "Press: minimise F1's windows and mute everything. Press again: everything back.",
+            "Tooltip": "Press: with F1 on its own desktop, over to your first desktop (where F1 Party is) and back; otherwise minimise F1's windows and mute everything, and back.",
             "Icon": "images/action-hide",
             "Controllers": [
                 "Keypad"
@@ -309,8 +309,8 @@
         },
         {
             "UUID": "com.stan.f1.close",
-            "Name": "End session",
-            "Tooltip": "Press: end the session. F1 Party closes the streams, MultiViewer and Ultimate F1 Viewer, the desktop, lights and taskbar (the party stays). Without F1 Party the plugin closes F1 itself.",
+            "Name": "Start / end session",
+            "Tooltip": "With F1 Party: no session open → F1 Party opens on its calendar to pick one; a session open → end it (streams, apps, desktop, lights and taskbar back; the party stays). Without F1 Party: close F1.",
             "Icon": "images/action-close",
             "Controllers": [
                 "Keypad"
@@ -322,6 +322,58 @@
                     "ShowTitle": false
                 }
             ]
+        },
+        {
+            "UUID": "com.stan.f1.back",
+            "Name": "Back",
+            "Tooltip": "Press: back to the profile you came from.",
+            "Icon": "images/action-back",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-back",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.profile",
+            "Name": "F1 profile",
+            "Tooltip": "Press: opens the F1 Race Control profile on this Stream Deck (put this key on your own main page).",
+            "Icon": "images/action-profile",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-profile",
+                    "ShowTitle": false
+                }
+            ]
+        }
+    ],
+    "Profiles": [
+        {
+            "Name": "profiles/F1 Race Control",
+            "DeviceType": 0,
+            "ReadOnly": false,
+            "DontAutoSwitchWhenInstalled": true
+        },
+        {
+            "Name": "profiles/F1 Race Control XL",
+            "DeviceType": 2,
+            "ReadOnly": false,
+            "DontAutoSwitchWhenInstalled": true
+        },
+        {
+            "Name": "profiles/F1 Race Control Plus",
+            "DeviceType": 7,
+            "ReadOnly": false,
+            "DontAutoSwitchWhenInstalled": true
         }
     ]
 }

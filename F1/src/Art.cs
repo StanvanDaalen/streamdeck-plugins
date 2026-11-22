@@ -27,27 +27,30 @@ public static class Art
     /// <param name="upper">Labels are capitals; times like "-40s" keep their small s.</param>
     /// <param name="caption">Optional small line under the label (for example which race a key opens); without it the key is unchanged.</param>
     public static string Key(string glyph, string label, string? pill = null, string pillColor = Green, string labelColor = White, bool upper = true,
-        string? caption = null, string captionColor = Grey) =>
-        caption == null
-            ? Frame(pill, pillColor) +
-              $"<g transform='translate(72 62)'>{glyph}</g>" +
-              $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{E(upper ? label.ToUpperInvariant() : label)}</text>" +
+        string? caption = null, string captionColor = Grey)
+    {
+        // With a tag the icon is a little smaller and lower, so the tag top left keeps clear of it.
+        double y = caption == null ? 62 : 57, scale = caption == null ? 1 : 0.92;
+        if (pill != null) { y += 5; scale *= 0.82; }
+        var icon = $"<g transform='translate(72 {N(y)}) scale({N(scale)})'>{glyph}</g>";
+        var text = E(upper ? label.ToUpperInvariant() : label);
+        return caption == null
+            ? Frame(pill, pillColor) + icon +
+              $"<text x='72' y='124' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{text}</text>" +
               "</svg>"
-            : Frame(pill, pillColor) +
-              $"<g transform='translate(72 57) scale(0.92)'>{glyph}</g>" +
-              $"<text x='72' y='114' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{E(upper ? label.ToUpperInvariant() : label)}</text>" +
+            : Frame(pill, pillColor) + icon +
+              $"<text x='72' y='114' font-family='{Font}' font-size='17' font-weight='900' letter-spacing='0.4' text-anchor='middle' fill='{labelColor}'>{text}</text>" +
               $"<text x='72' y='132' font-family='{Font}' font-size='{(caption.Length > 13 ? 10 : 12)}' font-weight='700' text-anchor='middle' fill='{captionColor}'>{E(caption)}</text>" +
               "</svg>";
+    }
 
     private static string Frame(string? pill, string pillColor)
     {
-        // A number (how many watch the party) is a round badge in the corner, clear of the edges and the icon.
-        bool count = pill is { Length: > 0 and <= 2 } && pill.All(char.IsDigit);
-        var p = pill == null ? "" : count
-            ? $"<circle cx='25' cy='25' r='13' fill='{pillColor}'/>" +
-              $"<text x='25' y='30' font-family='{Font}' font-size='14' font-weight='900' text-anchor='middle' fill='{Tile}'>{E(pill)}</text>"
-            : $"<rect x='8' y='10' width='32' height='18' rx='4' fill='{pillColor}'/>" +
-              $"<text x='24' y='23.5' font-family='{Font}' font-size='11' font-weight='900' text-anchor='middle' fill='{Tile}'>{E(pill)}</text>";
+        // The tag: a small rounded label top left, inside the corner's curve and clear of the edges.
+        double w = pill == null ? 0 : Math.Max(22, 10 + pill.Length * 8);
+        var p = pill == null ? "" :
+            $"<rect x='13' y='13' width='{N(w)}' height='18' rx='9' fill='{pillColor}'/>" +
+            $"<text x='{N(13 + w / 2)}' y='26.5' font-family='{Font}' font-size='12' font-weight='900' text-anchor='middle' fill='{Tile}'>{E(pill)}</text>";
         return "<svg xmlns='http://www.w3.org/2000/svg' width='144' height='144' viewBox='0 0 144 144'>" +
                $"<rect x='1' y='1' width='142' height='142' rx='18' fill='{Tile}' stroke='{Edge}' stroke-width='1.5'/>" +
                // the F1 site's red corner: along the top edge, round the corner and down the right side
@@ -279,17 +282,49 @@ public static class Art
         $"<path d='M0 -32 V-12' stroke='{White}' stroke-width='7' stroke-linecap='round'/>";
 
     /// <summary>
-    /// Four people in front of a screen (F1 Party). Off: grey with a stroke through it, like the other on/off
-    /// keys.
+    /// Four people in front of a screen (F1 Party). In a party the screen shows how many watch, in the sync
+    /// colour; otherwise a play sign. Off: grey with a stroke through it, like the other on/off keys.
     /// </summary>
-    public static string Party(bool on = true)
+    public static string Party(bool on = true, string? count = null, string countColor = Green)
     {
-        string c = on ? White : Grey, play = on ? Red : Grey, people = "";
-        foreach (var x in new[] { -27, -9, 9, 27 })
-            people += $"<circle cx='{x}' cy='11' r='5' fill='{c}'/><path d='M{x - 7} 31 Q{x - 7} 19 {x} 19 Q{x + 7} 19 {x + 7} 31 Z' fill='{c}'/>";
-        return $"<rect x='-34' y='-34' width='68' height='34' rx='5' fill='none' stroke='{c}' stroke-width='5'/>" +
-               $"<path d='M-6 -24 L8 -17 L-6 -10 Z' fill='{play}'/>" + people +
-               (on ? "" : $"<path d='M-38 34 L38 -38' stroke='{Tile}' stroke-width='12' stroke-linecap='round'/><path d='M-38 34 L38 -38' stroke='{c}' stroke-width='6' stroke-linecap='round'/>");
+        string c = on ? White : Grey, people = "";
+        // one person per viewer, at most four, centred under the screen (not in a party: four)
+        int n = count != null && int.TryParse(count, out var k) ? Math.Clamp(k, 1, 4) : 4;
+        foreach (var x in Enumerable.Range(0, n).Select(i => (i - (n - 1) / 2.0) * 18))
+            people += $"<circle cx='{N(x)}' cy='17' r='5' fill='{c}'/><path d='M{N(x - 7)} 36 Q{N(x - 7)} 25 {N(x)} 25 Q{N(x + 7)} 25 {N(x + 7)} 36 Z' fill='{c}'/>";
+        var inside = count != null
+            ? $"<text x='0' y='-6' font-family='{Font}' font-size='{(count.Length > 1 ? 26 : 30)}' font-weight='900' text-anchor='middle' fill='{countColor}'>{E(count)}</text>"
+            : $"<path d='M-7 -26 L9 -17 L-7 -8 Z' fill='{(on ? Red : Grey)}'/>";
+        return $"<rect x='-38' y='-40' width='76' height='46' rx='6' fill='none' stroke='{c}' stroke-width='5'/>" + inside + people +
+               (on ? "" : $"<path d='M-40 36 L40 -42' stroke='{Tile}' stroke-width='12' stroke-linecap='round'/><path d='M-40 36 L40 -42' stroke='{c}' stroke-width='6' stroke-linecap='round'/>");
+    }
+
+    /// <summary>A calendar page with a red top (Start session: pick one in F1 Party's calendar).</summary>
+    public static string Calendar()
+    {
+        var s = $"<rect x='-30' y='-26' width='60' height='54' rx='6' fill='none' stroke='{White}' stroke-width='6'/>" +
+                $"<path d='M-30 -14 H30' stroke='{White}' stroke-width='6'/>" +
+                $"<rect x='-27' y='-23' width='54' height='9' fill='{Red}'/>" +
+                $"<path d='M-16 -34 V-20 M16 -34 V-20' stroke='{White}' stroke-width='6' stroke-linecap='round'/>";
+        for (int r = 0; r < 2; r++)
+            for (int c = 0; c < 3; c++)
+                s += $"<rect x='{-19 + c * 15}' y='{-4 + r * 14}' width='8' height='8' rx='1.5' fill='{White}'/>";
+        return s;
+    }
+
+    /// <summary>
+    /// A monitor with an arrow (Hide / Show): down while F1 shows (press to put it away), up in grey while it is
+    /// out of sight (press to bring it back).
+    /// </summary>
+    public static string Screen(bool hidden)
+    {
+        string c = hidden ? Grey : White;
+        string arrow = hidden
+            ? "M-12 -8 L0 -20 L12 -8 M0 -20 V2"
+            : "M-12 -12 L0 0 L12 -12 M0 0 V-22";
+        return $"<rect x='-36' y='-32' width='72' height='46' rx='6' fill='none' stroke='{c}' stroke-width='5'/>" +
+               $"<path d='M0 14 V24 M-14 26 H14' stroke='{c}' stroke-width='5' stroke-linecap='round'/>" +
+               $"<path d='{arrow}' fill='none' stroke='{Red}' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>";
     }
 
     /// <summary>Arrow back to the left (Stream Deck's Go to Page, back to page 1).</summary>
@@ -297,11 +332,11 @@ public static class Art
         $"<path d='M-8 -24 L-30 0 L-8 24' fill='none' stroke='{White}' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/>" +
         $"<path d='M-28 0 H30' stroke='{Red}' stroke-width='7' stroke-linecap='round'/>";
 
-    /// <summary>A circular arrow going back with the seconds inside (Replay).</summary>
+    /// <summary>A circular arrow going back (anticlockwise) with the seconds inside (Replay).</summary>
     public static string Rewind(int seconds) =>
-        $"<path d='{ArcPath(-150, 150, 28)}' fill='none' stroke='{White}' stroke-width='7' stroke-linecap='round'/>" +
-        $"<path d='M-36 -28 L-23 -13 L-38 -6' fill='none' stroke='{White}' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>" +
-        $"<text x='3' y='9' font-family='{Font}' font-size='24' font-weight='900' text-anchor='middle' fill='{Red}'>{seconds}</text>";
+        // a clockwise arc with its arrowhead, mirrored: the arrow runs anticlockwise and ends top left
+        $"<g transform='scale(-1 1)'>{Arc(-40, 250, 29, White)}</g>" +
+        $"<text x='0' y='8' font-family='{Font}' font-size='22' font-weight='900' text-anchor='middle' fill='{Red}'>{seconds}</text>";
 
     /// <summary>An eye: open (shown) or shut with a stroke (hidden).</summary>
     public static string Eye(bool open = true)
@@ -312,10 +347,11 @@ public static class Art
         return open ? s : s + $"<path d='M-34 30 L34 -30' stroke='{Tile}' stroke-width='12' stroke-linecap='round'/><path d='M-34 30 L34 -30' stroke='{c}' stroke-width='6' stroke-linecap='round'/>";
     }
 
-    /// <summary>A paper plane (send the invite).</summary>
+    /// <summary>A paper plane (send the invite): white with a grey fold, red speed lines behind it.</summary>
     public static string Plane() =>
-        $"<path d='M-34 -2 L32 -28 L18 30 L2 10 Z' fill='none' stroke='{White}' stroke-width='6' stroke-linejoin='round'/>" +
-        $"<path d='M2 10 L32 -28 M2 10 V28 L12 18' fill='none' stroke='{Red}' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/>";
+        $"<path d='M-26 -2 L38 -30 L20 28 L4 12 Z' fill='{White}' stroke='{White}' stroke-width='3' stroke-linejoin='round'/>" +
+        $"<path d='M4 12 L38 -30 L10 30 Z' fill='#B9BCC4' stroke='#B9BCC4' stroke-width='3' stroke-linejoin='round'/>" +
+        $"<path d='M-40 14 H-22 M-34 26 H-12' stroke='{Red}' stroke-width='5' stroke-linecap='round'/>";
 
     /// <summary>The five start lights in their bar; lit = how many are red (Start together's countdown).</summary>
     public static string Lights(int lit)
@@ -392,7 +428,7 @@ public static class Art
             ("mode", F1Mark(White)), ("session", Tower()), ("flags", Flag(White)), ("zone", Bulb()), ("volume", Speaker()),
             ("latency", Clock()), ("live", Live(White)), ("sync", Party()), ("pause", Pause()),
             ("race", Chequered()), ("quali", Stopwatch(White)), ("fullscreen", Expand()), ("close", Power()), ("start", Lights(5)),
-            ("replay", Rewind(10)), ("hide", Eye()), ("invite", Plane()),
+            ("replay", Rewind(10)), ("hide", Screen(false)), ("invite", Plane()), ("back", Back()), ("profile", F1Mark(White)),
         })
             yield return ("action-" + name, Icon(glyph, 40));
         yield return ("key-mode", Key(F1Mark(), "F1 Mode"));
@@ -401,11 +437,14 @@ public static class Art
         yield return ("key-live", Key(Live(), "Go live"));
         yield return ("key-sync", Key(Party(), "Party"));
         yield return ("key-close", Key(Power(), "End session"));
+        yield return ("key-open", Key(Calendar(), "Start", caption: "pick a session"));
         yield return ("key-start", Key(Lights(0), "Start", caption: "together"));
         yield return ("key-replay", Key(Rewind(10), "Replay"));
-        yield return ("key-hide", Key(Eye(), "Hide"));
+        yield return ("key-hide", Key(Screen(false), "Hide"));
         yield return ("key-invite", Key(Plane(), "Invite"));
         yield return ("key-page1", Key(Back(), "Page 1"));
+        yield return ("key-back", Key(Back(), "Back"));
+        yield return ("key-profile", Key(F1Mark(), "F1"));
         yield return ("key-pause", Key(Pause(), "Pause"));
         yield return ("key-race", Key(Chequered(), "Race"));
         yield return ("key-quali", Key(Stopwatch(), "Quali"));

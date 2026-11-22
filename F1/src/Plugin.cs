@@ -15,6 +15,8 @@ internal sealed class Ctx
     public CancellationTokenSource? Hold, Click;
     public bool HoldFired;
     public int Clicks;
+    public bool DialImageSet;
+    public string Device = "";
 }
 
 internal sealed class Plugin
@@ -23,7 +25,19 @@ internal sealed class Plugin
     private const string Mode = P + "mode", Flags = P + "flags", Zone = P + "zone",
         Volume = P + "volume", Latency = P + "latency", Live = P + "live", Sync = P + "sync",
         Pause = P + "pause", Race = P + "race", Quali = P + "quali", Fullscreen = P + "fullscreen", Session = P + "session", Close = P + "close", Start = P + "start",
-        Replay = P + "replay", Hide = P + "hide", Invite = P + "invite";
+        Replay = P + "replay", Hide = P + "hide", Invite = P + "invite", Back = P + "back", Profile = P + "profile";
+
+    /// <summary>
+    /// The profiles this plugin brings along (manifest "Profiles"), by Stream Deck device type: 0 Stream Deck,
+    /// 2 XL, 7 Stream Deck +. Stream Deck offers to install them with the plugin.
+    /// </summary>
+    private static readonly Dictionary<int, string> Profiles = new()
+    {
+        [0] = "profiles/F1 Race Control", [2] = "profiles/F1 Race Control XL", [7] = "profiles/F1 Race Control Plus",
+    };
+
+    /// <summary>Device id → Stream Deck device type (from deviceDidConnect).</summary>
+    private readonly Dictionary<string, int> _deviceTypes = new();
 
     private readonly int _port;
     private readonly string _uuid, _register;
@@ -72,6 +86,18 @@ internal sealed class Plugin
         _ = Task.Run(PollLoop);
         _ = Task.Run(HandleLoop);
         _ = Task.Run(RestLoop);
+        Remote.Hide = () => WithGateResult(HideAsync);
+        Remote.OpenProfile = () => WithGateResult(async () =>
+        {
+            foreach (var (dev, type) in _deviceTypes)
+                if (Profiles.TryGetValue(type, out var profile))
+                {
+                    await SendAsync(new JsonObject { ["event"] = "switchToProfile", ["context"] = _uuid, ["device"] = dev, ["payload"] = new JsonObject { ["profile"] = profile } });
+                    Store.Log($"F1-profiel: '{profile}' gevraagd op {dev} (type {type})");
+                    return $"asked for '{profile}' (device type {type})";
+                }
+            return "no Stream Deck with a profile of this plugin (" + string.Join(",", _deviceTypes.Values) + ")";
+        });
         Remote.Start(RequestRemote, () => { lock (_jobLock) return _busy; }, async () =>
         {
             // Only for a setup Race/Quali opened, and not while a job (opening, closing) runs.
@@ -105,6 +131,14 @@ internal sealed class Plugin
     }
 
     private Task WithGate(Func<Task> f) => WithGate(f, CancellationToken.None);
+
+    /// <summary>Runs f under the gate and returns its result.</summary>
+    private async Task<T> WithGateResult<T>(Func<Task<T>> f)
+    {
+        T result = default!;
+        await WithGate(async () => result = await f());
+        return result;
+    }
 
     /// <summary>Runs f under the gate; a cancelled token gives up while still waiting (throws OperationCanceledException).</summary>
     private async Task WithGate(Func<Task> f, CancellationToken token)
@@ -286,10 +320,20 @@ internal sealed class Plugin
             // the Session key's page may need more than the basic state (leader, fastest lap, chance of rain)
             if (_sessionPage != SessionPages.Main) _ = SessionPages.RefreshAsync(_sessionPage, state);
             // F1 Party for the Party and Start together keys, every 2 s (every tick while the lights count down)
-            if ((_ticks % 4 == 0 || _party?.Countdown > 0) && _contexts.Values.Any(c => c.Action is Sync or Start))
+            if ((_ticks % 4 == 0 || _party?.Countdown > 0) && (F1Party.Installed || _contexts.Values.Any(c => c.Action is Sync or Start or Close)))
             {
                 var party = await F1Party.InfoAsync();
-                await WithGate(async () => { _party = party; await RenderAllAsync(); });
+                await WithGate(async () =>
+                {
+                    _party = party;
+                    // F1 Party decides where F1 opens: its own desktop (with its name) or the current one
+                    if (party?.Desktop is { } d)
+                    {
+                        S.ModeDesktop = d.Length == 0 ? "current" : "f1";
+                        if (d.Length > 0) S.DesktopName = d;
+                    }
+                    await RenderAllAsync();
+                });
             }
             // where you are in the session, for Race/Quali to pick up there next time (not while a key is opening one)
             if (_ticks % 10 == 0 && state.Online && !IsBusy) await StartPoint.RememberAsync();
@@ -336,9 +380,14 @@ internal sealed class Plugin
         var action = (string?)m["action"];
         var payload = m["payload"] as JsonObject;
 
+        if (ev == "deviceDidConnect" && (string?)m["device"] is { } dev)
+        {
+            _deviceTypes[dev] = (int?)m["deviceInfo"]?["type"] ?? -1;
+            return;
+        }
         if (ev == "willAppear" && ctxId != null && action != null)
         {
-            _contexts[ctxId] = new Ctx { Id = ctxId, Action = action, Encoder = (string?)payload?["controller"] == "Encoder" };
+            _contexts[ctxId] = new Ctx { Id = ctxId, Action = action, Encoder = (string?)payload?["controller"] == "Encoder", Device = (string?)m["device"] ?? "" };
             if (action == Zone && _zones.Count == 0) await LoadZonesAsync();
             await RenderAsync(_contexts[ctxId]);
             return;
@@ -426,7 +475,17 @@ internal sealed class Plugin
                 if (rp.Live) _latency += 10;
                 await MultiViewer.SyncAsync(rp.Id);
                 break;
-            case Hide: await ToggleHiddenAsync(c); break;
+            case Hide: await HideKeyAsync(c); break;
+            case Back:
+                // back to the profile you came from (Stream Deck remembers it)
+                await SendAsync(new JsonObject { ["event"] = "switchToProfile", ["context"] = _uuid, ["device"] = c.Device, ["payload"] = new JsonObject() });
+                break;
+            case Profile:
+                // the F1 Race Control profile made for this Stream Deck, when the plugin brings one for it
+                if (_deviceTypes.TryGetValue(c.Device, out var type) && Profiles.TryGetValue(type, out var profile))
+                    await SendAsync(new JsonObject { ["event"] = "switchToProfile", ["context"] = _uuid, ["device"] = c.Device, ["payload"] = new JsonObject { ["profile"] = profile } });
+                else { Store.Log($"F1-profiel: geen profiel voor dit type Stream Deck ({(_deviceTypes.TryGetValue(c.Device, out var t) ? t : -1)})"); await Alert(c); }
+                break;
             case Invite:
                 if (!F1Party.Installed) { await Alert(c); break; }
                 _ = Task.Run(async () => await (await F1Party.CommandAsync("invite") ? Ok(c) : Alert(c)));
@@ -487,6 +546,12 @@ internal sealed class Plugin
     private void CloseF1Key(Ctx c)
     {
         if (!F1Party.Installed || _f1ModeOn) { Request(c, "close"); return; }
+        // the Start / end session key with nothing open: F1 Party comes up on its calendar to pick a session
+        if (c.Action == Close && NoSession)
+        {
+            _ = Task.Run(async () => await (await F1Party.CommandAsync("calendar") ? Ok(c) : Alert(c)));
+            return;
+        }
         _ = Task.Run(async () =>
         {
             if (await F1Party.CommandAsync("close")) await Ok(c);
@@ -549,6 +614,45 @@ internal sealed class Plugin
         }
         if (_mv.Main is { } main && await MultiViewer.SyncAsync(main.Id)) await Ok(c); else await Alert(c);
     }
+
+    /// <summary>
+    /// F1's own desktop while F1 runs on it ("F1", or the name in the settings), with its place in the list and
+    /// whether it shows now. Null when F1 doesn't use its own desktop.
+    /// </summary>
+    private (int Index, bool OnIt)? F1Desktop()
+    {
+        if (!OperatingSystem.IsWindows() || S.ModeDesktop == "current" || !_f1Running) return null;
+        // by name, else the desktop this plugin made for F1 (when Windows lost its name)
+        var (ids, cur) = Desktops.Info();
+        Guid? found = Desktops.FindByName(S.DesktopName) ?? (_f1Desk is { } m && ids.IndexOf(m) > 0 ? m : null);
+        if (found is not { } id) return null;
+        int i = ids.IndexOf(id);
+        return i > 0 ? (i, cur == i) : null;
+    }
+
+    /// <summary>
+    /// Hide: with F1 on its own desktop, over to the first desktop (where F1 Party is) and back again; otherwise
+    /// minimise F1's windows and mute everything, and back.
+    /// </summary>
+    private async Task HideKeyAsync(Ctx c) => await (await HideAsync() == "failed" ? Alert(c) : Ok(c));
+
+    /// <summary>The Hide key without a key (also for the local test door): returns what it did.</summary>
+    private async Task<string> HideAsync()
+    {
+        if (F1Desktop() is not { } fd)
+        {
+            var ctx = new Ctx { Id = "", Action = Hide };
+            bool was = _hidden;
+            await ToggleHiddenAsync(ctx);
+            Store.Log($"hide: geen eigen F1-bureaublad, {(was ? "terug" : "geminimaliseerd")}");
+            return was == _hidden ? "failed" : was ? "restored" : "minimised";
+        }
+        await Desktops.GoToAsync(fd.OnIt ? 0 : fd.Index);
+        Store.Log($"hide: naar bureaublad {(fd.OnIt ? 1 : fd.Index + 1)}");
+        return fd.OnIt ? "to desktop 1" : "to the F1 desktop";
+    }
+
+    private Guid? _f1Desk;
 
     /// <summary>Double click on F1 Mode: minimise F1's windows and mute everything, or bring it all back.</summary>
     private async Task ToggleHiddenAsync(Ctx c)
@@ -667,6 +771,7 @@ internal sealed class Plugin
         if (!CheckApps()) return false;
         Taskbar.ApplyForF1(); // straight away and silently: no settings window
         Guid? desk = S.ModeDesktop == "current" ? null : await Desktops.GoToNamedAsync(S.DesktopName);
+        if (desk != null) _f1Desk = desk;
         await WithGate(async () =>
         {
             S.F1DesktopId = desk?.ToString();
@@ -1224,7 +1329,20 @@ internal sealed class Plugin
 
     private async Task RenderAsync(Ctx c)
     {
-        if (c.Encoder) await RenderDial(c);
+        if (c.Encoder)
+        {
+            // Flags is a key and a dial: as a dial its image is the plain white flag, like the other dials
+            if (c.Action == Flags && !c.DialImageSet)
+            {
+                c.DialImageSet = true;
+                await SendAsync(new JsonObject
+                {
+                    ["event"] = "setImage", ["context"] = c.Id,
+                    ["payload"] = new JsonObject { ["image"] = Art.DataUrl(Art.Icon(Art.Flag(Art.White), 40)), ["target"] = 0 },
+                });
+            }
+            await RenderDial(c);
+        }
         else await RenderKey(c);
     }
 
@@ -1240,11 +1358,13 @@ internal sealed class Plugin
             Sync => SyncKey(),
             Race => Art.Key(Art.Chequered(), "Race", IsWorking(Race) ? "…" : null, Art.Amber, caption: Opens("race", out var rc), captionColor: rc),
             Quali => Art.Key(Art.Stopwatch(), "Quali", IsWorking(Quali) ? "…" : null, Art.Amber, caption: Opens("quali", out var qc), captionColor: qc),
-            Close => Art.Key(Art.Power(), "End session", IsWorking(Close) ? "…" : null, Art.Amber),
+            Close => StartEndKey(),
             Start => StartKey(),
             Replay => Art.Key(Art.Rewind(10), "Replay", labelColor: _mv.Main == null ? Art.Grey : Art.White),
-            Hide => _hidden ? Art.Key(Art.Eye(open: false), "Show", labelColor: Art.Grey) : Art.Key(Art.Eye(), "Hide"),
+            Hide => (F1Desktop() is { } fd ? !fd.OnIt : _hidden) ? Art.Key(Art.Screen(hidden: true), "Show", labelColor: Art.Grey) : Art.Key(Art.Screen(hidden: false), "Hide"),
             Invite => Art.Key(Art.Plane(), "Invite"),
+            Back => Art.Key(Art.Back(), "Back"),
+            Profile => Art.Key(Art.F1Mark(), "F1"),
             Mode when !Art.HasLogo => Art.Key(Art.F1Mark(), "F1 Mode", ModePill, ModePillColor),
             _ => null,
         };
@@ -1345,11 +1465,23 @@ internal sealed class Plugin
         if (!F1Party.Installed) return Art.Key(Art.Sync(), "Sync");
         if (_party is not { Mode: "host" or "guest" } p) return Art.Key(Art.Party(on: false), "Party", labelColor: Art.Grey);
         var color = p.Sync switch { "ok" => Art.Green, "warn" => Art.Amber, _ => Art.Red };
-        return Art.Key(Art.Party(), "Party", p.Members.ToString(), color,
+        // you are in it yourself: never 0, also while F1 Party is still connecting and has no member list yet
+        return Art.Key(Art.Party(count: Math.Max(1, p.Members).ToString(), countColor: color), "Party",
             caption: p.Mode == "host" ? p.Code + " · HOST" : p.Code, captionColor: Art.Grey);
     }
 
     private F1Party.Info? _party;
+
+    /// <summary>With F1 Party: no session open (F1 Party says so, or it doesn't run and MultiViewer shows nothing).</summary>
+    private bool NoSession => _party is { } p ? !p.Session : _mv.Main == null;
+
+    /// <summary>Start / end session: a calendar (pick a session) while none is open, else the power symbol.</summary>
+    private string StartEndKey()
+    {
+        if (IsWorking(Close)) return Art.Key(Art.Power(), "End session", "…", Art.Amber);
+        if (F1Party.Installed && !_f1ModeOn && NoSession) return Art.Key(Art.Calendar(), "Start", caption: "pick a session");
+        return Art.Key(Art.Power(), "End session");
+    }
 
     /// <summary>Start together: five dark lights; while F1 Party counts down they come on one by one.</summary>
     private string StartKey()
@@ -1365,7 +1497,7 @@ internal sealed class Plugin
         var main = _mv.Main;
         if (main == null) return Art.Key(Art.Expand(Art.Grey), "Fullscreen", labelColor: Art.Grey);
         return main.Fullscreen
-            ? Art.Key(Art.Collapse(), "Exit full", "ON")
+            ? Art.Key(Art.Collapse(), "Exit full")
             : Art.Key(Art.Expand(), "Fullscreen");
     }
 

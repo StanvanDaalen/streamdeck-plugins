@@ -18,7 +18,8 @@ public static class F1Party
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "f1party", "app.json");
 
     /// <summary>The party for the Sync key: mode ("idle", "host", "guest"), code, members and how well they are in sync.</summary>
-    public sealed record Info(string Mode, string Code, int Members, string Sync, int Countdown = 0);
+    /// <param name="Desktop">F1's own desktop as set in F1 Party ("" = none), null from an older F1 Party.</param>
+    public sealed record Info(string Mode, string Code, int Members, string Sync, int Countdown = 0, bool Session = false, string? Desktop = null);
 
     /// <summary>The party while F1 Party runs, else null.</summary>
     public static async Task<Info?> InfoAsync()
@@ -28,7 +29,7 @@ public static class F1Party
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             var j = JsonNode.Parse(await Http.GetStringAsync(Control + "status", cts.Token));
             return new Info((string?)j?["mode"] ?? "idle", (string?)j?["code"] ?? "", (int?)j?["members"] ?? 0, (string?)j?["sync"] ?? "",
-                (int?)j?["countdown"] ?? 0);
+                (int?)j?["countdown"] ?? 0, (bool?)j?["session"] ?? false, (string?)j?["desktop"]);
         }
         catch { return null; }
     }
@@ -90,7 +91,8 @@ public static class F1Party
     public static bool Installed => Exe() != null;
 
     /// <summary>
-    /// A command for F1 Party ("party", "copy", "invite", "leave", "close" (End session), "start" (Start
+    /// A command for F1 Party ("party", "copy", "invite", "leave", "close" (End session), "calendar" (Start
+    /// session: the window on the calendar), "start" (Start
     /// together), "watch" with which = "race" |
     /// "quali" | "live"). Starts F1 Party first when it isn't running and waits for it (up to 20 s).
     /// </summary>

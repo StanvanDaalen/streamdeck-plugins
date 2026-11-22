@@ -12,6 +12,32 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.38 (2026-11-22)
+
+### New
+
+- **F1 Race Control**: an **F1 Race Control profile** for the Stream Deck +, the Stream Deck (15 keys) and the Stream Deck XL comes with the plugin. Put the new **F1 profile** key on your own page: the first press asks to install the profile that fits your Stream Deck and opens it. Its **Back** key takes you back to the profile you came from.
+
+### Improved
+
+- **F1 Race Control**: with F1 Party, where F1 opens (its own desktop and its name, or the current desktop) follows F1 Party's setting, for Race, Quali, Session and Hide alike.
+- **F1 Race Control**: the Party key shows how many watch inside its screen, in the sync colour (green, amber, red), with one person under it per viewer (up to four), instead of a tag in the corner.
+- **F1 Race Control**: cleaner Replay and Invite icons.
+- **F1 Race Control**: Hide / Show has a clearer icon: a screen with an arrow down (hide), grey with an arrow up (show).
+- **F1 Race Control**: **Hide** with F1 on its own desktop switches to your first desktop (where F1 Party is) and back, instead of minimising everything.
+- **F1 Race Control**: status tags (such as ON on Flags) are small rounded labels top left with room around them; the icon makes way. Fullscreen no longer shows ON next to Exit full.
+- **F1 Race Control**: End session is now **Start / end session**: with no session open it shows a calendar and opens F1 Party on its calendar to pick one; with a session open it ends it.
+
+### Fixed
+
+- **F1 Race Control**: the Track status dial's image in the Stream Deck app is the plain white flag, like the other dials, instead of the old Flags key.
+
+- **F1 Race Control**: the Party key never shows 0 while you are in a party (you count yourself), also in the first seconds after starting one.
+
+- **F1 Race Control**: F1's own desktop is found again after it was made (its name is written where Windows keeps it right away), so starting a session makes at most one desktop and Hide switches to it instead of minimising.
+
+- **F1 Race Control**: the first desktop never counts as F1's own desktop, so F1 doesn't open there when that desktop happens to carry F1's name.
+
 ## 1.1.36 (2026-11-22)
 
 ### New

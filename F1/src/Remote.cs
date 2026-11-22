@@ -11,10 +11,18 @@ namespace F1;
 ///   GET  /f1/status → { "plugin": "F1 Race Control", "version": "…", "busy": bool }
 ///   POST /f1/open   { "kind": "race" | "quali" | "practice", "contentId": "1000010439" (optional) }
 ///   POST /f1/rest   → fill the best-of-the-rest onboards now (after the caller moved the replay in time)
+///   POST /f1/profile → the F1 profile key: switch to the F1 profile on the first Stream Deck that has one
+///   POST /f1/hide   → the Hide key: over to the first desktop and back (F1 on its own desktop), else minimise
 /// </summary>
 public static class Remote
 {
     public const int Port = 9335;
+
+    /// <summary>The Hide key's action, set by the plugin; returns what it did.</summary>
+    public static Func<Task<string>>? Hide;
+
+    /// <summary>The F1 profile key's action (switch to the F1 profile), set by the plugin; returns what it did.</summary>
+    public static Func<Task<string>>? OpenProfile;
 
     public static void Start(Func<string, string?, bool> open, Func<bool> busy, Func<Task<bool>> refreshRest)
     {
@@ -45,6 +53,10 @@ public static class Remote
             if (req.Headers["Origin"] != null) { code = 403; body = Error("forbidden"); }
             else if (req.HttpMethod == "GET" && req.Url?.AbsolutePath == "/f1/status")
                 body = new JsonObject { ["plugin"] = "F1 Race Control", ["version"] = Version, ["busy"] = busy() };
+            else if (req.HttpMethod == "POST" && req.Url?.AbsolutePath == "/f1/hide" && Hide != null)
+                body = new JsonObject { ["did"] = await Hide() };
+            else if (req.HttpMethod == "POST" && req.Url?.AbsolutePath == "/f1/profile" && OpenProfile != null)
+                body = new JsonObject { ["did"] = await OpenProfile() };
             else if (req.HttpMethod == "POST" && req.Url?.AbsolutePath == "/f1/open")
             {
                 using var reader = new StreamReader(req.InputStream, Encoding.UTF8);

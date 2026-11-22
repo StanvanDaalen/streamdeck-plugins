@@ -83,7 +83,9 @@ public static class Desktops
     {
         if (!OperatingSystem.IsWindows()) return null;
         var (ids, _) = Info();
-        foreach (var id in ids)
+        // never the first desktop: that is where you work (and where everything goes back to); a name left on
+        // it would make F1 open there instead of on its own desktop
+        foreach (var id in ids.Skip(1))
         {
             using var k = Registry.CurrentUser.OpenSubKey($@"{Key}\Desktops\{id:B}");
             if (string.Equals(k?.GetValue("Name") as string, name, StringComparison.OrdinalIgnoreCase)) return id;
@@ -123,6 +125,14 @@ public static class Desktops
             try { mgr.SetDesktopName(d, hs); }
             finally { WindowsDeleteString(hs); Marshal.Release(d); }
             Store.Log($"bureaublad heet nu '{name}'");
+            // Windows writes the name to the registry later (or not at all); write it now too, so this plugin and
+            // F1 Party find the desktop by its name straight away
+            try
+            {
+                using var k = Registry.CurrentUser.CreateSubKey($@"{Key}\Desktops\{desk:B}");
+                k.SetValue("Name", name, RegistryValueKind.String);
+            }
+            catch (Exception e) { Store.Log("bureaublad naam in het register: " + e.Message); }
             return;
         }
         catch (Exception e) { Store.Log("bureaublad naam via Windows: " + e.Message); }

@@ -47,10 +47,16 @@ internal static class Program
             }
             foreach (var (name, svg) in new[]
             {
-                ("party-on", Art.Key(Art.Party(), "Party", "4", Art.Green, caption: "ZGGCW · HOST", captionColor: Art.Grey)),
+                ("party-on", Art.Key(Art.Party(count: "4"), "Party", caption: "ZGGCW · HOST", captionColor: Art.Grey)),
                 ("party-off", Art.Key(Art.Party(on: false), "Party", labelColor: Art.Grey)),
                 ("start-count", Art.Key(Art.Lights(3), "Start", caption: "lights out soon", captionColor: Art.Red)),
-                ("hide-on", Art.Key(Art.Eye(open: false), "Show", labelColor: Art.Grey)),
+                ("flags-on", Art.Key(Art.Flag(), "Flags", "ON")),
+                ("full-on", Art.Key(Art.Collapse(), "Exit full")),
+                ("party-1", Art.Key(Art.Party(count: "1"), "Party", caption: "ABCDE · HOST", captionColor: Art.Grey)),
+                ("party-2", Art.Key(Art.Party(count: "2"), "Party", caption: "ABCDE · HOST", captionColor: Art.Grey)),
+                ("party-3", Art.Key(Art.Party(count: "3"), "Party", caption: "ABCDE · HOST", captionColor: Art.Grey)),
+                ("party-12", Art.Key(Art.Party(count: "12", countColor: Art.Amber), "Party", caption: "3MD24 · HOST", captionColor: Art.Grey)),
+                ("hide-on", Art.Key(Art.Screen(hidden: true), "Show", labelColor: Art.Grey)),
             })
             {
                 var key = Art.Png(svg, 144);
