@@ -8,11 +8,15 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
-- **F1 Race Control**: in an F1 Party the Sync key shows how many watch (green: everyone in sync, amber: someone isn't yet, red: no connection) and the party code; "SYNC ALL" and HOST when you host.
-
 ### Improved
 
 ### Fixed
+
+## 1.1.29 (2026-11-22)
+
+### New
+
+- **F1 Race Control**: in an F1 Party the Sync key shows how many watch (green: everyone in sync, amber: someone isn't yet, red: no connection) and the party code; "SYNC ALL" and HOST when you host.
 
 ## 1.1.28 (2026-11-22)
 
