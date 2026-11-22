@@ -3,7 +3,7 @@
     "Name":  "F1 Race Control",
     "Author":  "Stan",
     "Description":  "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.18.5.0",
+    "Version": "1.18.6.0",
     "SDKVersion":  2,
     "Icon":  "images/plugin",
     "Category":  "F1 Race Control",
@@ -236,6 +236,22 @@
                         "States":  [
                                        {
                                            "Image":  "images/key-quali",
+                                           "ShowTitle":  false
+                                       }
+                                   ]
+                    },
+                    {
+                        "UUID":  "com.stan.f1.close",
+                        "Name":  "Close F1",
+                        "Tooltip":  "Press: close F1, the same as holding Race, Quali or F1 Mode: lights back to normal, apps closed, back to desktop 1.",
+                        "Icon":  "images/action-close",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "DisableAutomaticStates":  true,
+                        "States":  [
+                                       {
+                                           "Image":  "images/key-close",
                                            "ShowTitle":  false
                                        }
                                    ]

@@ -196,6 +196,9 @@ const send = payload => ws && ws.readyState === 1 &&
 const ctl = (what, text) => `<div class="ctl"><b>${what}</b><span>${text}</span></div>`;
 const shows = text => `<div class="shows">${text}</div>`;
 const HELP = {
+  close:
+    ctl('Press', 'Closes F1, the same as holding Race, Quali or F1 Mode for 1 s: stops anything that is still opening, lights back to normal, apps closed, back to desktop 1.') +
+    shows('Shows <b>…</b> while closing.'),
   mode:
     ctl('Press', 'Starts F1: its own desktop, MultiViewer and Ultimate F1 Viewer in place, the flags and the layout. Already running? Nothing happens.') +
     ctl('Double-press', 'Hides F1 (windows minimised, streams muted). Again to bring it back.') +

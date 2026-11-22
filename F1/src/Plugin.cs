@@ -21,7 +21,7 @@ internal sealed class Plugin
     private const string P = "com.stan.f1.";
     private const string Mode = P + "mode", Flags = P + "flags", Zone = P + "zone",
         Volume = P + "volume", Latency = P + "latency", Live = P + "live", Sync = P + "sync",
-        Pause = P + "pause", Race = P + "race", Quali = P + "quali", Fullscreen = P + "fullscreen", Session = P + "session";
+        Pause = P + "pause", Race = P + "race", Quali = P + "quali", Fullscreen = P + "fullscreen", Session = P + "session", Close = P + "close";
 
     private readonly int _port;
     private readonly string _uuid, _register;
@@ -388,6 +388,11 @@ internal sealed class Plugin
 
         switch (c.Action)
         {
+            case Close:
+                // The same as holding Race, Quali or F1 Mode: stop what is starting and close everything.
+                Request(c, "close");
+                await RenderAsync(c);
+                break;
             case Session:
                 // A session on track: open it with its own layout (practice, qualifying or race).
                 // Nothing on track: the next page (weather, wind, rain, leader, fastest lap, incidents).
@@ -1144,6 +1149,7 @@ internal sealed class Plugin
             Sync => SyncKey(),
             Race => Art.Key(Art.Chequered(), "Race", IsWorking(Race) ? "…" : null, Art.Amber, caption: Opens("race", out var rc), captionColor: rc),
             Quali => Art.Key(Art.Stopwatch(), "Quali", IsWorking(Quali) ? "…" : null, Art.Amber, caption: Opens("quali", out var qc), captionColor: qc),
+            Close => Art.Key(Art.Power(), "Close F1", IsWorking(Close) ? "…" : null, Art.Amber),
             Mode when !Art.HasLogo => Art.Key(Art.F1Mark(), "F1 Mode", ModePill, ModePillColor),
             _ => null,
         };

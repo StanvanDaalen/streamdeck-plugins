@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.33 (2026-11-22)
+
+### New
+
+- **F1 Race Control**: a **Close F1** key that closes everything with one press, the same as holding Race, Quali or F1 Mode for 1 second. Handy for anyone who does not know the hold.
+
 ## 1.1.32 (2026-11-22)
 
 ### Fixed
