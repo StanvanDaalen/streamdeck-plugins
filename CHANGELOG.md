@@ -8,6 +8,8 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### New
 
+- **F1 Race Control**: `F1/SETUP-PROMPT.md`, a prompt for an AI assistant that builds your own MultiViewer setups and Ultimate F1 Viewer layouts per session type, fitted to your monitors and checked with a yellow desktop.
+
 ### Improved
 
 ### Fixed
