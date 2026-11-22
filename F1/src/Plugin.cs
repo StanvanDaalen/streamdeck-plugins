@@ -14,6 +14,7 @@ internal sealed class Ctx
     public string? Hash;
     public CancellationTokenSource? Hold, Click;
     public bool HoldFired;
+    public int Clicks;
 }
 
 internal sealed class Plugin
@@ -21,7 +22,7 @@ internal sealed class Plugin
     private const string P = "com.stan.f1.";
     private const string Mode = P + "mode", Flags = P + "flags", Zone = P + "zone",
         Volume = P + "volume", Latency = P + "latency", Live = P + "live", Sync = P + "sync",
-        Pause = P + "pause", Race = P + "race", Quali = P + "quali", Fullscreen = P + "fullscreen", Session = P + "session", Close = P + "close";
+        Pause = P + "pause", Race = P + "race", Quali = P + "quali", Fullscreen = P + "fullscreen", Session = P + "session", Close = P + "close", Start = P + "start";
 
     private readonly int _port;
     private readonly string _uuid, _register;
@@ -283,8 +284,12 @@ internal sealed class Plugin
             });
             // the Session key's page may need more than the basic state (leader, fastest lap, chance of rain)
             if (_sessionPage != SessionPages.Main) _ = SessionPages.RefreshAsync(_sessionPage, state);
-            // F1 Party for the Sync key, every 2 s and only with a Sync key on the Stream Deck
-            if (_ticks % 4 == 0 && _contexts.Values.Any(c => c.Action == Sync)) _party = await F1Party.InfoAsync();
+            // F1 Party for the Party and Start together keys, every 2 s (every tick while the lights count down)
+            if ((_ticks % 4 == 0 || _party?.Countdown > 0) && _contexts.Values.Any(c => c.Action is Sync or Start))
+            {
+                var party = await F1Party.InfoAsync();
+                await WithGate(async () => { _party = party; await RenderAllAsync(); });
+            }
             // where you are in the session, for Race/Quali to pick up there next time (not while a key is opening one)
             if (_ticks % 10 == 0 && state.Online && !IsBusy) await StartPoint.RememberAsync();
             if (++_ticks % 4 == 0 && _f1Running)
@@ -362,8 +367,8 @@ internal sealed class Plugin
     {
         if (c.Action is Race or Quali or Mode or Sync)
         {
-            // Hold 1 s = close F1 (F1 Mode, Race and Quali alike), or for Sync: host an F1 Party and send
-            // the Discord invite. A short press is handled on key up.
+            // Hold 1 s = close F1 (F1 Mode, Race and Quali alike), or for the Party key: leave the party.
+            // A short press is handled on key up.
             c.HoldFired = false;
             c.Hold?.Cancel();
             var cts = c.Hold = new CancellationTokenSource();
@@ -378,8 +383,9 @@ internal sealed class Plugin
                     if (cts.IsCancellationRequested) return;
                     c.HoldFired = true;
                     c.Click?.Cancel();
-                    if (c.Action == Sync) _ = Task.Run(async () => await (await F1Party.HostAsync() ? Ok(c) : Alert(c)));
-                    else Request(c, "close");
+                    c.Clicks = 0;
+                    if (c.Action == Sync) _ = Task.Run(async () => await (await F1Party.CommandAsync("leave") ? Ok(c) : Alert(c)));
+                    else CloseF1Key(c);
                     await Task.CompletedTask;
                 });
             });
@@ -390,19 +396,29 @@ internal sealed class Plugin
         {
             case Close:
                 // The same as holding Race, Quali or F1 Mode: stop what is starting and close everything.
-                Request(c, "close");
+                CloseF1Key(c);
                 await RenderAsync(c);
                 break;
             case Session:
                 // A session on track: open it with its own layout (practice, qualifying or race).
                 // Nothing on track: the next page (weather, wind, rain, leader, fastest lap, incidents).
-                if (Schedule.OnTrackNow() is { } onTrack) { Request(c, Schedule.KindOf(onTrack.Type, onTrack.Name)); break; }
+                if (Schedule.OnTrackNow() is { } onTrack)
+                {
+                    if (F1Party.Installed) _ = Task.Run(async () => await (await F1Party.CommandAsync("watch", "live") ? Ok(c) : Alert(c)));
+                    else Request(c, Schedule.KindOf(onTrack.Type, onTrack.Name));
+                    break;
+                }
                 _sessionPage = SessionPages.Next(_sessionPage, _mv);
                 _sessionPageAt = DateTime.UtcNow;
                 await SessionPages.RefreshAsync(_sessionPage, _mv);
                 await RenderAsync(c);
                 break;
             case Flags: await ToggleFlags(); break;
+            case Start:
+                // Start together (F1 Party): the five lights for the whole party, then everyone plays
+                if (!F1Party.Installed) { await Alert(c); break; }
+                _ = Task.Run(async () => await (await F1Party.CommandAsync("start") ? Ok(c) : Alert(c)));
+                break;
             case Live: await GoLive(c); break;
             case Pause: await TogglePause(c); break;
             case Fullscreen:
@@ -419,8 +435,14 @@ internal sealed class Plugin
         c.Hold?.Cancel();
         c.Hold = null;
         if (c.HoldFired) return;
-        if (c.Action == Sync) { await SyncKeyAsync(c); return; }
-        if (c.Action != Mode) { Request(c, LayoutKind(c)); return; }
+        if (c.Action == Sync) { PartyClick(c); return; }
+        if (c.Action != Mode)
+        {
+            // With F1 Party: it opens the race or qualifying the way its "Open with" says
+            if (F1Party.Installed) _ = Task.Run(async () => await (await F1Party.CommandAsync("watch", LayoutKind(c)) ? Ok(c) : Alert(c)));
+            else Request(c, LayoutKind(c));
+            return;
+        }
 
         // F1 Mode: a second click within 350 ms makes a double click (hide/show); otherwise a single click.
         if (c.Click != null)
@@ -444,6 +466,61 @@ internal sealed class Plugin
                 else Request(c, "mode");                           // start (or nothing when it already is)
             });
         });
+    }
+
+    /// <summary>
+    /// Close F1 (the Close F1 key, or holding Race or Quali): F1 Party closes it when it runs, unless this plugin
+    /// opened F1 itself (F1 Mode, or F1 Party's "Open with: Stream Deck"); then the plugin closes its own.
+    /// </summary>
+    private void CloseF1Key(Ctx c)
+    {
+        if (!F1Party.Installed || _f1ModeOn) { Request(c, "close"); return; }
+        _ = Task.Run(async () =>
+        {
+            if (await F1Party.CommandAsync("close")) await Ok(c);
+            else Request(c, "close");
+        });
+    }
+
+    /// <summary>
+    /// Party key, counted over 350 ms: 1× not in a party: host one, in one: sync (a guest to the host; a host
+    /// has everyone sync); 2× copy the party code; 3× send the Discord invite. Without F1 Party: 1× syncs the
+    /// streams here.
+    /// </summary>
+    private void PartyClick(Ctx c)
+    {
+        c.Click?.Cancel();
+        c.Clicks++;
+        if (c.Clicks >= 3) { c.Click = null; c.Clicks = 0; _ = Task.Run(() => PartyGesture(c, 3)); return; }
+        var click = c.Click = new CancellationTokenSource();
+        _ = Task.Run(async () =>
+        {
+            try { await Task.Delay(350, click.Token); }
+            catch (OperationCanceledException) { return; }
+            int n = 0;
+            await WithGate(async () =>
+            {
+                if (click.IsCancellationRequested) return;
+                c.Click = null;
+                (n, c.Clicks) = (c.Clicks, 0);
+                await Task.CompletedTask;
+            });
+            if (n > 0) await PartyGesture(c, n);
+        });
+    }
+
+    private async Task PartyGesture(Ctx c, int clicks)
+    {
+        if (!F1Party.Installed) { if (clicks == 1) await SyncKeyAsync(c); else await Alert(c); return; }
+        bool ok = clicks switch
+        {
+            1 => await F1Party.CommandAsync("party"),
+            2 => await F1Party.CommandAsync("copy"),
+            _ => await F1Party.CommandAsync("invite"),
+        };
+        await (ok ? Ok(c) : Alert(c));
+        var party = await F1Party.InfoAsync();
+        await WithGate(async () => { _party = party; await RenderAllAsync(); });
     }
 
     /// <summary>
@@ -1151,7 +1228,8 @@ internal sealed class Plugin
             Sync => SyncKey(),
             Race => Art.Key(Art.Chequered(), "Race", IsWorking(Race) ? "…" : null, Art.Amber, caption: Opens("race", out var rc), captionColor: rc),
             Quali => Art.Key(Art.Stopwatch(), "Quali", IsWorking(Quali) ? "…" : null, Art.Amber, caption: Opens("quali", out var qc), captionColor: qc),
-            Close => Art.Key(Art.Power(), "Close F1", IsWorking(Close) ? "…" : null, Art.Amber),
+            Close => Art.Key(Art.Power(), "End session", IsWorking(Close) ? "…" : null, Art.Amber),
+            Start => StartKey(),
             Mode when !Art.HasLogo => Art.Key(Art.F1Mark(), "F1 Mode", ModePill, ModePillColor),
             _ => null,
         };
@@ -1249,13 +1327,23 @@ internal sealed class Plugin
     /// </summary>
     private string SyncKey()
     {
-        if (_party is not { Mode: "host" or "guest" } p) return Art.Key(Art.Sync(), "Sync");
+        if (!F1Party.Installed) return Art.Key(Art.Sync(), "Sync");
+        if (_party is not { Mode: "host" or "guest" } p) return Art.Key(Art.Party(on: false), "Party", labelColor: Art.Grey);
         var color = p.Sync switch { "ok" => Art.Green, "warn" => Art.Amber, _ => Art.Red };
-        return Art.Key(Art.Sync(), p.Mode == "host" ? "Sync all" : "Sync", p.Members.ToString(), color,
+        return Art.Key(Art.Party(), "Party", p.Members.ToString(), color,
             caption: p.Mode == "host" ? p.Code + " · HOST" : p.Code, captionColor: Art.Grey);
     }
 
     private F1Party.Info? _party;
+
+    /// <summary>Start together: five dark lights; while F1 Party counts down they come on one by one.</summary>
+    private string StartKey()
+    {
+        int left = _party?.Countdown ?? 0;
+        if (left > 0) return Art.Key(Art.Lights(Math.Clamp(6 - left, 1, 5)), "Start", caption: "lights out soon", captionColor: Art.Red);
+        return Art.Key(Art.Lights(0), "Start", caption: _party is { Mode: "guest" } ? "host starts" : "together",
+            labelColor: _party is { Mode: "guest" } ? Art.Grey : Art.White);
+    }
 
     private string FullscreenKey()
     {
@@ -1283,7 +1371,7 @@ internal sealed class Plugin
                 var f = _flags.Current;
                 bool on = S.FlagsEnabled && Hue.Paired;
                 string color = on ? (f == Flag.Green ? Art.Green : FlagEngine.Color(f)) : Art.Grey;
-                icon = f == Flag.Chequered && on ? Art.Chequered() : Art.Flag(color);
+                icon = Art.Flag(on ? Art.White : Art.Grey); // white like the other dials; the colour is in the value and bar
                 title = !Hue.Paired ? "Flags · pair Hue" : S.FlagsEnabled ? "Track status" : "Flags off";
                 value = !online ? "Offline" : _mv.Timing == null ? "No session" : FlagEngine.Label(f);
                 if (on && _mv.Timing != null) valueColor = color;

@@ -12,6 +12,20 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.36 (2026-11-22)
+
+### New
+
+- **F1 Race Control**: **Start together** key: F1 Party's five start lights for the whole party, then everyone plays at the same moment. The lights on the key come on one by one during the countdown.
+- **F1 Race Control**: the Sync key is now the **Party** key for F1 Party, with its own icon (four people in front of a screen): bright in a party with how many watch, dark with a stroke when you're not in one. Press: start a party, or sync when you're in one (as the host everyone syncs to you). Double-press: copy the party code. Triple-press: send the Discord invite. Hold: leave the party. Without F1 Party a press still syncs your streams.
+
+### Improved
+
+- **F1 Race Control**: with F1 Party installed, Race, Quali, Session and Close F1 tell F1 Party what to do, and F1 Party opens and closes everything the way its "Open with" says. Without F1 Party they work as before.
+- **F1 Race Control**: **Close F1 is now End session**, with a tidier power icon. With F1 Party it ends the session there (the party stays).
+- **F1 Race Control**: the Track status dial shows a plain white flag, like the other dials; the flag colour stays in the text and the bar.
+- **F1 Race Control**: F1 Mode, Pause / play and Go live are no longer in the action list (Race, Quali and the Live delay dial cover them). Keys you already placed keep working.
+
 ## 1.1.35 (2026-11-22)
 
 ### New

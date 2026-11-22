@@ -1,260 +1,279 @@
 {
-    "UUID":  "com.stan.f1",
-    "Name":  "F1 Race Control",
-    "Author":  "Stan",
-    "Description":  "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
-    "Version": "1.18.8.0",
-    "SDKVersion":  2,
-    "Icon":  "images/plugin",
-    "Category":  "F1 Race Control",
-    "CategoryIcon":  "images/category",
-    "CodePathWin":  "bin/F1.exe",
-    "PropertyInspectorPath":  "pi.html",
-    "OS":  [
-               {
-                   "Platform":  "windows",
-                   "MinimumVersion":  "10"
-               }
-           ],
-    "Software":  {
-                     "MinimumVersion":  "6.5"
-                 },
-    "Actions":  [
-                    {
-                        "UUID":  "com.stan.f1.mode",
-                        "Name":  "F1 Mode",
-                        "Tooltip":  "Press: start F1 (own desktop, apps in place, flags, layout). Double-press: hide or show. Hold 1 s: close everything.",
-                        "Icon":  "images/action-mode",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-mode",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.session",
-                        "Name":  "Session",
-                        "Tooltip":  "Shows time remaining or laps, or the weather. Press: open the session on track with its layout, otherwise switch clock/weather.",
-                        "Icon":  "images/action-session",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "DisableAutomaticStates":  true,
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-session",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.flags",
-                        "Name":  "Flags",
-                        "Tooltip":  "Track status on your Hue lights. Press: flags on/off. Turn: brightness. Push: on/off. Touch: test.",
-                        "Icon":  "images/action-flags",
-                        "Controllers":  [
-                                            "Keypad",
-                                            "Encoder"
-                                        ],
-                        "DisableAutomaticStates":  true,
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-flags",
-                                           "ShowTitle":  false
-                                       }
-                                   ],
-                        "Encoder":  {
-                                        "layout":  "layouts/f1.json",
-                                        "Icon":  "images/action-flags",
-                                        "TriggerDescription":  {
-                                                                   "Rotate":  "Brightness",
-                                                                   "Push":  "Flags on/off",
-                                                                   "Touch":  "Test"
-                                                               }
-                                    }
-                    },
-                    {
-                        "UUID":  "com.stan.f1.zone",
-                        "Name":  "Flag lights",
-                        "Tooltip":  "Turn: choose which Hue room or zone shows the flags.",
-                        "Icon":  "images/action-zone",
-                        "Controllers":  [
-                                            "Encoder"
-                                        ],
-                        "States":  [
-                                       {
-                                           "Image":  "images/action-zone",
-                                           "ShowTitle":  false
-                                       }
-                                   ],
-                        "Encoder":  {
-                                        "layout":  "layouts/f1.json",
-                                        "Icon":  "images/action-zone",
-                                        "TriggerDescription":  {
-                                                                   "Rotate":  "Choose room / zone"
-                                                               }
-                                    }
-                    },
-                    {
-                        "UUID":  "com.stan.f1.volume",
-                        "Name":  "Volume",
-                        "Tooltip":  "Volume of the main F1 LIVE stream. Turn: louder/quieter. Push or touch: mute.",
-                        "Icon":  "images/action-volume",
-                        "Controllers":  [
-                                            "Encoder"
-                                        ],
-                        "States":  [
-                                       {
-                                           "Image":  "images/action-volume",
-                                           "ShowTitle":  false
-                                       }
-                                   ],
-                        "Encoder":  {
-                                        "layout":  "layouts/f1.json",
-                                        "Icon":  "images/action-volume",
-                                        "TriggerDescription":  {
-                                                                   "Rotate":  "Volume",
-                                                                   "Push":  "Mute",
-                                                                   "Touch":  "Mute"
-                                                               }
-                                    }
-                    },
-                    {
-                        "UUID":  "com.stan.f1.latency",
-                        "Name":  "Live delay",
-                        "Tooltip":  "Delay behind live (or replay offset): 0s, -40s, +3s. Turn: shift. Push: go live or pause (setting). Touch: the other one.",
-                        "Icon":  "images/action-latency",
-                        "Controllers":  [
-                                            "Encoder"
-                                        ],
-                        "States":  [
-                                       {
-                                           "Image":  "images/action-latency",
-                                           "ShowTitle":  false
-                                       }
-                                   ],
-                        "Encoder":  {
-                                        "layout":  "layouts/f1.json",
-                                        "Icon":  "images/action-latency",
-                                        "TriggerDescription":  {
-                                                                   "Rotate":  "1 s per click",
-                                                                   "Push":  "Go live",
-                                                                   "Touch":  "Pause / play"
-                                                               }
-                                    }
-                    },
-                    {
-                        "UUID":  "com.stan.f1.live",
-                        "Name":  "Go live",
-                        "Tooltip":  "Shows YOU'RE LIVE, -40s or REPLAY. Press: go live (in a replay: back to 0s).",
-                        "Icon":  "images/action-live",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "DisableAutomaticStates":  true,
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-live",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.sync",
-                        "Name":  "Sync",
-                        "Tooltip":  "Press: all streams jump to your main screen. Hold 1 s: start an F1 Party with a Discord invite (already hosting: everyone syncs to you, invite again).",
-                        "Icon":  "images/action-sync",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-sync",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.pause",
-                        "Name":  "Pause / play",
-                        "Tooltip":  "Press: pause or play. In an F1 Party: everyone pauses (setting: or just you).",
-                        "Icon":  "images/action-pause",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "DisableAutomaticStates":  true,
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-pause",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.fullscreen",
-                        "Name":  "Fullscreen",
-                        "Tooltip":  "Press: main MultiViewer screen fullscreen on/off.",
-                        "Icon":  "images/action-fullscreen",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "DisableAutomaticStates":  true,
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-fullscreen",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.race",
-                        "Name":  "Race",
-                        "Tooltip":  "Press: open your Race setup in MultiViewer and Ultimate F1 Viewer, best of the rest filled in. Hold 1 s: close everything.",
-                        "Icon":  "images/action-race",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-race",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.quali",
-                        "Name":  "Quali",
-                        "Tooltip":  "Press: open your Qualifying setup in MultiViewer and Ultimate F1 Viewer, best of the rest filled in. Hold 1 s: close everything.",
-                        "Icon":  "images/action-quali",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-quali",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    },
-                    {
-                        "UUID":  "com.stan.f1.close",
-                        "Name":  "Close F1",
-                        "Tooltip":  "Press: close F1, the same as holding Race, Quali or F1 Mode: lights back to normal, apps closed, back to desktop 1.",
-                        "Icon":  "images/action-close",
-                        "Controllers":  [
-                                            "Keypad"
-                                        ],
-                        "DisableAutomaticStates":  true,
-                        "States":  [
-                                       {
-                                           "Image":  "images/key-close",
-                                           "ShowTitle":  false
-                                       }
-                                   ]
-                    }
-                ]
+    "UUID": "com.stan.f1",
+    "Name": "F1 Race Control",
+    "Author": "Stan",
+    "Description": "Watch F1 with MultiViewer and Ultimate F1 Viewer: flags on your Hue lights, latency, volume, race and quali layouts, and an F1 Mode that sets everything up on its own desktop.",
+    "Version": "1.20.0.0",
+    "SDKVersion": 2,
+    "Icon": "images/plugin",
+    "Category": "F1 Race Control",
+    "CategoryIcon": "images/category",
+    "CodePathWin": "bin/F1.exe",
+    "PropertyInspectorPath": "pi.html",
+    "OS": [
+        {
+            "Platform": "windows",
+            "MinimumVersion": "10"
+        }
+    ],
+    "Software": {
+        "MinimumVersion": "6.5"
+    },
+    "Actions": [
+        {
+            "UUID": "com.stan.f1.mode",
+            "Name": "F1 Mode",
+            "Tooltip": "Press: start F1 (own desktop, apps in place, flags, layout). Double-press: hide or show. Hold 1 s: close everything.",
+            "Icon": "images/action-mode",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "images/key-mode",
+                    "ShowTitle": false
+                }
+            ],
+            "VisibleInActionsList": false
+        },
+        {
+            "UUID": "com.stan.f1.session",
+            "Name": "Session",
+            "Tooltip": "Shows time remaining or laps, or the weather. Press: open the session on track with its layout, otherwise switch clock/weather.",
+            "Icon": "images/action-session",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-session",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.flags",
+            "Name": "Flags",
+            "Tooltip": "Track status on your Hue lights. Press: flags on/off. Turn: brightness. Push: on/off. Touch: test.",
+            "Icon": "images/action-flags",
+            "Controllers": [
+                "Keypad",
+                "Encoder"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-flags",
+                    "ShowTitle": false
+                }
+            ],
+            "Encoder": {
+                "layout": "layouts/f1.json",
+                "Icon": "images/action-flags",
+                "TriggerDescription": {
+                    "Rotate": "Brightness",
+                    "Push": "Flags on/off",
+                    "Touch": "Test"
+                }
+            }
+        },
+        {
+            "UUID": "com.stan.f1.zone",
+            "Name": "Flag lights",
+            "Tooltip": "Turn: choose which Hue room or zone shows the flags.",
+            "Icon": "images/action-zone",
+            "Controllers": [
+                "Encoder"
+            ],
+            "States": [
+                {
+                    "Image": "images/action-zone",
+                    "ShowTitle": false
+                }
+            ],
+            "Encoder": {
+                "layout": "layouts/f1.json",
+                "Icon": "images/action-zone",
+                "TriggerDescription": {
+                    "Rotate": "Choose room / zone"
+                }
+            }
+        },
+        {
+            "UUID": "com.stan.f1.volume",
+            "Name": "Volume",
+            "Tooltip": "Volume of the main F1 LIVE stream. Turn: louder/quieter. Push or touch: mute.",
+            "Icon": "images/action-volume",
+            "Controllers": [
+                "Encoder"
+            ],
+            "States": [
+                {
+                    "Image": "images/action-volume",
+                    "ShowTitle": false
+                }
+            ],
+            "Encoder": {
+                "layout": "layouts/f1.json",
+                "Icon": "images/action-volume",
+                "TriggerDescription": {
+                    "Rotate": "Volume",
+                    "Push": "Mute",
+                    "Touch": "Mute"
+                }
+            }
+        },
+        {
+            "UUID": "com.stan.f1.latency",
+            "Name": "Live delay",
+            "Tooltip": "Delay behind live (or replay offset): 0s, -40s, +3s. Turn: shift. Push: go live or pause (setting). Touch: the other one.",
+            "Icon": "images/action-latency",
+            "Controllers": [
+                "Encoder"
+            ],
+            "States": [
+                {
+                    "Image": "images/action-latency",
+                    "ShowTitle": false
+                }
+            ],
+            "Encoder": {
+                "layout": "layouts/f1.json",
+                "Icon": "images/action-latency",
+                "TriggerDescription": {
+                    "Rotate": "1 s per click",
+                    "Push": "Go live",
+                    "Touch": "Pause / play"
+                }
+            }
+        },
+        {
+            "UUID": "com.stan.f1.live",
+            "Name": "Go live",
+            "Tooltip": "Shows YOU'RE LIVE, -40s or REPLAY. Press: go live (in a replay: back to 0s).",
+            "Icon": "images/action-live",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-live",
+                    "ShowTitle": false
+                }
+            ],
+            "VisibleInActionsList": false
+        },
+        {
+            "UUID": "com.stan.f1.sync",
+            "Name": "Party",
+            "Tooltip": "F1 Party. Press: start a party, or sync (a host syncs everyone). Double-press: copy the party code. Triple-press: Discord invite. Hold 1 s: leave the party.",
+            "Icon": "images/action-sync",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "images/key-sync",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.pause",
+            "Name": "Pause / play",
+            "Tooltip": "Press: pause or play. In an F1 Party: everyone pauses (setting: or just you).",
+            "Icon": "images/action-pause",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-pause",
+                    "ShowTitle": false
+                }
+            ],
+            "VisibleInActionsList": false
+        },
+        {
+            "UUID": "com.stan.f1.fullscreen",
+            "Name": "Fullscreen",
+            "Tooltip": "Press: main MultiViewer screen fullscreen on/off.",
+            "Icon": "images/action-fullscreen",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-fullscreen",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.race",
+            "Name": "Race",
+            "Tooltip": "Press: open your Race setup in MultiViewer and Ultimate F1 Viewer, best of the rest filled in. Hold 1 s: close everything.",
+            "Icon": "images/action-race",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "images/key-race",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.quali",
+            "Name": "Quali",
+            "Tooltip": "Press: open your Qualifying setup in MultiViewer and Ultimate F1 Viewer, best of the rest filled in. Hold 1 s: close everything.",
+            "Icon": "images/action-quali",
+            "Controllers": [
+                "Keypad"
+            ],
+            "States": [
+                {
+                    "Image": "images/key-quali",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.start",
+            "Name": "Start together",
+            "Tooltip": "F1 Party: the five start lights for the whole party, then everyone plays at the same moment. Starts a party when you are not in one.",
+            "Icon": "images/action-start",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-start",
+                    "ShowTitle": false
+                }
+            ]
+        },
+        {
+            "UUID": "com.stan.f1.close",
+            "Name": "End session",
+            "Tooltip": "Press: end the session. F1 Party closes the streams, MultiViewer and Ultimate F1 Viewer, the desktop, lights and taskbar (the party stays). Without F1 Party the plugin closes F1 itself.",
+            "Icon": "images/action-close",
+            "Controllers": [
+                "Keypad"
+            ],
+            "DisableAutomaticStates": true,
+            "States": [
+                {
+                    "Image": "images/key-close",
+                    "ShowTitle": false
+                }
+            ]
+        }
+    ]
 }

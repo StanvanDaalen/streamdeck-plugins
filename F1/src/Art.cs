@@ -269,10 +269,33 @@ public static class Art
         $"<rect x='-30' y='-6' width='12' height='12' rx='2' fill='{White}'/><rect x='-12' y='-6' width='34' height='12' rx='2' fill='{White}'/>" +
         $"<rect x='-30' y='16' width='12' height='12' rx='2' fill='{White}'/><rect x='-12' y='16' width='26' height='12' rx='2' fill='{White}'/>";
 
-    /// <summary>Power symbol (close F1).</summary>
+    /// <summary>Power symbol (End session): a short stem in the ring's opening.</summary>
     public static string Power() =>
-        $"<path d='{ArcPath(-60, 240, 27)}' fill='none' stroke='{Red}' stroke-width='7' stroke-linecap='round'/>" +
-        $"<path d='M0 -34 V-4' stroke='{White}' stroke-width='7' stroke-linecap='round'/>";
+        $"<path d='{ArcPath(-50, 230, 27)}' fill='none' stroke='{Red}' stroke-width='7' stroke-linecap='round'/>" +
+        $"<path d='M0 -32 V-12' stroke='{White}' stroke-width='7' stroke-linecap='round'/>";
+
+    /// <summary>
+    /// Four people in front of a screen (F1 Party). Off: grey with a stroke through it, like the other on/off
+    /// keys.
+    /// </summary>
+    public static string Party(bool on = true)
+    {
+        string c = on ? White : Grey, play = on ? Red : Grey, people = "";
+        foreach (var x in new[] { -27, -9, 9, 27 })
+            people += $"<circle cx='{x}' cy='10' r='6' fill='{c}'/><path d='M{x - 9} 32 Q{x} 14 {x + 9} 32 Z' fill='{c}'/>";
+        return $"<rect x='-34' y='-34' width='68' height='34' rx='5' fill='none' stroke='{c}' stroke-width='5'/>" +
+               $"<path d='M-6 -24 L8 -17 L-6 -10 Z' fill='{play}'/>" + people +
+               (on ? "" : $"<path d='M-38 34 L38 -38' stroke='{Tile}' stroke-width='12' stroke-linecap='round'/><path d='M-38 34 L38 -38' stroke='{c}' stroke-width='6' stroke-linecap='round'/>");
+    }
+
+    /// <summary>The five start lights in their bar; lit = how many are red (Start together's countdown).</summary>
+    public static string Lights(int lit)
+    {
+        var s = $"<rect x='-52' y='-14' width='104' height='28' rx='14' fill='none' stroke='{White}' stroke-width='3'/>";
+        for (int i = 0; i < 5; i++)
+            s += $"<circle cx='{-40 + i * 20}' cy='0' r='8' fill='{(i < lit ? Red : "#3A3A44")}'/>";
+        return s;
+    }
 
     public static string Play() => $"<path d='M-16 -26 L26 0 L-16 26 Z' fill='{White}'/>";
     public static string Pause() =>
@@ -338,15 +361,17 @@ public static class Art
         foreach (var (name, glyph) in new[]
         {
             ("mode", F1Mark(White)), ("session", Tower()), ("flags", Flag(White)), ("zone", Bulb()), ("volume", Speaker()),
-            ("latency", Clock()), ("live", Live(White)), ("sync", Sync()), ("pause", Pause()),
-            ("race", Chequered()), ("quali", Stopwatch(White)), ("fullscreen", Expand()),
+            ("latency", Clock()), ("live", Live(White)), ("sync", Party()), ("pause", Pause()),
+            ("race", Chequered()), ("quali", Stopwatch(White)), ("fullscreen", Expand()), ("close", Power()), ("start", Lights(5)),
         })
             yield return ("action-" + name, Icon(glyph, 40));
         yield return ("key-mode", Key(F1Mark(), "F1 Mode"));
         yield return ("key-session", InfoKey("Session", "--:--", "Remaining", White));
         yield return ("key-flags", Key(Flag(), "Flags", "ON"));
         yield return ("key-live", Key(Live(), "Go live"));
-        yield return ("key-sync", Key(Sync(), "Sync"));
+        yield return ("key-sync", Key(Party(), "Party"));
+        yield return ("key-close", Key(Power(), "End session"));
+        yield return ("key-start", Key(Lights(0), "Start", caption: "together"));
         yield return ("key-pause", Key(Pause(), "Pause"));
         yield return ("key-race", Key(Chequered(), "Race"));
         yield return ("key-quali", Key(Stopwatch(), "Quali"));

@@ -139,7 +139,7 @@
   <!-- Sync -->
   <div class="box" data-for="sync">
     <h4>F1 Party</h4>
-    <p class="muted">Hold works with the F1 Party app (it opens by itself). For Discord invites, set a webhook in F1 Party once.</p>
+    <p class="muted">Works with the F1 Party app (it opens by itself). For Discord invites, set them up in F1 Party once. Without F1 Party, a press syncs your streams to the main screen.</p>
   </div>
 
   <!-- Pause -->
@@ -198,8 +198,11 @@ const ctl = (what, text) => `<div class="ctl"><b>${what}</b><span>${text}</span>
 const shows = text => `<div class="shows">${text}</div>`;
 const HELP = {
   close:
-    ctl('Press', 'Closes F1, the same as holding Race, Quali or F1 Mode for 1 s: stops anything that is still opening, lights back to normal, apps closed, back to desktop 1.') +
+    ctl('Press', 'Ends the session. With F1 Party: the streams, MultiViewer and Ultimate F1 Viewer close, the desktop, lights and taskbar go back (as set in F1 Party under Settings → Close); the party stays, and as the host you end it for everyone. Without F1 Party: the plugin closes F1, the same as holding Race or Quali.') +
     shows('Shows <b>…</b> while closing.'),
+  start:
+    ctl('Press', 'Start together in F1 Party: the five start lights for the whole party, then everyone plays at the same moment. Not in a party yet: it starts one first. Only the host can start.') +
+    shows('The five lights come on one by one during the countdown.'),
   mode:
     ctl('Press', 'Starts F1: its own desktop, MultiViewer and Ultimate F1 Viewer in place, the flags and the layout. Already running? Nothing happens.') +
     ctl('Double-press', 'Hides F1 (windows minimised, streams muted). Again to bring it back.') +
@@ -230,20 +233,22 @@ const HELP = {
     ctl('Press', 'Drops the delay and goes live. In a replay: back to before you shifted.') +
     shows('Shows <b>YOU\'RE LIVE</b>, how far behind you are (e.g. <b>-40s</b>) or <b>REPLAY</b>.'),
   sync:
-    ctl('Press', 'All streams jump to your main screen. As a guest in an F1 Party: first to the host.') +
-    ctl('Hold 1 s', 'No party yet: starts an F1 Party and sends the invite to Discord. Already hosting: everyone syncs to you and the invite is sent again.') +
+    ctl('Press', 'Not in a party: starts an F1 Party. In one: sync. As a guest you jump to the host; as the host your streams and those of everyone else sync to your main screen.') +
+    ctl('Double-press', 'Copies the party code.') +
+    ctl('Triple-press', 'Sends the invite to Discord.') +
+    ctl('Hold 1 s', 'Leaves the party (as the host: ends it).') +
     shows('In an F1 Party: how many watch (green: all in sync, amber: someone is not yet, red: no connection) and the party code.'),
   pause:
     ctl('Press', 'Pause or play. In an F1 Party: see "Pause everyone" below.') +
     shows('Time spent paused counts as delay behind live.'),
   race:
     ctl('Press', 'Opens your race setup: the MultiViewer setup (onboards, F1 LIVE, timing), then the Ultimate F1 Viewer layout on top (flag bars, battle mode).') +
-    ctl('Hold 1 s', 'Closes F1, like F1 Mode.') +
-    shows('For the live race, or the replay open in MultiViewer. It starts where you left off, else 1 minute before the start (setting below). Starts F1 Mode first when it isn\'t running.'),
+    ctl('Hold 1 s', 'Closes F1.') +
+    shows('With F1 Party installed, F1 Party opens it the way its <b>Open with</b> says (a party you host switches along). For the live race, or the replay open in MultiViewer. It starts where you left off, else 1 minute before the start (setting below). Starts F1 Mode first when it isn\'t running.'),
   quali:
     ctl('Press', 'Opens your qualifying setup: the MultiViewer setup (onboards, F1 LIVE, timing), then the Ultimate F1 Viewer layout on top (flag bars).') +
-    ctl('Hold 1 s', 'Closes F1, like F1 Mode.') +
-    shows('For the live qualifying, or the replay open in MultiViewer. It starts where you left off, else 1 minute before the start (setting below). Starts F1 Mode first when it isn\'t running.'),
+    ctl('Hold 1 s', 'Closes F1.') +
+    shows('With F1 Party installed, F1 Party opens it the way its <b>Open with</b> says (a party you host switches along). For the live qualifying, or the replay open in MultiViewer. It starts where you left off, else 1 minute before the start (setting below). Starts F1 Mode first when it isn\'t running.'),
   fullscreen:
     ctl('Press', 'The main MultiViewer screen fullscreen, or back.') +
     shows('Shows <b>ON</b> while it is fullscreen.'),

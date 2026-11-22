@@ -4,8 +4,9 @@ using System.Text.Json.Nodes;
 namespace F1;
 
 /// <summary>
-/// F1 Party (github.com/Jeremy0538/f1party), the watch-party app, when it is installed: the Sync key syncs to
-/// the party's host when you are a guest, and holding it hosts a party and posts the Discord invite.
+/// F1 Party (github.com/Jeremy0538/f1party), the watch-party app, when it is installed. The keys then only
+/// tell F1 Party what to do: the Party key (sync, code, invite, leave), and Race, Quali, Session and Close
+/// F1, which F1 Party opens and closes the way its "Open with" says.
 /// F1 Party listens on 127.0.0.1:47821 and writes where it is installed to f1party/app.json.
 /// </summary>
 public static class F1Party
@@ -17,7 +18,7 @@ public static class F1Party
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "f1party", "app.json");
 
     /// <summary>The party for the Sync key: mode ("idle", "host", "guest"), code, members and how well they are in sync.</summary>
-    public sealed record Info(string Mode, string Code, int Members, string Sync);
+    public sealed record Info(string Mode, string Code, int Members, string Sync, int Countdown = 0);
 
     /// <summary>The party while F1 Party runs, else null.</summary>
     public static async Task<Info?> InfoAsync()
@@ -26,7 +27,8 @@ public static class F1Party
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
             var j = JsonNode.Parse(await Http.GetStringAsync(Control + "status", cts.Token));
-            return new Info((string?)j?["mode"] ?? "idle", (string?)j?["code"] ?? "", (int?)j?["members"] ?? 0, (string?)j?["sync"] ?? "");
+            return new Info((string?)j?["mode"] ?? "idle", (string?)j?["code"] ?? "", (int?)j?["members"] ?? 0, (string?)j?["sync"] ?? "",
+                (int?)j?["countdown"] ?? 0);
         }
         catch { return null; }
     }
@@ -82,6 +84,37 @@ public static class F1Party
             return res.IsSuccessStatusCode;
         }
         catch (Exception e) { Store.Log("f1party host: " + e.Message); return false; }
+    }
+
+    /// <summary>Whether F1 Party is installed (it has run once on this computer).</summary>
+    public static bool Installed => Exe() != null;
+
+    /// <summary>
+    /// A command for F1 Party ("party", "copy", "invite", "leave", "close" (End session), "start" (Start
+    /// together), "watch" with which = "race" |
+    /// "quali" | "live"). Starts F1 Party first when it isn't running and waits for it (up to 20 s).
+    /// </summary>
+    public static async Task<bool> CommandAsync(string command, string? which = null)
+    {
+        if (await ModeAsync() == null)
+        {
+            if (command is "leave" or "close") return false; // nothing to leave or close in F1 Party
+            var exe = Exe();
+            if (exe == null) { Store.Log("F1 Party: niet gevonden (nog nooit gestart?)"); return false; }
+            Store.Log($"F1 Party starten voor {command}");
+            Process.Start(new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! });
+            for (int i = 0; i < 40 && await ModeAsync() == null; i++) await Task.Delay(500);
+        }
+        try
+        {
+            HttpContent? body = which == null ? null : new StringContent(new JsonObject { ["which"] = which }.ToJsonString(),
+                System.Text.Encoding.UTF8, "application/json");
+            var res = await Http.PostAsync(Control + command, body);
+            var text = await res.Content.ReadAsStringAsync();
+            Store.Log($"F1 Party {command}{(which != null ? " " + which : "")}: {(int)res.StatusCode} {text.Trim()}");
+            return res.IsSuccessStatusCode;
+        }
+        catch (Exception e) { Store.Log($"f1party {command}: " + e.Message); return false; }
     }
 
     private static string? Exe()
