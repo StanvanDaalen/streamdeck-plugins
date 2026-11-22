@@ -236,6 +236,8 @@ internal sealed class Plugin
     }
 
     /// <summary>The key's job is running or waiting: show "…" on it.</summary>
+    private bool IsBusy { get { lock (_jobLock) return _busy; } }
+
     private bool IsWorking(string action)
     {
         lock (_jobLock) return _running?.Ctx.Action == action || _pending?.Ctx.Action == action;
@@ -278,6 +280,8 @@ internal sealed class Plugin
             });
             // F1 Party for the Sync key, every 2 s and only with a Sync key on the Stream Deck
             if (_ticks % 4 == 0 && _contexts.Values.Any(c => c.Action == Sync)) _party = await F1Party.InfoAsync();
+            // where you are in the session, for Race/Quali to pick up there next time (not while a key is opening one)
+            if (_ticks % 10 == 0 && state.Online && !IsBusy) await StartPoint.RememberAsync();
             if (++_ticks % 4 == 0 && _f1Running)
             {
                 try { Apps.KeepBattleModeOnTop(); } catch (Exception e) { Store.Log("battle mode voor: " + e.Message); }
@@ -708,6 +712,10 @@ internal sealed class Plugin
         Store.Log(timing ? "timing geladen" : "timing na 25 s nog niet geladen");
         Job.Check();
 
+        // Where to start: where you left off, else a minute before the session starts (also when it is already
+        // running). Not when F1 Party asked for the session: the party decides where everyone is.
+        if (onlyContent == null && S.StartFromBeginning && kind is "race" or "quali") await StartPoint.ApplyAsync();
+
         // Best of the rest right away (the setup may have opened before positions were known).
         if (timing && MvSetups.Active) await MvSetups.UpdateRestSlotsAsync(force: true);
 
@@ -1031,6 +1039,7 @@ internal sealed class Plugin
                 case "BattleRight": S.BattleRight = v.ToString(); break;
                 case "BattleLive": S.BattleLive = B(v); break;
                 case "OpenLatestReplay": S.OpenLatestReplay = B(v); break;
+                case "StartFromBeginning": S.StartFromBeginning = B(v); break;
                 case "TopTeams":
                     var teams = v.ToString().Split(',').Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
                     if (teams.Count > 0) S.TopTeams = teams;

@@ -153,6 +153,8 @@
     <div class="row"><span class="lbl">Ultimate F1 Viewer</span><select id="layout"></select></div>
     <div class="row"><label class="check"><input type="checkbox" data-key="OpenLatestReplay">No live session of this type? Open the latest replay</label></div>
     <div class="row"><label class="check"><input type="checkbox" data-key="LayoutCloseCurrent">Close the open Ultimate F1 Viewer windows first</label></div>
+    <div class="row"><label class="check"><input type="checkbox" data-key="StartFromBeginning">Start where I left off, else 1 minute before the start</label></div>
+    <p class="note">Also when the session is already running: you watch it from the start instead of halfway. Off: where MultiViewer starts (live: the live edge).</p>
     <div class="row"><span class="lbl"></span><button id="saveLayout">Save current windows</button></div>
     <p class="note lblnote" id="saveStatus">Saves the windows open in Ultimate F1 Viewer as this layout. Save your MultiViewer setup in MultiViewer itself.</p>
 
@@ -225,11 +227,11 @@ const HELP = {
   race:
     ctl('Press', 'Opens your race setup: the MultiViewer setup (onboards, F1 LIVE, timing), then the Ultimate F1 Viewer layout on top (flag bars, battle mode).') +
     ctl('Hold 1 s', 'Closes F1, like F1 Mode.') +
-    shows('For the live race, or the replay open in MultiViewer. Starts F1 Mode first when it isn\'t running.'),
+    shows('For the live race, or the replay open in MultiViewer. It starts where you left off, else 1 minute before the start (setting below). Starts F1 Mode first when it isn\'t running.'),
   quali:
     ctl('Press', 'Opens your qualifying setup: the MultiViewer setup (onboards, F1 LIVE, timing), then the Ultimate F1 Viewer layout on top (flag bars).') +
     ctl('Hold 1 s', 'Closes F1, like F1 Mode.') +
-    shows('For the live qualifying, or the replay open in MultiViewer. Starts F1 Mode first when it isn\'t running.'),
+    shows('For the live qualifying, or the replay open in MultiViewer. It starts where you left off, else 1 minute before the start (setting below). Starts F1 Mode first when it isn\'t running.'),
   fullscreen:
     ctl('Press', 'The main MultiViewer screen fullscreen, or back.') +
     shows('Shows <b>ON</b> while it is fullscreen.'),

@@ -93,6 +93,8 @@ public sealed class F1Settings
 
     /// <summary>No race/quali on: open the latest race or qualifying replay.</summary>
     public bool OpenLatestReplay { get; set; } = true;
+    /// <summary>Race/Quali start where you left off in that session, else a minute before it starts.</summary>
+    public bool StartFromBeginning { get; set; } = true;
     public double HoldSeconds { get; set; } = 2;
     public bool LayoutCloseCurrent { get; set; } = true;
 }

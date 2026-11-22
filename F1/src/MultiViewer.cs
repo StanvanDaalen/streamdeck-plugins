@@ -118,7 +118,7 @@ public static class MultiViewer
         "f1LiveTimingClock { trackTime } " +
         "players { id type fullscreen state { volume muted paused live } driverData { tla } streamData { title } } }";
 
-    private static async Task<JsonNode?> QueryAsync(string query)
+    internal static async Task<JsonNode?> QueryAsync(string query)
     {
         var body = new JsonObject { ["query"] = query };
         using var content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
