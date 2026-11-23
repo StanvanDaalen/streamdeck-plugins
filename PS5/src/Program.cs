@@ -15,6 +15,7 @@ internal sealed class Ctx
     public string? Overlay;
     public string SdTitle = ""; // the title typed in Stream Deck itself
     public DateTime OverlayUntil;
+    public DateTime DiscordUntil; // just turned Discord: show its level, with a white bar
 }
 
 internal static class Program
@@ -241,6 +242,7 @@ internal static class Program
         if (pressed) c.RotatedWhileDown = true;
         if (!Sound.HasSessions) Sound.Refresh();
         if (!Sound.HasSessions) { await Flash(c, Obs.Running ? "No audio" : "OBS not running"); return; }
+        if (pressed && Str(c, "pressedTurn", "discord") != "fine") { await TurnDiscord(c, ticks); return; }
         int step = pressed ? 1 : Math.Clamp(Int(c, "step", 5), 1, 25);
         int now = (int)Math.Round((Sound.Volume ?? 0f) * 100f);
         // snap to the step grid so the numbers stay round
@@ -249,6 +251,23 @@ internal static class Program
         Sound.SetVolume(next / 100f);
         if (Sound.Muted && ticks > 0) Sound.SetMute(false);
         await RenderAll();
+    }
+
+    /// <summary>
+    /// Pressed turn: Discord's volume (its own entry in the Windows volume mixer, so only what you hear).
+    /// Meanwhile the dial shows Discord's level instead of the PlayStation's.
+    /// </summary>
+    private static async Task TurnDiscord(Ctx c, int ticks)
+    {
+        if (!Sound.HasDiscord) Sound.Refresh();
+        if (!Sound.HasDiscord) { Log.Write("discord: no audio session"); await Flash(c, "No Discord"); return; }
+        int step = Math.Clamp(Int(c, "discordStep", 5), 1, 25);
+        int now = (int)Math.Round((Sound.DiscordVolume ?? 1f) * 100f);
+        int next = ticks > 0 ? (now / step + ticks) * step : ((now + step - 1) / step + ticks) * step;
+        next = Math.Clamp(next, 0, 100);
+        Sound.SetDiscordVolume(next / 100f);
+        c.DiscordUntil = DateTime.UtcNow.AddSeconds(2);
+        await Flash(c, "Discord");
     }
 
     private static async Task Press(Ctx c)
@@ -300,8 +319,10 @@ internal static class Program
         var state = Ps5.State;
         bool on = state == Ps5State.On;
         bool closed = state == Ps5State.ObsClosed;
-        int? volume = Sound.HasSessions && Sound.Volume is { } v ? (int)Math.Round(v * 100f) : null;
-        bool muted = Sound.HasSessions && Sound.Muted;
+        bool discordShown = DateTime.UtcNow < c.DiscordUntil && Sound.HasDiscord;
+        int? volume = discordShown ? (int)Math.Round((Sound.DiscordVolume ?? 0f) * 100f)
+            : Sound.HasSessions && Sound.Volume is { } v ? (int)Math.Round(v * 100f) : null;
+        bool muted = !discordShown && Sound.HasSessions && Sound.Muted;
         // The title typed in Stream Deck wins, then the one in our own settings.
         var name = c.SdTitle.Length > 0 ? c.SdTitle : Str(c, "title", "PlayStation 5");
         var iconPath = Str(c, "icon", File.Exists(DefaultIcon) ? DefaultIcon : "");
@@ -328,7 +349,7 @@ internal static class Program
             ["speaker"] = new JsonObject { ["value"] = Art.Loudspeaker(muted), ["opacity"] = on ? 1 : 0.5 },
             ["percent"] = new JsonObject { ["value"] = volume == null ? "—" : $"{volume}%", ["color"] = on && !muted ? "#FFFFFF" : "#8C8C8C" },
             // PlayStation blue, like Spotify green / YouTube red on the media dials; grey when off or muted.
-            ["progress"] = new JsonObject { ["value"] = volume ?? 0, ["bar_fill_c"] = on && !muted && Bool(c, "accentBar", true) ? "#0070D1" : "#FFFFFF", ["opacity"] = muted ? 0.3 : on ? 1 : 0.4 },
+            ["progress"] = new JsonObject { ["value"] = volume ?? 0, ["bar_fill_c"] = on && !muted && Bool(c, "accentBar", true) && !discordShown ? "#0070D1" : "#FFFFFF", ["opacity"] = muted ? 0.3 : on ? 1 : 0.4 },
             ["overlay"] = new JsonObject { ["value"] = Art.ObsClosed(icon), ["opacity"] = closed && c.Overlay == null ? 1 : 0 },
         };
         var json = payload.ToJsonString();
@@ -340,7 +361,7 @@ internal static class Program
     private static async Task OnPi(Ctx c, JsonObject p)
     {
         bool changed = false;
-        foreach (var field in new[] { "title", "icon", "step", "defaultVolume", "videoSource", "audioSource", "accentBar", "accentLogo" })
+        foreach (var field in new[] { "title", "icon", "step", "defaultVolume", "videoSource", "audioSource", "accentBar", "accentLogo", "pressedTurn", "discordStep" })
             if (p[field] is { } value) { c.Settings[field] = value.DeepClone(); changed = true; }
         if (changed)
         {
@@ -379,6 +400,10 @@ internal static class Program
                 ["defaultVolume"] = Int(c, "defaultVolume", 70),
                 ["accentBar"] = Bool(c, "accentBar", true),
                 ["accentLogo"] = Bool(c, "accentLogo", true),
+                ["pressedTurn"] = Str(c, "pressedTurn", "discord") == "fine" ? "fine" : "discord",
+                ["discordStep"] = Int(c, "discordStep", 5).ToString(),
+                ["discordStatus"] = Sound.HasDiscord ? $"Found ({(int)Math.Round((Sound.DiscordVolume ?? 0f) * 100f)}%)" : "Not running",
+                ["discordOk"] = Sound.HasDiscord,
                 ["videoSource"] = Str(c, "videoSource", "PS5 beeld"),
                 ["audioSource"] = Str(c, "audioSource", "PS5 geluid"),
                 ["sources"] = sources,

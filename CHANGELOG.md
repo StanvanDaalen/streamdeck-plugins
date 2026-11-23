@@ -12,6 +12,16 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.51 (2026-11-23)
+
+### New
+
+- **PlayStation 5 for OBS**: press and turn the dial to set Discord's volume, so one dial controls both the game and your friends. The dial shows Discord's level meanwhile. The Discord step is adjustable, and the old 1% PlayStation steps are still available under **Pressed turn**.
+
+### Improved
+
+- **PlayStation 5 for OBS**: the settings are grouped into Status, Display, Volume, Pressed turn and OBS sources, with a switch for what a pressed turn does.
+
 ## 1.1.50 (2026-11-23)
 
 ### Fixed

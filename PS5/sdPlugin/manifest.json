@@ -3,7 +3,7 @@
   "Name": "PlayStation 5 for OBS",
   "Author": "Stan",
   "Description": "Hear your PlayStation 5 through OBS and a capture card: control the volume from a dial and see whether the console is on.",
-  "Version": "1.0.0.0",
+  "Version": "1.1.2.0",
   "SDKVersion": 2,
   "Icon": "images/plugin",
   "Category": "PlayStation 5 for OBS",
@@ -16,7 +16,7 @@
     {
       "UUID": "com.stan.ps5.audio",
       "Name": "PS5 Volume",
-      "Tooltip": "Turn: volume. Press: mute (or start OBS). Hold: default volume.",
+      "Tooltip": "Turn: volume. Pressed turn: Discord volume. Press: mute (or start OBS). Hold: default volume.",
       "Icon": "images/action",
       "Controllers": ["Encoder"],
       "DisableAutomaticStates": true,
@@ -24,7 +24,7 @@
       "Encoder": {
         "layout": "layouts/ps5.json",
         "Icon": "images/action",
-        "TriggerDescription": { "Rotate": "Volume (pressed: 1% steps)", "Push": "Mute / start OBS", "Touch": "Mute / start OBS", "LongTouch": "Default volume" }
+        "TriggerDescription": { "Rotate": "Volume (pressed: Discord)", "Push": "Mute / start OBS", "Touch": "Mute / start OBS", "LongTouch": "Default volume" }
       }
     }
   ]

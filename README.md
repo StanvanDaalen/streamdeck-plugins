@@ -138,7 +138,7 @@ Works with the Spotify app for Windows, without a Spotify account or sign-in in 
 
 For anyone who hears a PlayStation 5 in OBS through a capture card with pass-through.
 
-- **PS5 Volume** (dial): turn to set how loud you hear the PlayStation, pressed turn in 1% steps. Press or tap toggles mute, or starts OBS if it is closed. Hold sets the volume back to your default.
+- **PS5 Volume** (dial): turn to set how loud you hear the PlayStation. Press and turn to set Discord's volume instead; the dial shows Discord's level meanwhile. Under **Pressed turn** you set the Discord step, or choose 1% PlayStation steps instead. Press or tap toggles mute, or starts OBS if it is closed. Hold sets the volume back to your default.
 - The dial looks like the Spotify dial: the name with **On** or **Off** below it, a speaker icon bottom left (crossed out when muted), the percentage bottom right and a PlayStation-blue bar. A small PlayStation logo sits in the corner of the tile. While the PlayStation is off, everything turns grey.
 - In the settings you turn the blue bar (otherwise white) and the small logo on or off separately.
 - The plugin reads on or off from the capture card's audio. With obs-websocket enabled (Tools > WebSocket Server Settings) it also looks at the picture and recognises the card's "NO SIGNAL" screen. The plugin reads the password itself from the OBS settings on this PC.
