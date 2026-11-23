@@ -77,8 +77,9 @@ A key with the logo, name and playtime of a game.
 
 A key with the icon and name of one app.
 
-- **Click**: minimize, show again, or open the app if it is closed.
-- **Hold for 1 second**: close the app. If it keeps running in the system tray, like Discord, it is shut down completely after 3 seconds, unless a window is still open (for example a save prompt).
+- **While playing**: when the app plays something, the key shows it like the App Volume dial: the picture across the key (video thumbnail, episode still, album cover or the race weekend's flag), the title with the series, channel or artist below it in grey, and a timeline. The timeline can take the service's colour and a small black-and-white logo shows the service (Netflix, YouTube, Spotify, …), each switchable. A small sign top right shows paused or muted. Turn it off with **Show what's playing**.
+- **Gestures**: click, double-click and hold each do what you choose: minimize / open, play / pause, next, previous, mute, close or nothing. Defaults: click minimizes or opens, double-click plays or pauses, hold closes. A closed app opens with any gesture. Set double-click to Nothing to make a click act at once.
+- **Close**: if the app keeps running in the system tray, like Discord, it is shut down completely after 3 seconds, unless a window is still open (for example a save prompt).
 - **Display**: with or without the name.
 
 ## Scarlett Switch

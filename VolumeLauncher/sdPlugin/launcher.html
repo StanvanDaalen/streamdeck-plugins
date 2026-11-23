@@ -37,7 +37,20 @@
   <div class="row hide" id="namePlayingRow"><label class="check"><input type="checkbox" id="showNamePlaying">Show name while playing</label></div>
   <div class="row hide" id="timeRow"><label class="check"><input type="checkbox" id="showPlaytime">Show playtime while playing</label></div>
 
+  <div id="mediaSection" class="hide">
+    <h4>While playing</h4>
+    <div class="row"><label class="check"><input type="checkbox" id="showMedia">Show what's playing</label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="accentTimeline">Timeline in app colour</label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="accentLogo">Small black-and-white logo</label></div>
+    <p class="muted">When the app plays something, the key shows the picture, the title with the series or artist below it, and a timeline, like the App Volume dial. The colour and logo are those of the service (Netflix, YouTube, Spotify, …).</p>
+  </div>
+
   <h4>Controls</h4>
+  <div id="gestureRows" class="hide">
+    <div class="row"><span class="lbl">Click</span><select id="singleAction" class="gesture"></select></div>
+    <div class="row"><span class="lbl">Double-click</span><select id="doubleAction" class="gesture"></select></div>
+    <div class="row"><span class="lbl">Hold</span><select id="holdAction" class="gesture"></select></div>
+  </div>
   <p class="muted" id="help"></p>
 
 <script>
@@ -57,6 +70,8 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
   $('gameRow').classList.toggle('hide', isApp);
   $('namePlayingRow').classList.toggle('hide', isApp);
   $('timeRow').classList.toggle('hide', isApp);
+  $('mediaSection').classList.toggle('hide', !isApp);
+  $('gestureRows').classList.toggle('hide', !isApp);
   layout('');
   ws = new WebSocket('ws://127.0.0.1:' + port);
   ws.onopen = () => { ws.send(JSON.stringify({ event: registerEvent, uuid })); send({}); };
@@ -72,7 +87,7 @@ function layout(gameId) {
   $('nameRow').classList.toggle('hide', !isApp && !isFixed);
   $('nameLabel').textContent = isFixed ? 'Show name when the game is closed' : 'Show name';
   $('help').textContent = isApp
-    ? 'Click: minimize, show or open. Hold: close.'
+    ? 'A closed app opens with any gesture. Play/pause, next and previous only control this app, never another player. Double-click on Nothing makes a click act at once.'
     : isFixed
       ? 'Click: start, minimize or show. Hold: close.'
       : 'Click: minimize or show. Hold: close.';
@@ -94,8 +109,16 @@ function apply(p) {
   const apps = [...new Set([...p.apps, ...(p.app ? [p.app] : [])])];
   $('app').innerHTML = '<option value="">Choose an app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
   $('app').value = p.app;
-  for (const k of ['showName', 'showNamePlaying', 'showPlaytime']) $(k).checked = p[k];
+  for (const k of ['showName', 'showNamePlaying', 'showPlaytime', 'showMedia', 'accentTimeline', 'accentLogo']) $(k).checked = p[k];
+  for (const k of ['singleAction', 'doubleAction', 'holdAction']) if (p[k]) $(k).value = p[k];
 }
+
+const GESTURES = [['window', 'Minimize / open'], ['playpause', 'Play / pause'], ['next', 'Next'], ['previous', 'Previous'],
+  ['mute', 'Mute'], ['close', 'Close'], ['none', 'Nothing']];
+document.querySelectorAll('.gesture').forEach(s => {
+  s.innerHTML = GESTURES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  s.addEventListener('change', () => send({ [s.id]: s.value }));
+});
 
 $('gameId').addEventListener('change', () => { layout($('gameId').value); send({ gameId: $('gameId').value }); });
 $('app').addEventListener('change', () => send({ app: $('app').value }));
@@ -109,7 +132,7 @@ $('logoFile').addEventListener('change', e => {
   }
   e.target.value = '';
 });
-for (const k of ['showName', 'showNamePlaying', 'showPlaytime'])
+for (const k of ['showName', 'showNamePlaying', 'showPlaytime', 'showMedia', 'accentTimeline', 'accentLogo'])
   $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 </script>
 </body>

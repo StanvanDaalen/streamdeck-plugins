@@ -156,7 +156,9 @@ public static class MediaControl
 
             // Backdrop: the full picture over the whole screen, darkened so white text stays readable.
             // While turning the volume, an even darker version keeps the volume bar calm over any picture.
-            return (ArtworkService.DataUrl(cover), Backdrop(src, 150), Backdrop(src, 215));
+            var coverUrl = ArtworkService.DataUrl(cover);
+            using (var key = ArtworkService.Cover(src, 144, 144)) RememberKeyArt(coverUrl, ArtworkService.DataUrl(key));
+            return (coverUrl, Backdrop(src, 150), Backdrop(src, 215));
         }
         catch (Exception e) { SettingsStore.Log("media art: " + e.Message); return (null, null, null); }
     }
@@ -179,9 +181,41 @@ public static class MediaControl
                 g.SetClip(flag);
                 g.DrawImage(src, box);
             }
-            return (ArtworkService.DataUrl(cover), Backdrop(src, 150), Backdrop(src, 215));
+            var coverUrl = ArtworkService.DataUrl(cover);
+            // On a key: the whole flag across the top part, on black.
+            using (var key = new Bitmap(144, 144, PixelFormat.Format32bppArgb))
+            {
+                using (var g = ArtworkService.HighQuality(key))
+                {
+                    g.Clear(Color.Black);
+                    double scale = Math.Min(144.0 / src.Width, 96.0 / src.Height);
+                    int w = (int)Math.Round(src.Width * scale), h = (int)Math.Round(src.Height * scale);
+                    g.DrawImage(src, (144 - w) / 2, 0, w, h);
+                }
+                RememberKeyArt(coverUrl, ArtworkService.DataUrl(key));
+            }
+            return (coverUrl, Backdrop(src, 150), Backdrop(src, 215));
         }
         catch (Exception e) { SettingsStore.Log("flag: " + e.Message); return (null, null, null); }
+    }
+
+    // The same picture at key size (144 x 144), found by its dial cover, for the App Key.
+    private static readonly Dictionary<string, string> KeyArt = new();
+
+    private static void RememberKeyArt(string cover, string key)
+    {
+        lock (KeyArt)
+        {
+            if (KeyArt.Count > 60) KeyArt.Clear();
+            KeyArt[cover] = key;
+        }
+    }
+
+    /// <summary>The key-size picture for a dial cover, or null.</summary>
+    public static string? KeyArtFor(string? cover)
+    {
+        if (cover == null) return null;
+        lock (KeyArt) return KeyArt.GetValueOrDefault(cover);
     }
 
     private static string Backdrop(Bitmap src, int shadeAlpha)

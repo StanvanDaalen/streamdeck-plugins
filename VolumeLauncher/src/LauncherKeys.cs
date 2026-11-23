@@ -25,6 +25,8 @@ internal sealed class LauncherKeys
         public string? Hash;
         public bool HoldFired;
         public CancellationTokenSource? HoldTimer;
+        public int Clicks;
+        public CancellationTokenSource? ClickTimer;
     }
 
     private static readonly string ExesPath = Path.Combine(SettingsStore.Dir, "launcher.json");
@@ -35,6 +37,9 @@ internal sealed class LauncherKeys
     private readonly Func<JsonObject, Task> _send;
     private readonly Func<Func<Task>, Task> _withGate;
     private readonly Func<string, Task> _logoChanged;
+    private readonly Func<string, MediaInfo?> _media;
+    private readonly Func<string, bool> _muted;
+    private readonly Func<string, string, Task> _appAction;
     private readonly Dictionary<string, Key> _keys = new();
     private RunningGame? _game;
     private Dictionary<string, string> _gameExes = new();
@@ -43,10 +48,12 @@ internal sealed class LauncherKeys
     private static GlobalSettings G => SettingsStore.Current;
 
     public LauncherKeys(GameLibrary library, GameDetector detector, ArtworkService art,
-        Func<JsonObject, Task> send, Func<Func<Task>, Task> withGate, Func<string, Task> logoChanged)
+        Func<JsonObject, Task> send, Func<Func<Task>, Task> withGate, Func<string, Task> logoChanged,
+        Func<string, MediaInfo?> media, Func<string, bool> muted, Func<string, string, Task> appAction)
     {
         _library = library; _detector = detector; _art = art;
         _send = send; _withGate = withGate; _logoChanged = logoChanged;
+        _media = media; _muted = muted; _appAction = appAction;
         try { if (File.Exists(ExesPath)) _gameExes = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(ExesPath)) ?? new(); }
         catch (Exception e) { SettingsStore.Log("launcher exes: " + e.Message); }
     }
@@ -70,6 +77,17 @@ internal sealed class LauncherKeys
         if (gameChanged) foreach (var k in _keys.Values.Where(k => k.Action == GameKey && !IsFixed(k)).ToList()) await SendPi(k);
         foreach (var k in _keys.Values.ToList()) await Render(k);
         SaveExes();
+    }
+
+    /// <summary>Apps whose App Key shows what they play, so the plugin keeps track of their media.</summary>
+    public IEnumerable<string> MediaApps() =>
+        _keys.Values.Where(k => k.Action == AppKey && Bool(k, "showMedia", true)).Select(k => Str(k, "app", "")).Where(a => a.Length > 0);
+
+    /// <summary>What an app plays (or its mute) changed: draw its App Keys again.</summary>
+    public async Task MediaChanged(string app)
+    {
+        foreach (var k in _keys.Values.Where(k => k.Action == AppKey && Str(k, "app", "").Equals(app, StringComparison.OrdinalIgnoreCase)).ToList())
+            await RenderApp(k);
     }
 
     /// <summary>Names or logos changed: draw every key again.</summary>
@@ -116,6 +134,8 @@ internal sealed class LauncherKeys
     {
         k.HoldFired = false;
         k.HoldTimer?.Cancel();
+        k.HoldTimer = null;
+        if (k.Action == AppKey && Str(k, "holdAction", "close") == "none") return;
         var cts = k.HoldTimer = new CancellationTokenSource();
         _ = Task.Run(async () =>
         {
@@ -125,6 +145,9 @@ internal sealed class LauncherKeys
                 if (cts.IsCancellationRequested || !_keys.ContainsKey(k.Id)) return;
                 k.HoldTimer = null;
                 k.HoldFired = true;
+                k.ClickTimer?.Cancel();
+                k.Clicks = 0;
+                if (k.Action == AppKey && Str(k, "holdAction", "close") != "close") { await RunApp(k, Str(k, "holdAction", "close")); return; }
                 Close(k);
                 await _send(new JsonObject { ["event"] = "showOk", ["context"] = k.Id });
             });
@@ -136,7 +159,7 @@ internal sealed class LauncherKeys
         k.HoldTimer?.Cancel();
         k.HoldTimer = null;
         if (k.HoldFired) return;
-        if (k.Action == AppKey) PressApp(k);
+        if (k.Action == AppKey) ClickApp(k);
         else if (IsFixed(k)) PressFixed(k);
         else if (_game != null) ToggleGame(_game);
     }
@@ -175,6 +198,49 @@ internal sealed class LauncherKeys
     {
         var app = Str(k, "app", "");
         return window?.ExePath ?? G.AppExes.GetValueOrDefault(app) ?? (Str(k, "appExe", "") is { Length: > 0 } saved ? saved : null);
+    }
+
+    /// <summary>Click and double-click on an App Key, each with its own action (like the App Volume dial).</summary>
+    private void ClickApp(Key k)
+    {
+        var single = Str(k, "singleAction", "window");
+        var dbl = Str(k, "doubleAction", "playpause");
+        k.ClickTimer?.Cancel();
+        k.ClickTimer = null;
+        if (dbl == "none") { _ = _withGate(() => RunApp(k, single)); return; }
+        if (++k.Clicks >= 2) { k.Clicks = 0; _ = _withGate(() => RunApp(k, dbl)); return; }
+        var cts = k.ClickTimer = new CancellationTokenSource();
+        _ = Task.Run(async () =>
+        {
+            try { await Task.Delay(300, cts.Token); } catch (OperationCanceledException) { return; }
+            await _withGate(async () =>
+            {
+                if (cts.IsCancellationRequested || !_keys.ContainsKey(k.Id)) return;
+                k.ClickTimer = null;
+                k.Clicks = 0;
+                await RunApp(k, single);
+            });
+        });
+    }
+
+    private async Task RunApp(Key k, string action)
+    {
+        var app = Str(k, "app", "");
+        if (app.Length == 0 || action == "none") return;
+        // A closed app opens first, whatever the gesture would do.
+        var procs = System.Diagnostics.Process.GetProcessesByName(app);
+        bool running = procs.Length > 0;
+        foreach (var p in procs) p.Dispose();
+        if (!running && action != "close") { PressApp(k); return; }
+        switch (action)
+        {
+            case "window": PressApp(k); break;
+            case "close":
+                Close(k);
+                await _send(new JsonObject { ["event"] = "showOk", ["context"] = k.Id });
+                break;
+            default: await _appAction(app, action); break; // playpause, next, previous, mute
+        }
     }
 
     private static void PressApp(Key k)
@@ -298,6 +364,11 @@ internal sealed class LauncherKeys
     private async Task RenderApp(Key k)
     {
         var app = Str(k, "app", "");
+        if (app.Length > 0 && Bool(k, "showMedia", true) && _media(app) is { } m)
+        {
+            await RenderPlaying(k, app, m);
+            return;
+        }
         var window = app.Length > 0 ? WindowControl.FindApp(app) : null;
         if (window?.ExePath != null && window.ExePath != Str(k, "appExe", ""))
         {
@@ -326,6 +397,26 @@ internal sealed class LauncherKeys
         }
         catch { }
         return process.Length > 0 ? char.ToUpperInvariant(process[0]) + process[1..] : process;
+    }
+
+    /// <summary>The App Key while its app plays something: picture, title, series, timeline and service logo.</summary>
+    private async Task RenderPlaying(Key k, string app, MediaInfo m)
+    {
+        var exe = AppExe(k, null);
+        var art = (exe != null ? _art.ForExe("app:" + app.ToLowerInvariant(), exe) : null) ?? _art.NoGame;
+        string? color = null, badge = null;
+        if (m.Service is { } s) { color = s.Color; badge = s.Badge; }
+        else if (app.Equals("spotify", StringComparison.OrdinalIgnoreCase)) { color = "#1ED760"; badge = "images/media/badge-spotify.svg"; }
+        if (!Bool(k, "accentTimeline", true)) color = null;
+        if (!Bool(k, "accentLogo", true)) badge = null;
+        bool muted = _muted(app);
+        // The timeline moves in tenths of a percent, so the key is redrawn at most about once a second.
+        int part = m.HasTimeline ? (int)(1000 * m.Position.TotalSeconds / m.Duration.TotalSeconds) : -1;
+        var hash = $"media|{m.Title}|{m.Artist}|{m.Playing}|{part}|{m.Cover?.Length}|{color}|{badge}|{muted}";
+        if (hash == k.Hash) return;
+        k.Hash = hash;
+        var image = KeyMedia.Render(m, MediaControl.KeyArtFor(m.Cover), art.IconUrl, color, badge, muted);
+        await _send(new JsonObject { ["event"] = "setImage", ["context"] = k.Id, ["payload"] = new JsonObject { ["image"] = image, ["target"] = 0 } });
     }
 
     private const int NameLeft = 4, NameWidth = 136;
@@ -374,7 +465,7 @@ internal sealed class LauncherKeys
     private async Task OnPi(Key k, JsonObject p)
     {
         bool changed = false;
-        foreach (var field in new[] { "app", "gameId", "showPlaytime", "showName", "showNamePlaying" })
+        foreach (var field in new[] { "app", "gameId", "showPlaytime", "showName", "showNamePlaying", "showMedia", "accentTimeline", "accentLogo", "singleAction", "doubleAction", "holdAction" })
             if (p[field] is { } value) { k.Settings[field] = value.DeepClone(); changed = true; }
         if (changed)
             await _send(new JsonObject { ["event"] = "setSettings", ["context"] = k.Id, ["payload"] = k.Settings.DeepClone() });
@@ -421,6 +512,12 @@ internal sealed class LauncherKeys
                 ["showPlaytime"] = Bool(k, "showPlaytime", true),
                 ["showName"] = Bool(k, "showName", true),
                 ["showNamePlaying"] = Bool(k, "showNamePlaying", true),
+                ["showMedia"] = Bool(k, "showMedia", true),
+                ["accentTimeline"] = Bool(k, "accentTimeline", true),
+                ["accentLogo"] = Bool(k, "accentLogo", true),
+                ["singleAction"] = Str(k, "singleAction", "window"),
+                ["doubleAction"] = Str(k, "doubleAction", "playpause"),
+                ["holdAction"] = Str(k, "holdAction", "close"),
                 ["apps"] = apps, ["games"] = games,
             },
         });

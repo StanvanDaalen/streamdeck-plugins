@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.49 (2026-11-23)
+
+### New
+
+- **Volume & Launcher**: App Key shows what its app plays, like the App Volume dial: picture, title, series or artist, timeline, and the service's colour and small logo. Click, double-click and hold can each be set to minimize/open, play/pause, next, previous, mute or close.
+
 ## 1.1.48 (2026-11-23)
 
 ### New

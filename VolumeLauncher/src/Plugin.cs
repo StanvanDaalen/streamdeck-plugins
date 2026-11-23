@@ -71,7 +71,8 @@ internal sealed class Plugin
         _port = port; _uuid = uuid; _register = register;
         _detector = new GameDetector(_library);
         _art = new ArtworkService(_library);
-        _launcher = new LauncherKeys(_library, _detector, _art, SendAsync, WithGate, OnLauncherLogo);
+        _launcher = new LauncherKeys(_library, _detector, _art, SendAsync, WithGate, OnLauncherLogo,
+            app => _media.GetValueOrDefault(app), app => _audio.ForProcess(app).ToList() is { Count: > 0 } s && AudioSessions.Muted(s), KeyAppAction);
     }
 
     /// <summary>A launcher key set a game's logo: every dial and key of that game shows it.</summary>
@@ -143,7 +144,8 @@ internal sealed class Plugin
             await WithGate(() =>
             {
                 apps = _contexts.Values.Where(c => c.Action == AppAction && MediaStyle(c) != "off")
-                    .Select(c => Str(c, "app", "")).Where(a => a.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                    .Select(c => Str(c, "app", "")).Where(a => a.Length > 0)
+                    .Concat(_launcher.MediaApps()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                 return Task.CompletedTask;
             });
             await WithGate(() =>
@@ -165,6 +167,7 @@ internal sealed class Plugin
                     _media[app] = info;
                     foreach (var c in _contexts.Values.Where(c => c.Action == AppAction && Str(c, "app", "").Equals(app, StringComparison.OrdinalIgnoreCase)).ToList())
                         await RenderDial(c);
+                    await _launcher.MediaChanged(app);
                 });
             }
         }
@@ -644,6 +647,24 @@ internal sealed class Plugin
             && EpisodeArt.TryGet(info.Artist, info.Season, info.Episode, info.Title) is { } still)
             info = info with { Cover = still.Cover, Backdrop = still.Backdrop, BackdropDim = still.BackdropDim };
         return info;
+    }
+
+    /// <summary>An App Key's gesture: play/pause, next, previous or mute for its app. Its dials follow at once.</summary>
+    private async Task KeyAppAction(string app, string action)
+    {
+        if (action == "mute")
+        {
+            var sessions = _audio.ForProcess(app).ToList();
+            if (sessions.Count > 0) AudioSessions.SetMute(sessions, !AudioSessions.Muted(sessions));
+        }
+        else if (await MediaControl.RunAsync(app, action) != null)
+        {
+            await Task.Delay(250);
+            _media[app] = await FetchMedia(app);
+        }
+        foreach (var c in _contexts.Values.Where(c => c.Action == AppAction && Str(c, "app", "").Equals(app, StringComparison.OrdinalIgnoreCase)).ToList())
+            await RenderDial(c);
+        await _launcher.MediaChanged(app);
     }
 
     private async Task RunMedia(Ctx c, string action)

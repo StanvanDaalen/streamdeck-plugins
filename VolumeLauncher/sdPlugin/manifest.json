@@ -3,7 +3,7 @@
   "Name": "Volume & Launcher",
   "Author": "Stan",
   "Description": "Volume dials for the game that is open and for any app (with a media screen), and keys that start, minimize and close games and apps with their logo and playtime. Games are found automatically via Steam, Epic, Xbox and Lunar Client.",
-  "Version": "3.3.0.0",
+  "Version": "3.4.0.0",
   "SDKVersion": 2,
   "Icon": "images/plugin",
   "Category": "Volume & Launcher",
@@ -52,7 +52,7 @@
     {
       "UUID": "com.stan.gamevolume.appkey",
       "Name": "App Key",
-      "Tooltip": "Key with the icon and name of one app. Click: minimize, show or open. Hold 1 second: close, also from the system tray.",
+      "Tooltip": "Key for one app: its icon and name, or while it plays, the picture, title and timeline. Click, double-click and hold each do what you choose: minimize/open, play/pause, next, previous, mute or close.",
       "Icon": "images/action-appkey",
       "PropertyInspectorPath": "launcher.html",
       "Controllers": ["Keypad"],
