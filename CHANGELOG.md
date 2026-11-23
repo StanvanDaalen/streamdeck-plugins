@@ -12,6 +12,13 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.45 (2026-11-23)
+
+### New
+
+- **Volume & Launcher**: on F1 TV, MotoGP and WEC, App Volume shows the race on top (for example Spanish GP) and the session below (Practice 1, Qualifying, Race, …), with the flag of the weekend's country as the picture.
+- **Stream Deck Now Playing** (Chrome extension): now works on every supported streaming service, not only Netflix.
+
 ## 1.1.44 (2026-11-23)
 
 ### New

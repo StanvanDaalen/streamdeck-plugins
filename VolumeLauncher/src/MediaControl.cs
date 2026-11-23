@@ -15,6 +15,9 @@ public sealed record MediaInfo(
     /// <summary>The video service this is from (YouTube, Netflix, …), when known.</summary>
     public StreamingService? Service { get; init; }
 
+    /// <summary>Motorsport: the race weekend's country (ISO code, e.g. "es"), for its flag.</summary>
+    public string? Country { get; init; }
+
     /// <summary>Season and episode number, when the service's title names them (for looking up the episode picture).</summary>
     public int? Season { get; init; }
     public int? Episode { get; init; }
@@ -150,6 +153,29 @@ public static class MediaControl
             return (ArtworkService.DataUrl(cover), Backdrop(src, 150), Backdrop(src, 215));
         }
         catch (Exception e) { SettingsStore.Log("media art: " + e.Message); return (null, null, null); }
+    }
+
+    /// <summary>A flag: whole on a dark tile as the cover (never cropped), across the screen for the Picture style.</summary>
+    public static (string?, string?, string?) RenderFlag(Bitmap src)
+    {
+        try
+        {
+            using var cover = new Bitmap(80, 80, PixelFormat.Format32bppArgb);
+            using (var g = ArtworkService.HighQuality(cover))
+            {
+                using var tile = Rounded(new Rectangle(0, 0, 80, 80), 8);
+                using var dark = new SolidBrush(Color.FromArgb(26, 26, 26));
+                g.FillPath(dark, tile);
+                double scale = Math.Min(68.0 / src.Width, 68.0 / src.Height);
+                int w = (int)Math.Round(src.Width * scale), h = (int)Math.Round(src.Height * scale);
+                var box = new Rectangle((80 - w) / 2, (80 - h) / 2, w, h);
+                using var flag = Rounded(box, 4);
+                g.SetClip(flag);
+                g.DrawImage(src, box);
+            }
+            return (ArtworkService.DataUrl(cover), Backdrop(src, 150), Backdrop(src, 215));
+        }
+        catch (Exception e) { SettingsStore.Log("flag: " + e.Message); return (null, null, null); }
     }
 
     private static string Backdrop(Bitmap src, int shadeAlpha)

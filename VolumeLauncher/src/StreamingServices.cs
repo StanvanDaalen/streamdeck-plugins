@@ -5,6 +5,9 @@ namespace GameVolume;
 /// <summary>A video service an App Volume dial can recognise, with its colour and small black-and-white logo.</summary>
 public sealed record StreamingService(string Id, string Name, string? Color, string[] TitleNames, string[] Processes)
 {
+    /// <summary>F1 TV, MotoGP and WEC: race and session instead of episode and series, with the country's flag.</summary>
+    public bool Motorsport => Id is "f1tv" or "motogp" or "wec";
+
     public string Badge => $"images/media/badge-{Id}.svg";
 }
 
@@ -84,6 +87,7 @@ public static class StreamingServices
     public static MediaInfo Tidy(MediaInfo m, StreamingService s)
     {
         if (s == YouTube) return m;
+        if (s.Motorsport) return Race(m, s);
         string title = Strip(m.Title, s), artist = Strip(m.Artist, s);
         if (artist.Equals(title, StringComparison.OrdinalIgnoreCase)) artist = "";
         int? season = null, number = null;
@@ -100,6 +104,109 @@ public static class StreamingServices
         // Nothing left but the service's name (Netflix shows no episode in its tab): show the service itself.
         if (title.Length == 0) { title = artist.Length > 0 ? artist : s.Name; artist = ""; }
         return m with { Title = title, Artist = artist, Season = season, Episode = number };
+    }
+
+    // Sessions, most specific first: "Sprint Qualifying" before "Sprint" and "Qualifying", "Race" last.
+    private static readonly (Regex Pattern, string Name)[] Sessions =
+    {
+        (new(@"sprint\s*(qualifying|shootout)|\bSQ\b", RegexOptions.IgnoreCase), "Sprint Qualifying"),
+        (new(@"\bsprint\b", RegexOptions.IgnoreCase), "Sprint"),
+        (new(@"\bhyperpole\b", RegexOptions.IgnoreCase), "Hyperpole"),
+        (new(@"\b(pre[\s-]?(race|qualifying|sprint)(\s*show)?|grid\s*walk|build[\s-]?up)\b", RegexOptions.IgnoreCase), "Pre-race"),
+        (new(@"\b(post[\s-]?race(\s*show)?|press\s*conference)\b", RegexOptions.IgnoreCase), "Post-race"),
+        (new(@"\bhighlights\b", RegexOptions.IgnoreCase), "Highlights"),
+        (new(@"\bwarm[\s-]?up\b", RegexOptions.IgnoreCase), "Warm Up"),
+        (new(@"\b(qualifying|quali|Q[12])\b", RegexOptions.IgnoreCase), "Qualifying"),
+        (new(@"\b(?:free\s*)?practice\s*(?<n>\d)|\bFP\s*(?<n>\d)\b|\bpractice\b", RegexOptions.IgnoreCase), "Practice"),
+        (new(@"\b(race|feature\s*race)\b", RegexOptions.IgnoreCase), "Race"),
+    };
+
+    // "Spanish Grand Prix", "6 Hours of Spa-Francorchamps", "24 Hours of Le Mans", "Qatar 1812 km", "Lone Star Le Mans".
+    private static readonly Regex Event = new(
+        @"(?<name>(?:[\p{Lu}][\p{L}'’.&-]*\s+){1,3}?)(?:Grand\s*Prix|GP)\b|(?<full>\d+\s*Hours\s+of\s+[\p{L}][\p{L}'’.-]*(?:\s+[\p{Lu}][\p{L}'’.-]*)*)|(?<full>[\p{Lu}][\p{L}]*\s*\d{3,4}\s*km)\b|(?<full>Lone Star Le Mans)",
+        RegexOptions.IgnoreCase);
+
+    // Words in the event name -> the weekend's country (ISO code), for its flag. F1, MotoGP and WEC venues.
+    private static readonly (string Word, string Code)[] Countries =
+    {
+        ("Emilia", "it"), ("Romagna", "it"), ("Imola", "it"), ("Italian", "it"), ("Italy", "it"), ("Monza", "it"), ("Mugello", "it"), ("San Marino", "sm"),
+        ("Abu Dhabi", "ae"), ("Saudi", "sa"), ("Bahrain", "bh"), ("Qatar", "qa"), ("Lusail", "qa"),
+        ("Australian", "au"), ("Australia", "au"), ("Japanese", "jp"), ("Japan", "jp"), ("Fuji", "jp"), ("Motegi", "jp"), ("Chinese", "cn"), ("China", "cn"),
+        ("Miami", "us"), ("Las Vegas", "us"), ("United States", "us"), ("Americas", "us"), ("Lone Star", "us"), ("Austin", "us"), ("COTA", "us"), ("Sebring", "us"),
+        ("Monaco", "mc"), ("Canadian", "ca"), ("Canada", "ca"),
+        ("Spanish", "es"), ("Spain", "es"), ("España", "es"), ("Espana", "es"), ("Aragón", "es"), ("Valenciana", "es"),
+        ("Italia", "it"), ("Deutschland", "de"), ("Österreich", "at"), ("Barcelona", "es"), ("Catalan", "es"), ("Catalunya", "es"), ("Madrid", "es"), ("Aragon", "es"), ("Valencia", "es"), ("Jerez", "es"),
+        ("Austrian", "at"), ("Austria", "at"), ("British", "gb"), ("Silverstone", "gb"), ("Great Britain", "gb"),
+        ("Hungarian", "hu"), ("Hungary", "hu"), ("Balaton", "hu"), ("Belgian", "be"), ("Belgium", "be"), ("Spa", "be"),
+        ("Dutch", "nl"), ("Netherlands", "nl"), ("Assen", "nl"), ("Zandvoort", "nl"),
+        ("Azerbaijan", "az"), ("Baku", "az"), ("Singapore", "sg"), ("Mexico", "mx"), ("Mexican", "mx"),
+        ("São Paulo", "br"), ("Sao Paulo", "br"), ("Brazilian", "br"), ("Brazil", "br"), ("Interlagos", "br"),
+        ("Le Mans", "fr"), ("French", "fr"), ("France", "fr"), ("Portuguese", "pt"), ("Portugal", "pt"), ("Portimão", "pt"), ("Portimao", "pt"),
+        ("German", "de"), ("Germany", "de"), ("Sachsenring", "de"), ("Czech", "cz"), ("Brno", "cz"),
+        ("Thai", "th"), ("Thailand", "th"), ("Argentine", "ar"), ("Argentina", "ar"), ("Indonesian", "id"), ("Indonesia", "id"), ("Mandalika", "id"),
+        ("Malaysian", "my"), ("Malaysia", "my"), ("Sepang", "my"), ("Kazakhstan", "kz"), ("Indian", "in"), ("India", "in"), ("Turkish", "tr"), ("Turkey", "tr"),
+    };
+
+    private static readonly Dictionary<string, string> Demonyms = new()
+    {
+        ["es"] = "Spanish", ["it"] = "Italian", ["sm"] = "San Marino", ["pt"] = "Portuguese", ["fr"] = "French", ["de"] = "German",
+        ["at"] = "Austrian", ["cz"] = "Czech", ["nl"] = "Dutch", ["gb"] = "British", ["jp"] = "Japanese", ["au"] = "Australian",
+        ["my"] = "Malaysian", ["th"] = "Thai", ["id"] = "Indonesian", ["ar"] = "Argentine", ["qa"] = "Qatar", ["hu"] = "Hungarian",
+        ["mx"] = "Mexico City", ["br"] = "Brazilian", ["be"] = "Belgian", ["ca"] = "Canadian", ["mc"] = "Monaco", ["cn"] = "Chinese",
+    };
+
+    // Regions with their own weekend in a country that has several (MotoGP in Spain and Italy).
+    private static readonly (string Word, string Name)[] Regions =
+    {
+        ("Valencian", "Valencia"), ("Valenciana", "Valencia"), ("Catalunya", "Catalan"), ("Aragón", "Aragon"), ("Aragon", "Aragon"),
+        ("Jerez", "Spanish"), ("Emilia", "Emilia Romagna"), ("San Marino", "San Marino"), ("Americas", "Americas"), ("Mugello", "Italian"),
+    };
+
+    private static string? CountryOf(string text) =>
+        Countries.FirstOrDefault(c => Regex.IsMatch(text, $@"(?<!\p{{L}}){Regex.Escape(c.Word)}(?!\p{{L}})", RegexOptions.IgnoreCase)).Code;
+
+    /// <summary>Motorsport: the event on top (e.g. "Spanish GP"), the session below (Practice 1, Qualifying, Race, …).</summary>
+    private static MediaInfo Race(MediaInfo m, StreamingService s)
+    {
+        var text = $"{Strip(m.Title, s)} - {Strip(m.Artist, s)}".Trim(' ', '-');
+        // Sponsor and series names in official event names only make it longer ("FORMULA 1 ARAMCO GRAN PREMIO …").
+        text = Regex.Replace(text, @"\b(FORMULA\s*1|F1|MotoGP™?|FIA\s*WEC|WEC|FIA)\b", " ", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"\s{2,}", " ").Trim();
+
+        string session = "";
+        foreach (var (pattern, name) in Sessions)
+            if (pattern.Match(text) is { Success: true } sm)
+            {
+                session = name == "Practice" && sm.Groups["n"].Success ? $"Practice {sm.Groups["n"].Value}" : name;
+                break;
+            }
+
+        string evt = "";
+        if (Event.Match(text) is { Success: true } em)
+            evt = em.Groups["full"].Success ? em.Groups["full"].Value.Trim() : $"{em.Groups["name"].Value.Trim()} GP";
+        if (evt.Length == 0)
+        {
+            // No known event name: the first part of the title that is not only the session.
+            evt = text.Split(new[] { " - ", " | ", " – ", ": " }, StringSplitOptions.RemoveEmptyEntries)
+                      .Select(p => p.Trim()).FirstOrDefault(p => !Sessions.Any(x => x.Pattern.IsMatch(p)) || p.Length > 25) ?? "";
+        }
+        evt = Regex.Replace(evt, @"\s+\d{4}$", "").Trim();
+        var country = CountryOf(text);
+        // Official names ("Gran Premio Red Bull de España", "Grand Prix of the Americas") become the short English one.
+        if (Regex.Match(evt, @"\b(Gran\s+Premio|Grand\s+Prix|Großer\s+Preis|Grande\s+Prémio)\b(?<rest>.*)$", RegexOptions.IgnoreCase) is { Success: true } official)
+        {
+            var region = Regions.FirstOrDefault(r => official.Value.Contains(r.Word, StringComparison.OrdinalIgnoreCase)).Name;
+            if (region != null) evt = $"{region} GP";
+            else if (Regex.Match(official.Groups["rest"].Value, @"^\s*of\s+(the\s+)?(?<place>[\p{L}\s]+)$", RegexOptions.IgnoreCase) is { Success: true } of)
+                evt = $"{of.Groups["place"].Value.Trim()} GP";
+            else if (country != null && Demonyms.TryGetValue(country, out var demonym))
+                evt = $"{demonym} GP";
+        }
+        if (evt.Length > 0 && evt == evt.ToUpperInvariant())
+            evt = Regex.Replace(System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(evt.ToLowerInvariant()), @"\bGp\b", "GP");
+        if (evt.Length == 0) evt = session.Length > 0 ? session : s.Name;
+        if (evt == session) session = "";
+        return m with { Title = evt, Artist = session, Country = country };
     }
 
     private static string Strip(string text, StreamingService s)

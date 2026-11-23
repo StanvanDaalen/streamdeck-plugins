@@ -1,14 +1,28 @@
 {
   "manifest_version": 3,
   "name": "Stream Deck Now Playing",
-  "version": "1.0.0",
-  "description": "Tells Windows (and the Stream Deck App Volume dial) which episode and series a streaming site plays, with its picture.",
+  "version": "1.1.0",
+  "description": "Tells Windows (and the Stream Deck App Volume dial) what a streaming site plays: episode and series, or race and session.",
   "content_scripts": [
     {
-      "matches": ["https://www.netflix.com/*"],
-      "js": ["netflix.js"],
+      "matches": [
+        "https://www.netflix.com/*",
+        "https://play.hbomax.com/*", "https://play.max.com/*", "https://*.hbomax.com/*",
+        "https://www.paramountplus.com/*", "https://*.paramountplus.com/*",
+        "https://viaplay.nl/*", "https://*.viaplay.nl/*", "https://*.viaplay.com/*", "https://*.viaplay.se/*", "https://*.viaplay.dk/*", "https://*.viaplay.no/*", "https://*.viaplay.fi/*",
+        "https://v2.videoland.com/*", "https://*.videoland.com/*",
+        "https://*.skyshowtime.com/*",
+        "https://f1tv.formula1.com/*",
+        "https://www.motogp.com/*", "https://*.motogp.com/*",
+        "https://*.fiawec.tv/*", "https://fiawec.tv/*", "https://*.fiawec.com/*",
+        "https://www.disneyplus.com/*", "https://*.disneyplus.com/*",
+        "https://tv.apple.com/*",
+        "https://www.primevideo.com/*", "https://*.primevideo.com/*", "https://www.amazon.com/*", "https://www.amazon.nl/*", "https://www.amazon.de/*", "https://www.amazon.co.uk/*"
+      ],
+      "js": ["nowplaying.js"],
       "world": "MAIN",
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ]
 }

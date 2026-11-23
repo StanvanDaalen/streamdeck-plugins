@@ -163,8 +163,11 @@ internal sealed class Plugin
                 if (info != null && StreamingServices.Detect(app, info) is { } service)
                 {
                     info = StreamingServices.Tidy(info, service) with { Service = service };
+                    // Motorsport: the flag of the race weekend's country.
+                    if (service.Motorsport && G.EpisodeArt && info.Country is { } country && Flags.TryGet(country) is { } flag)
+                        info = info with { Cover = flag.Cover, Backdrop = flag.Backdrop, BackdropDim = flag.BackdropDim };
                     // No picture from the service (Paramount+, Netflix, …): the episode's still from TVmaze.
-                    if (info.Cover == null && G.EpisodeArt && service != StreamingServices.YouTube
+                    else if (info.Cover == null && !service.Motorsport && G.EpisodeArt && service != StreamingServices.YouTube
                         && EpisodeArt.TryGet(info.Artist, info.Season, info.Episode, info.Title) is { } still)
                         info = info with { Cover = still.Cover, Backdrop = still.Backdrop, BackdropDim = still.BackdropDim };
                 }
