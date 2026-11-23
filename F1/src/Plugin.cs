@@ -545,7 +545,8 @@ internal sealed class Plugin
     /// </summary>
     private void CloseF1Key(Ctx c)
     {
-        if (!F1Party.Installed || _f1ModeOn) { Request(c, "close"); return; }
+        // F1 opened by this plugin: also after a restart of the plugin, when only the settings still know
+        if (!F1Party.Installed || _f1ModeOn || S.F1DesktopId != null) { Request(c, "close"); return; }
         // the Start / end session key with nothing open: F1 Party comes up on its calendar to pick a session
         if (c.Action == Close && NoSession)
         {
@@ -554,8 +555,11 @@ internal sealed class Plugin
         }
         _ = Task.Run(async () =>
         {
-            if (await F1Party.CommandAsync("close")) await Ok(c);
-            else Request(c, "close");
+            bool partyClosed = await F1Party.CommandAsync("close");
+            // F1 Party ends its session and MultiViewer; Ultimate F1 Viewer, the lights and the F1 desktop are
+            // this plugin's, so they are closed here as well (what is already closed is skipped).
+            Store.Log($"End session: F1 Party {(partyClosed ? "gesloten" : "niet bereikbaar")}, nu de rest");
+            Request(c, "close");
         });
     }
 
@@ -622,9 +626,11 @@ internal sealed class Plugin
     private (int Index, bool OnIt)? F1Desktop()
     {
         if (!OperatingSystem.IsWindows() || S.ModeDesktop == "current" || !_f1Running) return null;
-        // by name, else the desktop this plugin made for F1 (when Windows lost its name)
+        // by name, else the desktop this plugin made for F1 (when Windows lost its name), also after the plugin
+        // restarted (OpenDeck restarts plugins more often than Stream Deck does): that one is in the settings
         var (ids, cur) = Desktops.Info();
-        Guid? found = Desktops.FindByName(S.DesktopName) ?? (_f1Desk is { } m && ids.IndexOf(m) > 0 ? m : null);
+        Guid? saved = _f1Desk ?? (Guid.TryParse(S.F1DesktopId, out var g) ? g : null);
+        Guid? found = Desktops.FindByName(S.DesktopName) ?? (saved is { } m && ids.IndexOf(m) > 0 ? m : null);
         if (found is not { } id) return null;
         int i = ids.IndexOf(id);
         return i > 0 ? (i, cur == i) : null;

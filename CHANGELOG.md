@@ -12,6 +12,14 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.41 (2026-11-23)
+
+### Fixed
+
+- **F1 Race Control**: Hide and End session switch desktops again on PCs where Windows keeps the current desktop per sign-in session (Windows 10 and some Windows 11 builds); the plugin thought it was always on desktop 1.
+- **F1 Race Control**: after the plugin restarted (OpenDeck does that more often), Hide still finds the F1 desktop and End session still closes Ultimate F1 Viewer and goes back to desktop 1.
+- **F1 Race Control**: End session with F1 Party also closes Ultimate F1 Viewer, the flags on the lights and the F1 desktop, not only F1 Party's session.
+
 ## 1.1.40 (2026-11-22)
 
 ### Improved

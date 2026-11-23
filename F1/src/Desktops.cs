@@ -21,13 +21,29 @@ public static class Desktops
         if (!OperatingSystem.IsWindows()) return (new List<Guid>(), 0);
         using var k = Registry.CurrentUser.OpenSubKey(Key);
         var raw = k?.GetValue("VirtualDesktopIDs") as byte[];
-        var cur = k?.GetValue("CurrentVirtualDesktop") as byte[];
+        var cur = k?.GetValue("CurrentVirtualDesktop") as byte[] ?? SessionCurrent();
         var ids = new List<Guid>();
         if (raw != null)
             for (int i = 0; i + 16 <= raw.Length; i += 16) ids.Add(new Guid(raw.AsSpan(i, 16)));
         if (ids.Count == 0) return (ids, 0);
         int index = cur is { Length: 16 } ? Math.Max(0, ids.IndexOf(new Guid(cur))) : 0;
         return (ids, index);
+    }
+
+    /// <summary>
+    /// Windows 10 (and some Windows 11 builds) keep the current desktop per sign-in session, under
+    /// Explorer\SessionInfo\&lt;session&gt;\VirtualDesktops, instead of next to the list. Without this the
+    /// plugin always thought it was on desktop 1: Hide and End session then did not switch.
+    /// </summary>
+    private static byte[]? SessionCurrent()
+    {
+        try
+        {
+            int session = System.Diagnostics.Process.GetCurrentProcess().SessionId;
+            using var k = Registry.CurrentUser.OpenSubKey($@"Software\Microsoft\Windows\CurrentVersion\Explorer\SessionInfo\{session}\VirtualDesktops");
+            return k?.GetValue("CurrentVirtualDesktop") as byte[];
+        }
+        catch { return null; }
     }
 
     /// <summary>Switches to a desktop (0-based).</summary>
