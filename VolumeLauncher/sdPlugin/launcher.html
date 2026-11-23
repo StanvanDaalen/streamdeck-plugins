@@ -16,13 +16,25 @@
   .val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn, button { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 2px 8px; font: inherit; cursor: pointer; margin-left: 4px; }
   #logoFile { display: none; }
+
+  /* App picker: a list inside the panel. Stream Deck draws a long native drop-down empty, so no <select> here. */
+  .picker { flex: 1; min-width: 0; }
+  .pickbtn { width: 100%; margin: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; cursor: pointer; }
+  .pickbtn::after { content: '\25BE'; float: right; color: #9a9a9a; }
+  .picklist { margin-top: 4px; background: #333; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px; }
+  .picklist input { width: 100%; box-sizing: border-box; background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 3px 5px; font: inherit; }
+  .pickitems { max-height: 180px; overflow-y: auto; margin-top: 4px; }
+  .pickitem { padding: 3px 6px; border-radius: 3px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pickitem:hover { background: #4a4a4a; }
+  .pickitem.on { color: #fff; background: #3a5a8a; }
 </style>
 </head>
 <body>
   <div id="target" class="hide">
     <h4 class="first" id="targetTitle">Game</h4>
     <div class="row hide" id="gameRow"><span class="lbl">Game</span><select id="gameId"></select></div>
-    <div class="row hide" id="appRow"><span class="lbl">App</span><select id="app"></select></div>
+    <div class="row hide" id="appRow"><span class="lbl">App</span><div class="picker"><button type="button" class="pickbtn" id="appBtn">Choose an app…</button>
+        <div class="picklist hide" id="appList"><input id="appSearch" placeholder="Search apps" autocomplete="off"><div class="pickitems" id="appItems"></div></div></div></div>
   </div>
   <div id="logoRow" class="hide">
     <h4>Logo</h4>
@@ -107,8 +119,7 @@ function apply(p) {
   $('logoBtns').classList.toggle('hide', isCurrent && !p.logoFor);
   $('logoName').textContent = p.customImage ? p.customImage.split(/[\\/]/).pop() : 'Automatic';
   const apps = [...new Set([...p.apps, ...(p.app ? [p.app] : [])])];
-  $('app').innerHTML = '<option value="">Choose an app…</option>' + apps.map(a => `<option>${esc(a)}</option>`).join('');
-  $('app').value = p.app;
+  setApps(apps, p.app);
   for (const k of ['showName', 'showNamePlaying', 'showPlaytime', 'showMedia', 'accentTimeline', 'accentLogo']) $(k).checked = p[k];
   for (const k of ['singleAction', 'doubleAction', 'holdAction']) if (p[k]) $(k).value = p[k];
 }
@@ -121,7 +132,40 @@ document.querySelectorAll('.gesture').forEach(s => {
 });
 
 $('gameId').addEventListener('change', () => { layout($('gameId').value); send({ gameId: $('gameId').value }); });
-$('app').addEventListener('change', () => send({ app: $('app').value }));
+
+// ---------- app picker ----------
+let appOptions = [], appValue = '';
+function setApps(list, value) {
+  appOptions = list; appValue = value || '';
+  $('appBtn').textContent = appValue || 'Choose an app…';
+  if (!$('appList').classList.contains('hide')) renderApps($('appSearch').value);
+}
+function renderApps(query) {
+  const q = (query || '').toLowerCase();
+  const shown = appOptions.filter(a => a.toLowerCase().includes(q));
+  $('appItems').innerHTML = shown.length
+    ? shown.map(a => `<div class="pickitem${a === appValue ? ' on' : ''}" data-v="${esc(a)}">${esc(a)}</div>`).join('')
+    : '<div class="muted">No apps found. Open the app first.</div>';
+}
+$('appBtn').addEventListener('click', () => {
+  const list = $('appList');
+  list.classList.toggle('hide');
+  if (!list.classList.contains('hide')) { $('appSearch').value = ''; renderApps(''); $('appSearch').focus(); }
+});
+$('appSearch').addEventListener('input', e => renderApps(e.target.value));
+$('appSearch').addEventListener('keydown', e => {
+  if (e.key === 'Escape') $('appList').classList.add('hide');
+  if (e.key === 'Enter') { const first = $('appItems').querySelector('.pickitem'); if (first) first.click(); }
+});
+$('appItems').addEventListener('click', e => {
+  const item = e.target.closest('.pickitem');
+  if (!item) return;
+  appValue = item.dataset.v;
+  $('appBtn').textContent = appValue;
+  $('appList').classList.add('hide');
+  send({ app: appValue });
+});
+
 $('logoClear').addEventListener('click', () => send({ customImage: '' }));
 $('logoFile').addEventListener('change', e => {
   const raw = e.target.value;

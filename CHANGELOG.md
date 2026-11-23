@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.50 (2026-11-23)
+
+### Fixed
+
+- **Volume & Launcher**: choosing the app on App Key and App Volume works again: the drop-down that Stream Deck showed empty is now a list with a search field inside the settings.
+
 ## 1.1.49 (2026-11-23)
 
 ### New
