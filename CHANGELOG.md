@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.47 (2026-11-23)
+
+### Fixed
+
+- **Volume & Launcher**: App Volume recognises a service from its own title first, so Paramount+ is not taken for Netflix when a Netflix tab is in front, and follows the Chrome profile that actually plays.
+
 ## 1.1.46 (2026-11-23)
 
 ### Fixed

@@ -41,7 +41,13 @@ public static class MediaControl
         catch { _manager = null; throw; }
         var name = process.Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
         // Chrome reports "Chrome", Spotify "Spotify.exe", Edge "MSEdge": the process name is part of the id.
-        return _manager.GetSessions().FirstOrDefault(s => s.SourceAppUserModelId.Contains(name, StringComparison.OrdinalIgnoreCase));
+        var matches = _manager.GetSessions().Where(s => s.SourceAppUserModelId.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (matches.Count <= 1) return matches.FirstOrDefault();
+        // Several (for instance two Chrome profiles): the one that plays, else the one Windows shows, else the first.
+        var current = _manager.GetCurrentSession();
+        return matches.FirstOrDefault(s => s.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+            ?? matches.FirstOrDefault(s => current != null && s.SourceAppUserModelId == current.SourceAppUserModelId)
+            ?? matches[0];
     }
 
     /// <summary>Runs the action and returns a short status for the dial, or null when the app plays no media.</summary>

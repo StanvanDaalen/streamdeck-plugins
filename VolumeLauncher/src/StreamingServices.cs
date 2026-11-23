@@ -64,12 +64,20 @@ public static class StreamingServices
         if (!IsBrowser(app)) return null;
         var titles = WindowControl.WindowTitles(app);
         var playing = titles.FirstOrDefault(t => m.Title.Length > 3 && t.Contains(m.Title, StringComparison.OrdinalIgnoreCase));
-        // The tab before the episode's own name: an episode called "Max" is not HBO Max.
+        // 1. The window showing what plays. 2. A title that signs with the service ("… - Paramount+", "Netflix: …"),
+        // even when another service's tab is in front. 3. Any window's tab. 4. The service named anywhere in the text,
+        // last so an episode called "Max" is not HBO Max.
         return (playing != null ? InText(playing) : null)
+            ?? Signed(m.Title) ?? Signed(m.Artist)
             ?? titles.Select(InText).FirstOrDefault(s => s != null && s != YouTube)
             ?? InText(m.Artist) ?? InText(m.Title)
             ?? YouTube;
     }
+
+    // The service's name as the title's first or last part: "… - Paramount+", "… | Netflix", "Disney+ | …".
+    private static StreamingService? Signed(string text) =>
+        text.Length == 0 ? null : All.FirstOrDefault(s => s.TitleNames.Any(n =>
+            Regex.IsMatch(text, $@"(?:[|\-–—:·•]|\bon\b)\s*{Regex.Escape(n)}(?:\.\w+)?\s*$|^{Regex.Escape(n)}\s*[|\-–—:·•]", RegexOptions.IgnoreCase)));
 
     // "S1:E3", "S1 E3", "Season 1 Episode 8", "Seizoen 1 Aflevering 2", "Episode 3", "Ep. 3".
     private const string Code = @"\b(?:S(?:eason|eizoen)?\s*(?<s>\d+)\s*[:,.]?\s*(?:E|Ep\.?|Episode|Aflevering)\s*(?<e>\d+)|(?:Episode|Aflevering|Ep\.?)\s*(?<e>\d+))\b";
