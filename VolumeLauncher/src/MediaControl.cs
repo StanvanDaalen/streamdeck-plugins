@@ -11,6 +11,9 @@ public sealed record MediaInfo(
     string? Cover, string? Backdrop, string? BackdropDim, bool CanPrevious, bool CanNext, bool CanSeek)
 {
     public bool HasTimeline => Duration > TimeSpan.FromSeconds(1);
+
+    /// <summary>The video service this is from (YouTube, Netflix, …), when known.</summary>
+    public StreamingService? Service { get; init; }
 }
 
 /// <summary>

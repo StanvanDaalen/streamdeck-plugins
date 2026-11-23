@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.42 (2026-11-23)
+
+### New
+
+- **Volume & Launcher**: App Volume recognises Netflix, HBO Max, Paramount+, Viaplay, Videoland, SkyShowtime, F1 TV, MotoGP, WEC, Disney+, Apple TV and Prime Video, in a browser or in their own app. The dial then shows the episode on top, the series below, and the service's colour and small logo, like YouTube.
+
 ## 1.1.41 (2026-11-23)
 
 ### Fixed

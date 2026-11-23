@@ -160,6 +160,8 @@ internal sealed class Plugin
             foreach (var app in apps)
             {
                 var info = await MediaControl.GetAsync(app); // outside the gate: never holds up dial presses
+                if (info != null && StreamingServices.Detect(app, info) is { } service)
+                    info = StreamingServices.Tidy(info, service) with { Service = service };
                 await WithGate(async () =>
                 {
                     _media[app] = info;
@@ -217,11 +219,12 @@ internal sealed class Plugin
         return (Flag("accentPlay", old == "play"), Flag("accentTimeline", old == "timeline"), Flag("accentLogo", old == "logo"));
     }
 
-    private static readonly HashSet<string> Browsers = new(StringComparer.OrdinalIgnoreCase) { "chrome", "msedge", "firefox", "brave", "opera", "vivaldi" };
-
-    /// <summary>The app's own colour and black-and-white logo. Browsers mostly play YouTube, so they get its red.</summary>
-    private static (string? Color, string? Badge) AppIdentity(string app) =>
-        Browsers.Contains(app) ? ("#FF0033", "images/media/badge-youtube.svg")
+    /// <summary>
+    /// The colour and black-and-white logo of what is playing: the video service (YouTube, Netflix, Disney+, …)
+    /// or Spotify. Apple TV has a logo but no colour, so its play button and timeline stay white.
+    /// </summary>
+    private static (string? Color, string? Badge) AppIdentity(string app, MediaInfo m) =>
+        m.Service is { } s ? (s.Color, s.Badge)
         : app.Equals("spotify", StringComparison.OrdinalIgnoreCase) ? ("#1ED760", "images/media/badge-spotify.svg")
         : (null, null);
 
@@ -355,7 +358,7 @@ internal sealed class Plugin
     {
         var style = MediaStyle(c);
         var show = Indicators(c);
-        var (appColor, appBadge) = AppIdentity(Str(c, "app", ""));
+        var (appColor, appBadge) = AppIdentity(Str(c, "app", ""), m);
         var layout = style == "background" && show.Logo && appBadge != null ? "layouts/media-background-logo.json" : $"layouts/media-{style}.json";
         if (c.Layout != layout)
         {
@@ -419,7 +422,7 @@ internal sealed class Plugin
                 items["volumePanel"] = new() { ["opacity"] = showVolume ? 1 : 0 }; // calm, dark base under the volume
                 break;
             default:
-                items["title"] = new() { ["value"] = AppName(app, exe) };
+                items["title"] = new() { ["value"] = m.Service is { } service && service.Id != "youtube" ? service.Name : AppName(app, exe) };
                 items["track"] = lineText;
                 items["icon"] = new() { ["value"] = art.IconUrl };
                 break;

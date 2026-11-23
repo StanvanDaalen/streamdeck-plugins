@@ -256,6 +256,17 @@ public static class WindowControl
         return names.ToList();
     }
 
+    /// <summary>The titles of a process's windows; a browser's title is its active tab.</summary>
+    public static List<string> WindowTitles(string process)
+    {
+        var titles = new List<string>();
+        ForEachAppWindow((hwnd, _, path) =>
+        {
+            if (Path.GetFileNameWithoutExtension(path).Equals(process, StringComparison.OrdinalIgnoreCase)) titles.Add(Native.WindowTitle(hwnd));
+        });
+        return titles;
+    }
+
     public static AppWindow? FindApp(string process)
     {
         AppWindow? found = null;
