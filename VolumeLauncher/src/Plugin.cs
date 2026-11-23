@@ -159,18 +159,7 @@ internal sealed class Plugin
             });
             foreach (var app in apps)
             {
-                var info = await MediaControl.GetAsync(app); // outside the gate: never holds up dial presses
-                if (info != null && StreamingServices.Detect(app, info) is { } service)
-                {
-                    info = StreamingServices.Tidy(info, service) with { Service = service };
-                    // Motorsport: the flag of the race weekend's country.
-                    if (service.Motorsport && G.EpisodeArt && info.Country is { } country && Flags.TryGet(country) is { } flag)
-                        info = info with { Cover = flag.Cover, Backdrop = flag.Backdrop, BackdropDim = flag.BackdropDim };
-                    // No picture from the service (Paramount+, Netflix, …): the episode's still from TVmaze.
-                    else if (info.Cover == null && !service.Motorsport && G.EpisodeArt && service != StreamingServices.YouTube
-                        && EpisodeArt.TryGet(info.Artist, info.Season, info.Episode, info.Title) is { } still)
-                        info = info with { Cover = still.Cover, Backdrop = still.Backdrop, BackdropDim = still.BackdropDim };
-                }
+                var info = await FetchMedia(app); // outside the gate: never holds up dial presses
                 await WithGate(async () =>
                 {
                     _media[app] = info;
@@ -622,6 +611,38 @@ internal sealed class Plugin
         SettingsStore.MarkDirty();
     }
 
+    // Per app: the media last seen and its service, so a service stays the same while the same thing plays
+    // (also while paused or when another tab is in front).
+    private readonly Dictionary<string, (string Key, StreamingService Service)> _services = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>What the app plays, with its video service, tidied text and picture (episode still or flag).</summary>
+    private async Task<MediaInfo?> FetchMedia(string app)
+    {
+        var info = await MediaControl.GetAsync(app);
+        if (info == null) return null;
+        var key = info.Title + "|" + info.Artist;
+        StreamingService? service;
+        lock (_services)
+        {
+            if (_services.TryGetValue(app, out var known) && known.Key == key) service = known.Service;
+            else
+            {
+                service = StreamingServices.Detect(app, info);
+                if (service != null) _services[app] = (key, service);
+            }
+        }
+        if (service == null) return info;
+        info = StreamingServices.Tidy(info, service) with { Service = service };
+        // Motorsport: the flag of the race weekend's country.
+        if (service.Motorsport && G.EpisodeArt && info.Country is { } country && Flags.TryGet(country) is { } flag)
+            info = info with { Cover = flag.Cover, Backdrop = flag.Backdrop, BackdropDim = flag.BackdropDim };
+        // No picture from the service (Paramount+, …): the episode's still from TVmaze.
+        else if (info.Cover == null && !service.Motorsport && G.EpisodeArt && service != StreamingServices.YouTube
+            && EpisodeArt.TryGet(info.Artist, info.Season, info.Episode, info.Title) is { } still)
+            info = info with { Cover = still.Cover, Backdrop = still.Backdrop, BackdropDim = still.BackdropDim };
+        return info;
+    }
+
     private async Task RunMedia(Ctx c, string action)
     {
         var process = c.Action == AppAction ? Str(c, "app", "") : DialGame(c)?.ExePath is { } exe ? Path.GetFileNameWithoutExtension(exe) : "";
@@ -631,7 +652,7 @@ internal sealed class Plugin
         {
             // The media screen shows the result itself (play/pause icon, new title): refresh it right away.
             await Task.Delay(250);
-            _media[process] = await MediaControl.GetAsync(process);
+            _media[process] = await FetchMedia(process);
             if (_media[process] != null) { await RenderDial(c); return; }
         }
         await ShowOverlay(c, status ?? "No media");

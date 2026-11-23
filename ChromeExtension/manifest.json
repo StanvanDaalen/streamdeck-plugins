@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Stream Deck Now Playing",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Tells Windows (and the Stream Deck App Volume dial) what a streaming site plays: episode and series, or race and session.",
   "content_scripts": [
     {

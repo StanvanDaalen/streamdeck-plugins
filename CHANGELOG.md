@@ -12,6 +12,13 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.46 (2026-11-23)
+
+### Fixed
+
+- **Volume & Launcher**: App Volume keeps the streaming service's colour and small logo when you pause or switch tabs, instead of briefly losing them.
+- **Stream Deck Now Playing** (Chrome extension): finds the Netflix episode again (Netflix moved the address it reads it from).
+
 ## 1.1.45 (2026-11-23)
 
 ### New

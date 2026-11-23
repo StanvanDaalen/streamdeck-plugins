@@ -43,12 +43,15 @@
     } catch {}
     if (!netflixCache.has(id)) {
       netflixCache.set(id, null);
-      let build = 'release';
-      try { build = window.netflix.reactContext.models.serverDefs.data.BUILD_IDENTIFIER || build; } catch {}
-      try {
-        const r = await fetch(`/nq/website/memberapi/${build}/metadata?movieid=${id}`, { credentials: 'include' });
-        if (r.ok) netflixCache.set(id, (await r.json()).video || null);
-      } catch {}
+      // "release" is the current path; the build id was the path in older Netflix versions (it now answers 502).
+      const paths = ['release'];
+      try { const b = window.netflix.reactContext.models.serverDefs.data.BUILD_IDENTIFIER; if (b) paths.push(b); } catch {}
+      for (const path of paths) {
+        try {
+          const r = await fetch(`/nq/website/memberapi/${path}/metadata?movieid=${id}`, { credentials: 'include' });
+          if (r.ok) { netflixCache.set(id, (await r.json()).video || null); break; }
+        } catch {}
+      }
     }
     const info = netflixDescribe(netflixCache.get(id), id);
     if (info && info.title) return info;

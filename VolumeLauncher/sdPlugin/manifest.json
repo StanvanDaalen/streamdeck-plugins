@@ -3,7 +3,7 @@
   "Name": "Volume & Launcher",
   "Author": "Stan",
   "Description": "Volume dials for the game that is open and for any app (with a media screen), and keys that start, minimize and close games and apps with their logo and playtime. Games are found automatically via Steam, Epic, Xbox and Lunar Client.",
-  "Version": "3.2.0.0",
+  "Version": "3.2.1.0",
   "SDKVersion": 2,
   "Icon": "images/plugin",
   "Category": "Volume & Launcher",

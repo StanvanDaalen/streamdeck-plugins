@@ -62,7 +62,7 @@ public static class EpisodeArt
             // No connection: try again on a later episode change instead of remembering "nothing".
             SettingsStore.Log("episode art: " + e.Message);
             Shows.TryRemove(series, out _);
-            _ = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(t => Pictures.TryRemove($"{series}{season}{episode}{title}", out _));
+            _ = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(t => Pictures.TryRemove($"{series}\u0001{season}\u0001{episode}\u0001{title}", out _));
             return null;
         }
     }
