@@ -67,31 +67,38 @@ public static class StreamingServices
             ?? YouTube;
     }
 
-    private static readonly Regex Episode = new(@"^(?<series>.+?)\s*[:\-–|,]\s*(?<code>S(eason)?\s*\d+\s*[:,.]?\s*E(p(isode)?)?\.?\s*\d+|Seizoen\s*\d+\s*[:,.]?\s*Aflevering\s*\d+|Episode\s*\d+|Aflevering\s*\d+)\s*(?:[:\-–|]\s*)?(?<episode>.*)$",
-        RegexOptions.IgnoreCase);
+    // "S1:E3", "S1 E3", "Season 1 Episode 8", "Seizoen 1 Aflevering 2", "Episode 3", "Ep. 3".
+    private const string Code = @"\b(?:S(?:eason|eizoen)?\s*(?<s>\d+)\s*[:,.]?\s*(?:E|Ep\.?|Episode|Aflevering)\s*(?<e>\d+)|(?:Episode|Aflevering|Ep\.?)\s*(?<e>\d+))\b";
+
+    // Series, then the code (with or without a separator), then the episode's own name.
+    private static readonly Regex Episode = new($@"^(?<series>.+?)(?:\s*[:\-–|,]\s*|\s+){Code}\s*(?:[:\-–|.]\s*)?(?<episode>.*)$", RegexOptions.IgnoreCase);
+    // Only a code in front of the episode's name, when the series comes separately.
+    private static readonly Regex Leading = new($@"^{Code}\s*(?:[:\-–|.]\s*)?(?<episode>.*)$", RegexOptions.IgnoreCase);
 
     /// <summary>
     /// The episode on top and the series below. The service's own name and "Watch" are removed from both, and a title
-    /// like "Series: S1:E3 Episode" is split in two. Returns the media unchanged when there is nothing to tidy.
+    /// like "Series Season 1 Episode 8: Episode" is split in two; the season and episode numbers are kept for the
+    /// episode picture. Returns the media unchanged for YouTube.
     /// </summary>
     public static MediaInfo Tidy(MediaInfo m, StreamingService s)
     {
         if (s == YouTube) return m;
         string title = Strip(m.Title, s), artist = Strip(m.Artist, s);
         if (artist.Equals(title, StringComparison.OrdinalIgnoreCase)) artist = "";
-        if (artist.Length == 0 && Episode.Match(title) is { Success: true } e)
+        int? season = null, number = null;
+        var e = artist.Length == 0 ? Episode.Match(title) : Leading.Match(title);
+        if (e.Success)
         {
+            if (int.TryParse(e.Groups["s"].Value, out var sn)) season = sn;
+            if (int.TryParse(e.Groups["e"].Value, out var en)) number = en;
             var episode = e.Groups["episode"].Value.Trim(' ', '"', '“', '”');
-            var code = Regex.Replace(e.Groups["code"].Value, @"\s+", " ").Trim();
+            var code = season != null ? $"S{season}:E{number}" : $"Episode {number}";
             title = episode.Length > 0 ? episode : code;
-            artist = e.Groups["series"].Value.Trim();
+            if (artist.Length == 0) artist = e.Groups["series"].Value.Trim();
         }
-        // "Episode 3 - Title" with the series below: the episode number adds nothing on a small screen.
-        var named = Regex.Replace(title, @"^(?:S\d+\s*[:,.]?\s*)?(?:E|Ep\.?|Episode|Aflevering)\s*\d+\s*[:\-–|.]\s*", "", RegexOptions.IgnoreCase);
-        if (named.Length > 0) title = named.Trim(' ', '"', '“', '”');
         // Nothing left but the service's name (Netflix shows no episode in its tab): show the service itself.
         if (title.Length == 0) { title = artist.Length > 0 ? artist : s.Name; artist = ""; }
-        return m with { Title = title, Artist = artist };
+        return m with { Title = title, Artist = artist, Season = season, Episode = number };
     }
 
     private static string Strip(string text, StreamingService s)

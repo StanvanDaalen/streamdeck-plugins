@@ -161,7 +161,13 @@ internal sealed class Plugin
             {
                 var info = await MediaControl.GetAsync(app); // outside the gate: never holds up dial presses
                 if (info != null && StreamingServices.Detect(app, info) is { } service)
+                {
                     info = StreamingServices.Tidy(info, service) with { Service = service };
+                    // No picture from the service (Paramount+, Netflix, …): the episode's still from TVmaze.
+                    if (info.Cover == null && G.EpisodeArt && service != StreamingServices.YouTube
+                        && EpisodeArt.TryGet(info.Artist, info.Season, info.Episode, info.Title) is { } still)
+                        info = info with { Cover = still.Cover, Backdrop = still.Backdrop, BackdropDim = still.BackdropDim };
+                }
                 await WithGate(async () =>
                 {
                     _media[app] = info;
@@ -1050,6 +1056,7 @@ internal sealed class Plugin
                 case "rememberVolume": G.RememberVolume = v.GetValue<bool>(); break;
                 case "balance": G.Balance = v.GetValue<bool>(); break;
                 case "duck": G.Duck = v.GetValue<bool>(); break;
+                case "episodeArt": G.EpisodeArt = v.GetValue<bool>(); break;
                 case "duckPercent": G.DuckPercent = int.Parse(v.ToString()); break;
                 case "customName" when editId != null:
                     Override(editId).Name = v.GetValue<string>();
@@ -1146,6 +1153,7 @@ internal sealed class Plugin
                 ["rememberVolume"] = G.RememberVolume,
                 ["balance"] = G.Balance,
                 ["duck"] = G.Duck,
+                ["episodeArt"] = G.EpisodeArt,
                 ["duckPercent"] = G.DuckPercent,
                 ["currentId"] = _game?.Entry.Id,
                 ["apps"] = apps,

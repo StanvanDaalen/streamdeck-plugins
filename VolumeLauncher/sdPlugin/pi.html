@@ -60,7 +60,11 @@
       <div class="row"><label class="check"><input type="checkbox" id="accentPlay">Play button in app colour</label></div>
       <div class="row"><label class="check"><input type="checkbox" id="accentTimeline">Timeline in app colour</label></div>
       <div class="row"><label class="check"><input type="checkbox" id="accentLogo">Small black-and-white logo</label></div>
-      <p class="muted">So you can tell this dial apart from Spotify: browsers show YouTube red, Spotify green. Logo adds a small black-and-white logo (Player and Picture). Other apps stay white.</p>
+      <p class="muted">So you can tell this dial apart from Spotify: Spotify shows green, a browser the colour of what it plays (YouTube red, Netflix red, Disney+ blue, …). Logo adds a small black-and-white logo (Player and Picture). Other apps stay white.</p>
+
+      <h4>Streaming</h4>
+      <div class="row"><label class="check"><input type="checkbox" id="episodeArt">Episode pictures from TVmaze</label></div>
+      <p class="muted">For series whose service shows no picture (Paramount+, Netflix, …), the episode's picture is looked up on TVmaze. Only the series name is sent.</p>
     </div>
 
     <div id="gestureSection">
@@ -150,7 +154,7 @@ function connectElgatoStreamDeckSocket(port, inUuid, registerEvent, info, action
 function apply(p) {
   document.querySelectorAll('.seg').forEach(s =>
     s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === p[s.dataset.group])));
-  for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo']) $(k).checked = !!p[k];
+  for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo', 'episodeArt']) $(k).checked = !!p[k];
   // Logo and slider colour only apply to the Classic look.
   if (window.isAppDial) for (const r of ['displayRow', 'themeRow']) $(r).classList.toggle('hide', p.idleStyle !== 'classic');
   $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
@@ -211,7 +215,7 @@ document.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forE
   s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
   send({ [s.dataset.group]: b.value });
 })));
-for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo'])
+for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo', 'episodeArt'])
   $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 $('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
 const GESTURES = [['mute', 'Mute'], ['window', 'Minimize / open'], ['close', 'Close'], ['favorite', 'Favorite volume'], ['none', 'Nothing']];

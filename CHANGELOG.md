@@ -12,6 +12,16 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.43 (2026-11-23)
+
+### New
+
+- **Volume & Launcher**: App Volume shows a picture of the episode for series whose service gives none (Paramount+, Netflix), looked up on TVmaze. It can be turned off under Streaming.
+
+### Fixed
+
+- **Volume & Launcher**: App Volume splits titles such as "Watch Sheriff Country Season 1 Episode 8: Death & Taxes - Paramount+" into the episode on top and the series below.
+
 ## 1.1.42 (2026-11-23)
 
 ### New

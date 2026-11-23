@@ -19,6 +19,8 @@ public sealed class GlobalSettings
     public bool RememberVolume { get; set; } = true;
     public bool Balance { get; set; } = true;
     public bool Duck { get; set; } = true;
+    /// <summary>Look up episode pictures on TVmaze for series whose service shows none.</summary>
+    public bool EpisodeArt { get; set; } = true;
     public int DuckPercent { get; set; } = 40;
     public Dictionary<string, float> GameVolumes { get; set; } = new();
     public Dictionary<string, GameOverride> Overrides { get; set; } = new();

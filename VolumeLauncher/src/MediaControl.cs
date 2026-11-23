@@ -14,6 +14,10 @@ public sealed record MediaInfo(
 
     /// <summary>The video service this is from (YouTube, Netflix, …), when known.</summary>
     public StreamingService? Service { get; init; }
+
+    /// <summary>Season and episode number, when the service's title names them (for looking up the episode picture).</summary>
+    public int? Season { get; init; }
+    public int? Episode { get; init; }
 }
 
 /// <summary>
@@ -118,6 +122,18 @@ public static class MediaControl
             using var stream = await Wait(thumb.OpenReadAsync());
             using var net = stream.AsStreamForRead();
             using var src = new Bitmap(net);
+            // A site without artwork gets the browser's own icon (transparent corners): that is no picture of the video.
+            if (src.GetPixel(0, 0).A < 20 && src.GetPixel(src.Width - 1, src.Height - 1).A < 20) return (null, null, null);
+            return RenderArt(src);
+        }
+        catch (Exception e) { SettingsStore.Log("media art: " + e.Message); return (null, null, null); }
+    }
+
+    /// <summary>A picture as the dial's rounded cover, full-screen backdrop and darker backdrop (under the volume).</summary>
+    public static (string?, string?, string?) RenderArt(Bitmap src)
+    {
+        try
+        {
 
             // Cover: a square crop with rounded corners, like the Spotify dial's album art.
             using var square = ArtworkService.Cover(src, 80, 80);
