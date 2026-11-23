@@ -17,6 +17,7 @@
   .btn { background: #3d3d3d; color: #d8d8d8; border: 1px solid #4a4a4a; border-radius: 3px; padding: 4px 10px; cursor: pointer; flex: none; }
   button:hover, .btn:hover { background: #474747; }
   .muted { color: #8a8a8a; font-size: 11px; line-height: 1.45; margin: 4px 0; }
+  .warn { color: #ffb020; font-size: 11px; line-height: 1.45; margin: 4px 0; }
   .file { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; }
   .file span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8a; }
   .file input { display: none; }
@@ -61,6 +62,13 @@
       <div class="row"><label class="check"><input type="checkbox" id="accentTimeline">Timeline in app colour</label></div>
       <div class="row"><label class="check"><input type="checkbox" id="accentLogo">Small black-and-white logo</label></div>
       <p class="muted">So you can tell this dial apart from Spotify: Spotify shows green, a browser the colour of what it plays (YouTube red, Netflix red, Disney+ blue, …). Logo adds a small black-and-white logo (Player and Picture). Other apps stay white.</p>
+
+      <h4>Chrome extension</h4>
+      <p class="warn hide" id="extensionNeeded">Chrome only reports the service's name: load the extension below.</p>
+      <div class="row"><span class="lbl"></span><button id="openExtension">Open extension folder</button></div>
+      <div class="row"><span class="lbl"></span><button id="copyExtension">Copy folder path</button></div>
+      <p class="muted">Netflix and some other services only tell Windows their name. The Stream Deck Now Playing extension passes on the episode, series and picture. Load it once in Chrome: open <b>chrome://extensions</b>, turn on <b>Developer mode</b>, click <b>Load unpacked</b> and choose this folder (or paste the copied path). Then refresh the streaming tab. After a plugin update, click <b>Reload</b> on the extension.</p>
+      <p class="muted" id="extensionFolder"></p>
 
       <h4>Streaming</h4>
       <div class="row"><label class="check"><input type="checkbox" id="episodeArt">Look up pictures online</label></div>
@@ -155,6 +163,8 @@ function apply(p) {
   document.querySelectorAll('.seg').forEach(s =>
     s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.value === p[s.dataset.group])));
   for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimeline', 'accentLogo', 'episodeArt']) $(k).checked = !!p[k];
+  if (p.extensionFolder) $('extensionFolder').textContent = p.extensionFolder;
+  $('extensionNeeded').classList.toggle('hide', !p.extensionNeeded);
   // Logo and slider colour only apply to the Classic look.
   if (window.isAppDial) for (const r of ['displayRow', 'themeRow']) $(r).classList.toggle('hide', p.idleStyle !== 'classic');
   $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
@@ -229,6 +239,13 @@ fillGestures(false);
 document.querySelectorAll('.gesture').forEach(s => s.addEventListener('change', () => send({ [s.id]: s.value })));
 $('favorite').addEventListener('change', () => send({ favorite: $('favorite').value }));
 $('favoriteCurrent').addEventListener('click', () => send({ favoriteCurrent: true }));
+$('openExtension').addEventListener('click', () => send({ openExtension: true }));
+$('copyExtension').addEventListener('click', () => {
+  const path = $('extensionFolder').textContent;
+  const done = () => { $('copyExtension').textContent = 'Copied'; setTimeout(() => $('copyExtension').textContent = 'Copy folder path', 1500); };
+  const fallback = () => { const t = document.createElement('textarea'); t.value = path; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); };
+  if (navigator.clipboard) navigator.clipboard.writeText(path).then(done, fallback); else fallback();
+});
 $('startFavorite').addEventListener('change', () => send({ startFavorite: $('startFavorite').checked }));
 $('step').addEventListener('change', () => send({ step: $('step').value }));
 $('seekStep').addEventListener('change', () => send({ seekStep: $('seekStep').value }));

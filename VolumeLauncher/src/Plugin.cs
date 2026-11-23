@@ -632,6 +632,9 @@ internal sealed class Plugin
             }
         }
         if (service == null) return info;
+        // A browser that reports only the service's name ("Netflix") is a sign the Chrome extension is not loaded.
+        if (StreamingServices.IsBrowser(app) && service != StreamingServices.YouTube)
+            ChromeExtension.NeedsLoading = info.Artist.Length == 0 && service.TitleNames.Any(n => n.Equals(info.Title.Trim(), StringComparison.OrdinalIgnoreCase));
         info = StreamingServices.Tidy(info, service) with { Service = service };
         // Motorsport: the flag of the race weekend's country.
         if (service.Motorsport && G.EpisodeArt && info.Country is { } country && Flags.TryGet(country) is { } flag)
@@ -1045,6 +1048,7 @@ internal sealed class Plugin
 
     private async Task OnPiMessage(Ctx c, JsonObject p)
     {
+        if (p["openExtension"] != null) { ChromeExtension.OpenFolder(); return; }
         if (p["iconLib"] != null)
         {
             await SendAsync(new JsonObject
@@ -1178,6 +1182,8 @@ internal sealed class Plugin
                 ["balance"] = G.Balance,
                 ["duck"] = G.Duck,
                 ["episodeArt"] = G.EpisodeArt,
+                ["extensionFolder"] = ChromeExtension.Folder,
+                ["extensionNeeded"] = ChromeExtension.NeedsLoading,
                 ["duckPercent"] = G.DuckPercent,
                 ["currentId"] = _game?.Entry.Id,
                 ["apps"] = apps,

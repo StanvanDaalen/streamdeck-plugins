@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.48 (2026-11-23)
+
+### New
+
+- **Volume & Launcher**: the Stream Deck Now Playing Chrome extension now comes with the plugin. App Volume's settings have a Chrome extension section with Open extension folder, Copy folder path and the steps to load it, and warn when Chrome reports only a service's name.
+
 ## 1.1.47 (2026-11-23)
 
 ### Fixed

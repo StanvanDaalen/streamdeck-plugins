@@ -14,6 +14,7 @@ internal static class Program
 
         if (Arg("--assets") is { } dir) { Glyphs.WriteAssets(dir); return 0; }
         SettingsStore.Load();
+        ChromeExtension.Sync();
         if (Arg("--closed-test") is { } closedPng)
         {
             // Diagnostic: the "Open <app>" cover a closed App Volume app shows.
