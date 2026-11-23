@@ -25,4 +25,14 @@ Copy-Item "$root\out\*" "$target\bin" -Recurse -Force
 # Deck would then read settings that the normal Stream Deck (started at sign-in) never sees.
 Start-Process explorer.exe -ArgumentList "`"$exe`""
 Write-Output 'Stream Deck restarted.'
+
+# The Chrome extension (Stream Deck Now Playing) lives in a fixed folder that Chrome loads it from, outside the
+# repo and Downloads, and is refreshed here; Chrome picks up a change after Reload on chrome://extensions.
+# Written through the admin share so a Store app running this script cannot redirect it into its private copy.
+$local = "\\localhost\c$\Users\$env:USERNAME\AppData\Local"
+if (-not (Test-Path $local)) { $local = $env:LOCALAPPDATA }
+$extension = Join-Path $local 'Stream Deck Now Playing'
+New-Item -ItemType Directory -Force $extension | Out-Null
+Copy-Item "$root\..\ChromeExtension\*" $extension -Recurse -Force
+Write-Output "Chrome extension updated in $extension"
 if (-not $NoPublish) { & "$root\..\publish.ps1" -Message $Message }
