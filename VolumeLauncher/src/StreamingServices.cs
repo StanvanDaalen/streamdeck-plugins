@@ -61,9 +61,10 @@ public static class StreamingServices
         if (!IsBrowser(app)) return null;
         var titles = WindowControl.WindowTitles(app);
         var playing = titles.FirstOrDefault(t => m.Title.Length > 3 && t.Contains(m.Title, StringComparison.OrdinalIgnoreCase));
+        // The tab before the episode's own name: an episode called "Max" is not HBO Max.
         return (playing != null ? InText(playing) : null)
-            ?? InText(m.Title) ?? InText(m.Artist)
             ?? titles.Select(InText).FirstOrDefault(s => s != null && s != YouTube)
+            ?? InText(m.Artist) ?? InText(m.Title)
             ?? YouTube;
     }
 

@@ -12,6 +12,16 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.44 (2026-11-23)
+
+### New
+
+- **Stream Deck Now Playing** (Chrome extension): passes the Netflix episode, series and picture on to Windows, so App Volume shows them.
+
+### Fixed
+
+- **Volume & Launcher**: App Volume finds the streaming service from the browser tab first, so an episode named for example "Max" is not mistaken for HBO Max.
+
 ## 1.1.43 (2026-11-23)
 
 ### New

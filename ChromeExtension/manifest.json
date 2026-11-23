@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Stream Deck Now Playing",
+  "version": "1.0.0",
+  "description": "Tells Windows (and the Stream Deck App Volume dial) which episode and series a streaming site plays, with its picture.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.netflix.com/*"],
+      "js": ["netflix.js"],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    }
+  ]
+}
