@@ -559,8 +559,7 @@ internal sealed class Plugin
             await OpenApp(c);
             return;
         }
-        var actions = new[] { Str(c, "singleAction", "mute"), Str(c, "doubleAction", "window"), Str(c, "tripleAction", TripleDefault(c)) };
-        int most = actions[2] != "none" ? 3 : actions[1] != "none" ? 2 : 1;
+        var actions = new[] { Str(c, "singleAction", "mute"), Str(c, "doubleAction", "window"), Str(c, "tripleAction", TripleDefault(c)) };        int most = actions[2] != "none" ? 3 : actions[1] != "none" ? 2 : 1;
         c.ClickTimer?.Cancel();
         c.ClickTimer = null;
         c.Clicks = Math.Min(c.Clicks + 1, most);
@@ -591,8 +590,19 @@ internal sealed class Plugin
         "close" => CloseTarget(c),
         "favorite" => GoToFavorite(c),
         "playpause" or "next" or "previous" => RunMedia(c, action),
+        "fullscreen" => ToggleFullscreen(c),
         _ => Task.CompletedTask,
     };
+
+    /// <summary>Fullscreen on/off for what the app plays: the window (browser tab) showing it, otherwise the app's window.</summary>
+    private async Task ToggleFullscreen(Ctx c)
+    {
+        var app = Str(c, "app", "");
+        if (app.Length == 0) return;
+        var playing = _media.GetValueOrDefault(app);
+        // The tab's title carries what the service reported (before tidying), e.g. "FBI" in "Watch FBI Season 5 …".
+        var hwnd = WindowControl.FindWindow(app, playing?.RawTitle ?? playing?.Title ?? "");        if (hwnd != IntPtr.Zero) await WindowControl.ToggleFullscreen(hwnd);
+    }
 
     // ---------- the game a Game Volume dial controls: its chosen game, or the game in front ----------
 
@@ -623,6 +633,7 @@ internal sealed class Plugin
     {
         var info = await MediaControl.GetAsync(app);
         if (info == null) return null;
+        info = info with { RawTitle = info.Title };
         var key = info.Title + "|" + info.Artist;
         StreamingService? service;
         lock (_services)
@@ -638,7 +649,7 @@ internal sealed class Plugin
         // A browser that reports only the service's name ("Netflix") is a sign the Chrome extension is not loaded.
         if (StreamingServices.IsBrowser(app) && service != StreamingServices.YouTube)
             ChromeExtension.NeedsLoading = info.Artist.Length == 0 && service.TitleNames.Any(n => n.Equals(info.Title.Trim(), StringComparison.OrdinalIgnoreCase));
-        info = StreamingServices.Tidy(info, service) with { Service = service };
+        info = StreamingServices.Tidy(StreamingServices.FromTab(app, info, service), service) with { Service = service };
         // Motorsport: the flag of the race weekend's country.
         if (service.Motorsport && G.EpisodeArt && info.Country is { } country && Flags.TryGet(country) is { } flag)
             info = info with { Cover = flag.Cover, Backdrop = flag.Backdrop, BackdropDim = flag.BackdropDim };

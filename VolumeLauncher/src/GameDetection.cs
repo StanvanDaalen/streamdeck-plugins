@@ -306,6 +306,38 @@ public static class WindowControl
 
     public static void Minimize(IntPtr hwnd) => Native.ShowWindowAsync(hwnd, 6);
 
+    /// <summary>
+    /// The window of a process whose title contains this text (a browser's title is its active tab), so the window
+    /// with the playing video; otherwise the app's main window.
+    /// </summary>
+    public static IntPtr FindWindow(string process, string text)
+    {
+        var hwnd = IntPtr.Zero;
+        if (text.Trim().Length > 1)
+            ForEachAppWindow((h, _, path) =>
+            {
+                if (hwnd == IntPtr.Zero && Path.GetFileNameWithoutExtension(path).Equals(process, StringComparison.OrdinalIgnoreCase)
+                    && Native.WindowTitle(h).Contains(text.Trim(), StringComparison.OrdinalIgnoreCase)) hwnd = h;
+            });
+        return hwnd != IntPtr.Zero ? hwnd : FindApp(process)?.Window ?? IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// Fullscreen on or off for the video in this window, the way the video sites do it: F toggles fullscreen,
+    /// Esc leaves it. The window comes to the front first, since the keys go to the window in front.
+    /// </summary>
+    public static async Task ToggleFullscreen(IntPtr hwnd)
+    {
+        bool full = Native.FillsMonitor(hwnd) && !Native.IsIconic(hwnd);
+        bool wasFront = Native.GetForegroundWindow() == hwnd;
+        if (!wasFront) { Activate(hwnd); await Task.Delay(120); }
+        if (Native.GetForegroundWindow() != hwnd) return; // never send keys to another window
+        if (full) { Native.Tap(0x1B); return; }           // Esc
+        // Activating may have tapped Alt, which puts Chrome's focus on its menu button; Esc puts it back on the page.
+        if (!wasFront) { Native.Tap(0x1B); await Task.Delay(40); }
+        Native.Tap(0x46);                                   // F
+    }
+
     public static void Activate(IntPtr hwnd)
     {
         if (Native.IsIconic(hwnd)) Native.ShowWindowAsync(hwnd, 9);

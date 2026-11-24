@@ -240,7 +240,7 @@ for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimel
   $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 $('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
 const GESTURES = [['mute', 'Mute'], ['window', 'Minimize / open'], ['close', 'Close'], ['favorite', 'Favorite volume'], ['none', 'Nothing']];
-const MEDIA = [['playpause', 'Play / pause'], ['next', 'Next track'], ['previous', 'Previous track']];
+const MEDIA = [['playpause', 'Play / pause'], ['next', 'Next track'], ['previous', 'Previous track'], ['fullscreen', 'Fullscreen on / off']];
 function fillGestures(withMedia) {
   document.querySelectorAll('.gesture').forEach(s => {
     s.innerHTML = (withMedia ? MEDIA.concat(GESTURES) : GESTURES).map(([v, t]) => `<option value="${v}">${t}</option>`).join('');

@@ -74,6 +74,34 @@ public static class StreamingServices
             ?? YouTube;
     }
 
+    // " - Google Chrome", " - Microsoft Edge", " — Mozilla Firefox" at the end of a browser window's title.
+    private static readonly Regex BrowserName = new(@"\s+[-–—]\s+(?:Google Chrome|Microsoft​?\s?Edge|Mozilla Firefox|Brave|Opera|Vivaldi)\s*$", RegexOptions.IgnoreCase);
+
+    // Per browser: the reported title and the fuller tab title found for it, so it stays while another tab is in front.
+    private static readonly Dictionary<string, (string Reported, string Tab)> Tabs = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Some sites (Paramount+) tell Windows only the series ("FBI"), while their tab says it all:
+    /// "Watch FBI Season 5 Episode 1: Hero's Journey - Paramount+". Then the tab's title is used instead,
+    /// but only when it names a season or episode, so a film or a site's own good report is left alone.
+    /// </summary>
+    public static MediaInfo FromTab(string app, MediaInfo m, StreamingService s)
+    {
+        if (!IsBrowser(app) || s == YouTube || s.Motorsport || m.Artist.Length > 0) return m;
+        var reported = m.Title.Trim();
+        if (reported.Length < 2 || Regex.IsMatch(reported, Code, RegexOptions.IgnoreCase)) return m;
+        var tab = WindowControl.WindowTitles(app)
+            .Select(t => BrowserName.Replace(t, "").Trim())
+            .FirstOrDefault(t => t.Length > reported.Length && t.Contains(reported, StringComparison.OrdinalIgnoreCase)
+                                 && Regex.IsMatch(t, Code, RegexOptions.IgnoreCase));
+        lock (Tabs)
+        {
+            if (tab != null) Tabs[app] = (reported, tab);
+            else if (Tabs.TryGetValue(app, out var known) && known.Reported == reported) tab = known.Tab;
+        }
+        return tab != null ? m with { Title = tab } : m;
+    }
+
     // The service's name as the title's first or last part: "… - Paramount+", "… | Netflix", "Disney+ | …".
     private static StreamingService? Signed(string text) =>
         text.Length == 0 ? null : All.FirstOrDefault(s => s.TitleNames.Any(n =>

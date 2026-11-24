@@ -12,6 +12,16 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.52 (2026-11-24)
+
+### New
+
+- **Volume & Launcher**: App Volume gesture **Fullscreen on / off**, for example on double-click: the video you are watching goes fullscreen, or back to its window.
+
+### Fixed
+
+- **Volume & Launcher**: Paramount+ showed only the series ("FBI") on the App Volume dial. When a site reports just the series, the episode and series now come from the browser tab ("Hero's Journey" with "FBI" below), which also brings back the episode picture.
+
 ## 1.1.51 (2026-11-23)
 
 ### New

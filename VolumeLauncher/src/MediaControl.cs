@@ -15,6 +15,9 @@ public sealed record MediaInfo(
     /// <summary>The video service this is from (YouTube, Netflix, …), when known.</summary>
     public StreamingService? Service { get; init; }
 
+    /// <summary>The title exactly as the app reported it, before tidying (to find the browser tab that plays it).</summary>
+    public string? RawTitle { get; init; }
+
     /// <summary>Motorsport: the race weekend's country (ISO code, e.g. "es"), for its flag.</summary>
     public string? Country { get; init; }
 
