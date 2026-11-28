@@ -169,6 +169,109 @@
     navigator.mediaSession.metadata = ours;
   }
 
+  // ---------- Next / previous: most of these sites ignore the media keys, so press their own buttons ----------
+  // "Next" (the dial's double click) skips the intro, recap or credits when the site offers that, and otherwise goes
+  // to the next episode. "Previous" starts the episode over. Sites name their buttons differently, so known
+  // selectors come first and the button's text or label is the fallback.
+  const SKIP_SELECTORS = [
+    '[data-uia="player-skip-intro"]', '[data-uia="player-skip-recap"]', '[data-uia="player-skip-preplay"]', // Netflix
+    '.atvwebplayersdk-skipelement-button',                                                                 // Prime Video
+    '[data-testid="player-ux-skip-button"]',                                                               // HBO Max
+    '.skip__button', '[data-testid="skip-intro-button"]',                                                  // Disney+
+    '.skip-button',                                                                                        // Paramount+ and others
+  ];
+  const NEXT_SELECTORS = [
+    '[data-uia="next-episode-seamless-button"]', '[data-uia="next-episode-seamless-button-draining"]', '[data-uia="control-next"]', // Netflix
+    '.atvwebplayersdk-nextupcard-button', '.atvwebplayersdk-nexttitle-button',                             // Prime Video
+    '[data-testid="player-ux-up-next-button"]', '[data-testid="player-ux-next-episode-button"]',           // HBO Max
+    '[data-testid="up-next-play-button"]', '[data-testid="next-episode-button"]',                          // Disney+
+  ];
+  const SKIP_TEXT = /skip|overslaan|überspringen|passer/i;
+  const NOT_SKIP = /\d+\s*(s|sec|seconds?|seconden|sekunden)\b|forward|backward|rewind|vooruit|terug|zurück/i;
+  const NEXT_TEXT = /next episode|volgende aflevering|nächste folge|épisode suivant|play next|next up/i;
+
+  const label = el => clean(el.getAttribute('aria-label') || el.textContent || el.getAttribute('title') || '');
+  const visible = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+
+  function findButton(selectors, text, not) {
+    for (const s of selectors) {
+      const el = [...document.querySelectorAll(s)].find(visible);
+      if (el) return el;
+    }
+    return [...document.querySelectorAll('button, [role="button"]')]
+      .find(el => visible(el) && text.test(label(el)) && !(not && not.test(label(el)))) || null;
+  }
+
+  // Player controls only exist while the mouse moves over the video; a fake move brings them up.
+  function revealControls(video) {
+    const r = video.getBoundingClientRect();
+    const init = { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 };
+    for (let el = video; el && el !== document.body; el = el.parentElement)
+      for (const type of ['pointermove', 'mousemove']) el.dispatchEvent(new MouseEvent(type, init));
+  }
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const playing = () => [...document.querySelectorAll('video')].find(v => v.currentTime > 0 || !v.paused);
+
+  // Netflix without a visible button: the next episode from its own episode list.
+  function netflixNextId() {
+    const id = (location.pathname.match(/^\/watch\/(\d+)/) || [])[1];
+    if (!id) return null;
+    let video = null;
+    try { video = Object.values(netflix_state() || {}).find(m => m?._metadata?.video?.seasons)?._metadata.video; } catch {}
+    video = video || netflixCache.get(id);
+    if (!video || !Array.isArray(video.seasons)) return null;
+    const episodes = video.seasons.flatMap(s => s.episodes || []);
+    const current = String(video.currentEpisode || id);
+    const i = episodes.findIndex(ep => String(ep.id) === current || String(ep.episodeId) === current);
+    const next = i >= 0 ? episodes[i + 1] : null;
+    return next ? String(next.id || next.episodeId) : null;
+  }
+
+  function netflixPlayer() {
+    try {
+      const vp = window.netflix.appContext.state.playerApp.getAPI().videoPlayer;
+      return vp.getVideoPlayerBySessionId(vp.getAllPlayerSessionIds()[0]);
+    } catch { return null; }
+  }
+
+  let busy = false;
+  async function next() {
+    if (busy) return;
+    busy = true;
+    try {
+      const video = playing();
+      let el = findButton(SKIP_SELECTORS, SKIP_TEXT, NOT_SKIP) || findButton(NEXT_SELECTORS, NEXT_TEXT);
+      if (!el && video) {
+        revealControls(video);
+        await sleep(350);
+        el = findButton(SKIP_SELECTORS, SKIP_TEXT, NOT_SKIP) || findButton(NEXT_SELECTORS, NEXT_TEXT);
+      }
+      if (el) { el.click(); return; }
+      if (host.endsWith('netflix.com')) {
+        const id = netflixNextId();
+        if (id) location.assign(`/watch/${id}`);
+      }
+    } finally { busy = false; }
+  }
+
+  function previous() {
+    const video = playing();
+    if (!video) return;
+    const nf = host.endsWith('netflix.com') && netflixPlayer();
+    if (nf) nf.seek(0); // Netflix refuses a direct change of the video's time
+    else video.currentTime = 0;
+  }
+
+  function claimButtons() {
+    if (MOTORSPORT || !('mediaSession' in navigator)) return; // live races have no next episode
+    try {
+      navigator.mediaSession.setActionHandler('nexttrack', () => { next().catch(() => {}); });
+      navigator.mediaSession.setActionHandler('previoustrack', previous);
+    } catch {}
+  }
+
   // These sites change pages without reloading (and play the next episode by themselves), so check now and then.
-  setInterval(() => update().catch(() => {}), 2000);
+  // The buttons are claimed again each time, because a site may set its own (empty) handlers later.
+  setInterval(() => { claimButtons(); update().catch(() => {}); }, 2000);
 })();

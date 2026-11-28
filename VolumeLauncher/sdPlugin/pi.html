@@ -95,6 +95,8 @@
       <div class="row"><label>Double-click</label><select id="doubleAction" class="gesture"></select></div>
       <div class="row"><label>Triple-click</label><select id="tripleAction" class="gesture"></select></div>
       <div class="row"><label>Hold</label><select id="holdAction" class="gesture"></select></div>
+      <div class="row"><label>Tap screen</label><select id="tapAction" class="gesture touch"></select></div>
+      <div class="row"><label>Long touch</label><select id="touchHoldAction" class="gesture touch"></select></div>
       <div class="row hide" id="seekRow"><label>Seek step</label>
         <select id="seekStep"><option value="5">5 sec</option><option value="10">10 sec</option><option value="15">15 sec</option><option value="30">30 sec</option><option value="60">60 sec</option></select></div>
       <p class="muted hide" id="seekHint">Hold and turn: rewind or fast-forward this much per step while the app plays something.</p>
@@ -182,7 +184,7 @@ function apply(p) {
   $('customTitleRow').classList.toggle('hide', p.titleMode !== 'custom');
   $('duckRow').classList.toggle('hide', !p.duck);
   if (document.activeElement !== $('customTitle')) $('customTitle').value = p.customTitle;
-  for (const k of ['singleAction', 'doubleAction', 'tripleAction', 'holdAction']) $(k).value = p[k];
+  for (const k of ['singleAction', 'doubleAction', 'tripleAction', 'holdAction', 'tapAction', 'touchHoldAction']) $(k).value = p[k] || 'dial';
   $('startFavorite').checked = !!p.startFavorite;
   $('favoriteFor').textContent = p.favoriteFor || 'No game open';
   $('favorite').disabled = $('favoriteCurrent').disabled = !p.favoriteFor;
@@ -240,10 +242,11 @@ for (const k of ['rememberVolume', 'balance', 'duck', 'accentPlay', 'accentTimel
   $(k).addEventListener('change', () => send({ [k]: $(k).checked }));
 $('customTitle').addEventListener('input', () => send({ customTitle: $('customTitle').value }));
 const GESTURES = [['mute', 'Mute'], ['window', 'Minimize / open'], ['close', 'Close'], ['favorite', 'Favorite volume'], ['none', 'Nothing']];
-const MEDIA = [['playpause', 'Play / pause'], ['next', 'Next track'], ['previous', 'Previous track'], ['fullscreen', 'Fullscreen on / off']];
+const MEDIA = [['playpause', 'Play / pause'], ['next', 'Next track / episode'], ['previous', 'Previous track / restart'], ['fullscreen', 'Fullscreen on / off']];
 function fillGestures(withMedia) {
   document.querySelectorAll('.gesture').forEach(s => {
-    s.innerHTML = (withMedia ? MEDIA.concat(GESTURES) : GESTURES).map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+    const list = (s.classList.contains('touch') ? [['dial', 'Same as the dial']] : []).concat(withMedia ? MEDIA.concat(GESTURES) : GESTURES);
+    s.innerHTML = list.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   });
 }
 fillGestures(false);

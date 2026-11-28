@@ -843,7 +843,10 @@ internal sealed class Plugin
                 await OnDialUp(ctx);
                 break;
             case "touchTap":
-                if (payload?["hold"]?.GetValue<bool>() == true) await Perform(ctx, Str(ctx, "holdAction", "close"));
+                // The screen has its own gestures, or ("dial", the default) does what pressing the dial does.
+                if (payload?["hold"]?.GetValue<bool>() == true)
+                    await Perform(ctx, Str(ctx, "touchHoldAction", "dial") is var th && th != "dial" ? th : Str(ctx, "holdAction", "close"));
+                else if (Str(ctx, "tapAction", "dial") is var tap && tap != "dial") await Perform(ctx, tap);
                 else await OnClick(ctx);
                 break;
             case "propertyInspectorDidAppear":
@@ -1097,7 +1100,7 @@ internal sealed class Plugin
             if (node is not JsonValue v) continue;
             switch (key)
             {
-                case "display" or "theme" or "step" or "seekStep" or "app" or "gameId" or "mediaStyle" or "idleStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction":
+                case "display" or "theme" or "step" or "seekStep" or "app" or "gameId" or "mediaStyle" or "idleStyle" or "accentPlay" or "accentTimeline" or "accentLogo" or "titleMode" or "customTitle" or "singleAction" or "doubleAction" or "tripleAction" or "holdAction" or "tapAction" or "touchHoldAction":
                     c.Settings[key] = node.DeepClone();
                     perAction = true;
                     break;
@@ -1203,6 +1206,8 @@ internal sealed class Plugin
                 ["doubleAction"] = Str(c, "doubleAction", "window"),
                 ["tripleAction"] = Str(c, "tripleAction", TripleDefault(c)),
                 ["holdAction"] = Str(c, "holdAction", "close"),
+                ["tapAction"] = Str(c, "tapAction", "dial"),
+                ["touchHoldAction"] = Str(c, "touchHoldAction", "dial"),
                 ["startFavorite"] = G.StartOnFavorite,
                 ["favorite"] = FavoriteKey(c) is { } fav && G.Favorites.TryGetValue(fav, out var favValue) ? (int)Math.Round(favValue * 100) : null,
                 ["gameId"] = Str(c, "gameId", ""),

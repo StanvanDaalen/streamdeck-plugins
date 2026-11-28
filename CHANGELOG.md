@@ -12,6 +12,13 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.54 (2026-11-28)
+
+### New
+
+- **Volume & Launcher**: **Next track** on the App Volume dial now works on streaming sites (Netflix, Prime Video, HBO Max, Disney+, Paramount+ and more), through the Stream Deck Now Playing extension. It skips the intro, recap or credits when the site offers that, and otherwise goes to the next episode. **Previous track** starts the episode over. Reload the extension in `chrome://extensions` after the update.
+- **Volume & Launcher**: the dial's touch screen can have its own gestures: **Tap screen** and **Long touch**, for example tap = fullscreen. By default they do the same as pressing the dial, as before.
+
 ## 1.1.53 (2026-11-28)
 
 ### Improved
