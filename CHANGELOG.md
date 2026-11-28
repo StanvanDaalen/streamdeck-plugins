@@ -12,6 +12,17 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.53 (2026-11-28)
+
+### Improved
+
+- **Better Spotify Dial**: seeking (hold and turn) is now written to the log, and Stream Deck closing the connection no longer fills the log with an error.
+- **Better Spotify Dial**: removed code that was no longer used.
+
+### Fixed
+
+- **Better Spotify Dial**: when Stream Deck missed the release of the dial, every turn kept seeking instead of changing the volume. A press that lasts over 20 seconds now counts as released.
+
 ## 1.1.52 (2026-11-24)
 
 ### New

@@ -13,6 +13,7 @@ internal sealed class Ctx
 
     // Press detection
     public bool Pressed, HoldFired, Turned;
+    public DateTime PressedAt = DateTime.MinValue;
     public int Count, Seq;
     public DateTime LastUp = DateTime.MinValue;
 
@@ -31,6 +32,8 @@ internal sealed class Plugin
     private static readonly TimeSpan ClickWindow = TimeSpan.FromMilliseconds(360);
     private static readonly TimeSpan HoldTime = TimeSpan.FromMilliseconds(450);
     private static readonly TimeSpan VolumeShown = TimeSpan.FromMilliseconds(1500);
+    /// <summary>Nobody holds the dial this long; a press without a release after this is a missed dialUp.</summary>
+    private static readonly TimeSpan StuckPress = TimeSpan.FromSeconds(20);
 
     public static readonly Dictionary<string, string> Defaults = new()
     {
@@ -117,10 +120,8 @@ internal sealed class Plugin
     private static bool PressSeeks(Ctx c) =>
         c.Settings["pressRotate"] is not JsonValue v || !v.TryGetValue(out string? s) || s != "other";
 
-    /// <summary>The screen while Spotify runs: player (like the official dial), picture or compact.</summary>
     private const string SpotifyGreen = "#1ED760";
 
-    /// <summary>How the dial shows it is Spotify: "play" (green play button), "timeline", "logo" or "off".</summary>
     /// <summary>
     /// How the dial shows which app it is; any combination can be on. Older settings stored one choice in
     /// "accent" (play / timeline / logo / off): that choice is the starting point until a box is ticked.
@@ -132,6 +133,7 @@ internal sealed class Plugin
         return (Flag("accentPlay", old == "play"), Flag("accentTimeline", old == "timeline"), Flag("accentLogo", old == "logo"));
     }
 
+    /// <summary>The screen while Spotify runs: player (like the official dial), picture or compact.</summary>
     private static string Look(Ctx c) => Str(c, "look") switch { "picture" => "picture", "compact" => "compact", _ => "player" };
 
     private static bool PreferVolume(Ctx c) =>
@@ -191,6 +193,7 @@ internal sealed class Plugin
     private void OnDown(Ctx c)
     {
         c.Pressed = true;
+        c.PressedAt = DateTime.UtcNow;
         c.HoldFired = false;
         c.Turned = false;
         if (DateTime.UtcNow - c.LastUp > ClickWindow) c.Count = 0;
@@ -235,6 +238,15 @@ internal sealed class Plugin
     private async Task OnRotate(Ctx c, int ticks)
     {
         if (ticks == 0) return;
+        if (c.Pressed && DateTime.UtcNow - c.PressedAt > StuckPress)
+        {
+            // Stream Deck lost the release: without this every turn would seek instead of change the volume.
+            Log.Write("press without release for 20 s, treating the dial as released");
+            c.Pressed = false;
+            c.Count = 0;
+            c.Seq++;
+            if (c.VolumeUntil == DateTime.MaxValue) c.VolumeUntil = DateTime.UtcNow;
+        }
         if (c.Pressed) c.Turned = true;
         if (c.Pressed && PressSeeks(c))
         {
@@ -246,6 +258,7 @@ internal sealed class Plugin
             if (target > s.Duration) target = s.Duration - TimeSpan.FromSeconds(1);
             c.SeekTarget = target;
             c.SeekUntil = DateTime.UtcNow + TimeSpan.FromSeconds(1.5);
+            Log.Write($"seek: {Clock(from)} -> {Clock(target)}");
             try { await _media.Seek(target); } catch (Exception e) { Log.Write("seek: " + e.Message); }
             await RenderAsync(c);
             return;
@@ -268,8 +281,6 @@ internal sealed class Plugin
     }
 
     // ---------- actions ----------
-
-    public static readonly string[] NeedsSession = { "playPause", "play", "next", "previous", "shuffle", "repeat" };
 
     private async Task RunAsync(Ctx c, string action)
     {

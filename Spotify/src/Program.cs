@@ -13,7 +13,7 @@ internal static class Program
         if (Arg("--dump") is { } file)
         {
             // Diagnostic output: what the plugin sees of Spotify right now.
-            using var media = new SpotifyMedia();
+            var media = new SpotifyMedia();
             await media.RefreshAsync();
             var s = media.State;
             File.WriteAllText(file,
@@ -29,6 +29,7 @@ internal static class Program
         if (port == null || uuid == null || register == null) return 1;
 
         try { await new Plugin(int.Parse(port), uuid, register).RunAsync(); }
+        catch (System.Net.WebSockets.WebSocketException) { Log.Write("Stream Deck closed the connection"); } // it quit or restarted
         catch (Exception e) { Log.Write("fatal: " + e); return 1; }
         return 0;
     }

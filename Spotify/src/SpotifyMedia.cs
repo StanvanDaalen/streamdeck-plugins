@@ -17,7 +17,7 @@ internal sealed record MediaState(
 }
 
 /// <summary>Spotify's now-playing info and transport controls through the Windows media controls.</summary>
-internal sealed class SpotifyMedia : IDisposable
+internal sealed class SpotifyMedia
 {
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
@@ -189,8 +189,6 @@ internal sealed class SpotifyMedia : IDisposable
         };
         await Wait(_session.TryChangeAutoRepeatModeAsync(next));
     }
-
-    public void Dispose() { }
 }
 
 /// <summary>Spotify's own volume in the Windows mixer, on every active output device.</summary>

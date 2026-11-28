@@ -3,7 +3,7 @@
   "Name": "Better Spotify Dial",
   "Author": "Stan",
   "Description": "Spotify on a Stream Deck + dial, like the official plugin, with your own actions for click, double-click, triple-click and hold.",
-  "Version": "1.0.0.0",
+  "Version": "1.0.1.0",
   "SDKVersion": 2,
   "Icon": "imgs/plugin",
   "Category": "Better Spotify Dial",
