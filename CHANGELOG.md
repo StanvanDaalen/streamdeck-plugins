@@ -12,6 +12,12 @@ Add a change under **Unreleased**, with the plugin name first. At the next relea
 
 ### Fixed
 
+## 1.1.55 (2026-11-28)
+
+### Fixed
+
+- **Volume & Launcher**: **Minimize / open** on the App Volume dial minimized whichever browser window was in front, so a second press hid another Chrome window. It now minimizes the window with the playing video (for example the Paramount+ tab), and the next press brings that same window back.
+
 ## 1.1.54 (2026-11-28)
 
 ### New

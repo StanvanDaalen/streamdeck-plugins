@@ -14,6 +14,8 @@ internal sealed class Ctx
     public JsonObject Settings { get; set; } = new();
     public string? Layout, ArtId, LastJson, KeyHash;
     public bool RotatedWhilePressed, Encoder, HoldFired;
+    /// <summary>The window this App Volume dial minimized last, so the next press brings back that same one.</summary>
+    public IntPtr MinimizedWindow;
     public CancellationTokenSource? HoldTimer, ClickTimer;
     public string? Overlay;
     public DateTime OverlayUntil, VolumeUntil, SeekUntil;
@@ -59,6 +61,17 @@ internal sealed class Plugin
     {
         var app = Str(c, "app", "");
         if (app.Length == 0) return;
+        // A browser has many windows: aim at the one with the playing video (its title is the active tab), and
+        // bring back exactly the window this dial minimized, not whichever window of the app is in front.
+        var hwnd = c.MinimizedWindow != IntPtr.Zero && Native.IsWindow(c.MinimizedWindow) && Native.IsIconic(c.MinimizedWindow)
+            ? c.MinimizedWindow
+            : _media.GetValueOrDefault(app) is { } playing ? WindowControl.FindWindow(app, playing.RawTitle ?? playing.Title ?? "") : IntPtr.Zero;
+        if (hwnd != IntPtr.Zero)
+        {
+            if (Native.GetForegroundWindow() == hwnd && !Native.IsIconic(hwnd)) { WindowControl.Minimize(hwnd); c.MinimizedWindow = hwnd; }
+            else { WindowControl.Activate(hwnd); c.MinimizedWindow = IntPtr.Zero; }
+            return;
+        }
         if (WindowControl.FindApp(app) is { } window) { WindowControl.ToggleApp(window); return; }
         var exe = _knownAppExe.GetValueOrDefault(app) ?? G.AppExes.GetValueOrDefault(app) ?? Str(c, "appExe", "");
         if (exe.Length == 0 || !File.Exists(exe)) return;
