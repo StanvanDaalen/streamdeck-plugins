@@ -185,13 +185,22 @@
     '.atvwebplayersdk-nextupcard-button', '.atvwebplayersdk-nexttitle-button',                             // Prime Video
     '[data-testid="player-ux-up-next-button"]', '[data-testid="player-ux-next-episode-button"]',           // HBO Max
     '[data-testid="up-next-play-button"]', '[data-testid="next-episode-button"]',                          // Disney+
+    '.controls-bottom-btn.btn-next',                                                                       // Paramount+
   ];
   const SKIP_TEXT = /skip|overslaan|überspringen|passer/i;
   const NOT_SKIP = /\d+\s*(s|sec|seconds?|seconden|sekunden)\b|forward|backward|rewind|vooruit|terug|zurück/i;
   const NEXT_TEXT = /next episode|volgende aflevering|nächste folge|épisode suivant|play next|next up/i;
 
   const label = el => clean(el.getAttribute('aria-label') || el.textContent || el.getAttribute('title') || '');
-  const visible = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  // Usable: on screen and not switched off. Paramount+ keeps a disabled, see-through "Skip" button in its player
+  // all the time, so disabled and fully transparent buttons do not count.
+  const visible = el => {
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0 || el.disabled || el.getAttribute('aria-disabled') === 'true') return false;
+    if (/(^|[\s_-])disabled\b/i.test(typeof el.className === 'string' ? el.className : '')) return false;
+    const css = getComputedStyle(el);
+    return css.visibility !== 'hidden' && parseFloat(css.opacity) > 0.05;
+  };
 
   function findButton(selectors, text, not) {
     for (const s of selectors) {
